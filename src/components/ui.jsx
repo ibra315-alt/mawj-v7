@@ -382,61 +382,110 @@ export function Spinner({ size=24, color='var(--teal)' }) {
    MODAL — deep glass
 ══════════════════════════════════════════════ */
 export function Modal({ open, onClose, title, children, width=560 }) {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 769
+
   useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
   }, [open])
+
   if (!open) return null
+
   return (
     <div
-      data-modal-overlay
       style={{
         position:'fixed', inset:0, zIndex:1000,
-        display:'flex', alignItems:'flex-end', justifyContent:'center',
-        background:'rgba(0,0,0,0.72)', backdropFilter:'blur(10px)',
-        padding:'0',
+        display:'flex',
+        alignItems: isMobile ? 'flex-end' : 'center',
+        justifyContent:'center',
+        background:'rgba(0,0,0,0.75)',
+        backdropFilter:'blur(8px)',
+        WebkitBackdropFilter:'blur(8px)',
+        padding: isMobile ? 0 : 16,
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        width:'100%', maxWidth:width,
-        /* On mobile: full bottom sheet. On desktop: centered modal */
-        maxHeight:'92dvh',
-        display:'flex', flexDirection:'column',
+        width:'100%',
+        maxWidth: isMobile ? '100%' : width,
+        height: isMobile ? 'auto' : 'auto',
+        maxHeight: isMobile ? '92dvh' : '88dvh',
+        display:'flex',
+        flexDirection:'column',
         background:'var(--modal-bg)',
         backdropFilter:'blur(48px)', WebkitBackdropFilter:'blur(48px)',
         border:'1.5px solid rgba(255,255,255,0.1)',
-        borderRadius:'var(--radius-xl) var(--radius-xl) 0 0',
-        boxShadow:'0 -8px 60px rgba(0,0,0,0.5), 0 0 40px rgba(0,228,184,0.04)',
-        animation:'modalIn 0.3s cubic-bezier(0.4,0,0.2,1) both',
-        position:'relative',
+        borderRadius: isMobile ? '24px 24px 0 0' : 'var(--radius-xl)',
+        boxShadow: isMobile
+          ? '0 -16px 60px rgba(0,0,0,0.6)'
+          : '0 32px 80px rgba(0,0,0,0.6)',
+        animation: isMobile ? 'sheetUp 0.32s cubic-bezier(0.4,0,0.2,1) both' : 'modalIn 0.28s cubic-bezier(0.4,0,0.2,1) both',
+        overflow:'hidden',
       }}>
-        {/* Top shimmer line */}
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(0,228,184,0.6),transparent)', pointerEvents:'none', borderRadius:'inherit' }} />
+        {/* Shimmer top line */}
+        <div style={{ height:1, background:'linear-gradient(90deg,transparent,rgba(0,228,184,0.5),transparent)', flexShrink:0 }} />
 
-        {/* Drag handle — mobile */}
-        <div style={{ width:36, height:4, borderRadius:99, background:'rgba(255,255,255,0.15)', margin:'10px auto 0', flexShrink:0 }} />
+        {/* Drag pill (mobile only) */}
+        {isMobile && (
+          <div style={{ width:40, height:4, borderRadius:99, background:'rgba(255,255,255,0.18)', margin:'10px auto 2px', flexShrink:0 }} />
+        )}
 
-        {/* Fixed header */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 22px', borderBottom:'1px solid var(--bg-border)', flexShrink:0 }}>
-          <h2 style={{ fontSize:16, fontWeight:800, letterSpacing:'-0.01em' }}>{title}</h2>
-          <button onClick={onClose} style={{ background:'var(--bg-glass)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius-pill)', width:34, height:34, cursor:'pointer', color:'var(--text-sec)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, transition:'all 0.2s ease', flexShrink:0 }}
+        {/* Sticky header */}
+        <div style={{
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'14px 20px',
+          borderBottom:'1px solid var(--bg-border)',
+          flexShrink:0,
+          background:'var(--modal-bg)',
+        }}>
+          {/* Close left, Title right (RTL) */}
+          <button
+            onClick={onClose}
+            style={{
+              background:'var(--bg-glass)', border:'1.5px solid var(--bg-border)',
+              borderRadius:'var(--radius-pill)', width:36, height:36,
+              cursor:'pointer', color:'var(--text-sec)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:15, transition:'all 0.2s ease', flexShrink:0,
+            }}
             onMouseEnter={e => { e.currentTarget.style.background='var(--bg-glass-hover)'; e.currentTarget.style.color='var(--text)' }}
-            onMouseLeave={e => { e.currentTarget.style.background='var(--bg-glass)'; e.currentTarget.style.color='var(--text-sec)' }}>
-            ✕
-          </button>
+            onMouseLeave={e => { e.currentTarget.style.background='var(--bg-glass)'; e.currentTarget.style.color='var(--text-sec)' }}
+          >✕</button>
+          <h2 style={{ fontSize:16, fontWeight:800, letterSpacing:'-0.01em', margin:0 }}>{title}</h2>
         </div>
 
-        {/* Scrollable body */}
-        <div style={{ overflowY:'auto', flex:1, padding:'20px 22px', WebkitOverflowScrolling:'touch' }}>
+        {/* Scrollable content */}
+        <div style={{
+          flex:1,
+          overflowY:'auto',
+          overflowX:'hidden',
+          padding:'18px 20px',
+          WebkitOverflowScrolling:'touch',
+          // Ensure momentum scrolling on iOS
+          scrollBehavior:'smooth',
+        }}>
           {children}
+          {/* Bottom breathing room on mobile so last field isn't behind keyboard */}
+          {isMobile && <div style={{ height:40 }} />}
         </div>
       </div>
 
       <style>{`
-        @media(min-width:769px){
-          [data-modal-wrap]{align-items:center!important;padding:16px!important}
-          [data-modal-wrap] > div{border-radius:var(--radius-xl)!important;max-height:90vh}
+        @keyframes sheetUp {
+          from { transform: translateY(100%); opacity: 0.6; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes modalIn {
+          from { opacity:0; transform:scale(0.95) translateY(8px); }
+          to   { opacity:1; transform:scale(1)    translateY(0); }
         }
       `}</style>
     </div>
@@ -511,36 +560,69 @@ export function ConfirmModal({ open, onClose, onConfirm, title, message, confirm
 ══════════════════════════════════════════════ */
 export function PageHeader({ title, subtitle, actions }) {
   return (
-    <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:28, gap:16, flexWrap:'wrap' }}>
-      <div>
-        <h1 style={{ fontSize:24, fontWeight:900, letterSpacing:'-0.025em', lineHeight:1.15 }}>{title}</h1>
-        {subtitle && <p style={{ fontSize:13, color:'var(--text-muted)', marginTop:5 }}>{subtitle}</p>}
+    <div style={{ marginBottom:24 }}>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+        <div style={{ minWidth:0 }}>
+          <h1 style={{ fontSize:22, fontWeight:900, letterSpacing:'-0.025em', lineHeight:1.2, margin:0 }}>{title}</h1>
+          {subtitle && <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:4 }}>{subtitle}</p>}
+        </div>
+        {actions && (
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', flexShrink:0 }}>
+            {actions}
+          </div>
+        )}
       </div>
-      {actions && <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>{actions}</div>}
     </div>
   )
 }
 
 /* ══════════════════════════════════════════════
-   TABS — pill style
+   TABS — scrollable pill row
 ══════════════════════════════════════════════ */
 export function Tabs({ tabs, active, onChange }) {
   return (
-    <div style={{ display:'flex', gap:4, background:'var(--bg-glass)', backdropFilter:'blur(20px)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius-pill)', padding:'4px 6px', flexWrap:'wrap', width:'fit-content', maxWidth:'100%' }}>
-      {tabs.map(t => (
-        <button key={t.id} onClick={() => onChange(t.id)} style={{
-          padding:'8px 18px', borderRadius:'var(--radius-pill)', border:'none',
-          background: active===t.id ? 'linear-gradient(135deg,var(--teal),#00c49a)' : 'transparent',
-          color: active===t.id ? '#07090f' : 'var(--text-sec)',
-          fontWeight: active===t.id ? 800 : 500, fontSize:13,
-          cursor:'pointer', fontFamily:'inherit',
-          transition:'all 0.22s ease',
-          boxShadow: active===t.id ? '0 2px 14px rgba(0,228,184,0.35)' : 'none',
-          whiteSpace:'nowrap',
-        }}>
-          {t.label}
-        </button>
-      ))}
+    <div style={{
+      overflowX:'auto',
+      overflowY:'hidden',
+      WebkitOverflowScrolling:'touch',
+      scrollbarWidth:'none', // Firefox
+      msOverflowStyle:'none', // IE
+      paddingBottom:2, // prevent clipping
+    }}>
+      <div style={{
+        display:'inline-flex',
+        gap:4,
+        background:'var(--bg-glass)',
+        backdropFilter:'blur(20px)',
+        WebkitBackdropFilter:'blur(20px)',
+        border:'1.5px solid var(--bg-border)',
+        borderRadius:'var(--radius-pill)',
+        padding:'4px 5px',
+        minWidth:'max-content', // never shrink — forces horizontal scroll instead of wrap
+      }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => onChange(t.id)} style={{
+            padding:'8px 14px',
+            borderRadius:'var(--radius-pill)',
+            border:'none',
+            background: active === t.id
+              ? 'linear-gradient(135deg, var(--teal), #00c49a)'
+              : 'transparent',
+            color: active === t.id ? '#07090f' : 'var(--text-sec)',
+            fontWeight: active === t.id ? 800 : 500,
+            fontSize:12,
+            cursor:'pointer',
+            fontFamily:'inherit',
+            transition:'all 0.22s ease',
+            boxShadow: active === t.id ? '0 2px 12px rgba(0,228,184,0.35)' : 'none',
+            whiteSpace:'nowrap',
+            flexShrink:0,
+          }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <style>{`::-webkit-scrollbar{display:none}`}</style>
     </div>
   )
 }

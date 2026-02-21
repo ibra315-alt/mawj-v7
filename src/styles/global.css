@@ -222,15 +222,22 @@ a { color: inherit; text-decoration: none; }
    RESPONSIVE
 ══════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .page { padding: 16px 14px 90px; }
+  .page { padding: 14px 12px 82px; }
   .desktop-only { display: none !important; }
   main { margin-right: 0 !important; }
+
+  /* Single-column grids inside forms on mobile */
+  .form-grid-2 { grid-template-columns: 1fr !important; }
 }
 @media (min-width: 769px) {
   .mobile-only       { display: none !important; }
   .mobile-header     { display: none !important; }
   .mobile-bottom-nav { display: none !important; }
 }
+
+/* Hide scrollbars on tab rows globally */
+.tabs-scroll::-webkit-scrollbar { display: none; }
+.tabs-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ── Glow utility classes ── */
 .glow-teal   { box-shadow: var(--shadow-teal); }

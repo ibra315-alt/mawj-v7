@@ -347,7 +347,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
 
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'تعديل الطلب' : 'طلب جديد'} maxWidth={680}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
         <Input label="اسم العميل (اختياري)" value={form.customer_name || ''} onChange={e => setField('customer_name', e.target.value)} placeholder="اسم العميل" />
         <Input label="رقم الهاتف" value={form.customer_phone || ''} onChange={e => setField('customer_phone', e.target.value)} placeholder="+971..." dir="ltr" />
 
@@ -411,7 +411,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
       </div>
 
       {/* Financial summary */}
-      <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
         <Input
           label="رسوم التوصيل (د.إ)"
           type="number"
