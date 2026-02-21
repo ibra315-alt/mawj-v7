@@ -93,7 +93,17 @@ export default function App() {
     if (localStorage.getItem('mawj_animations') === 'false') {
       const s = document.getElementById('mawj-anim-style') || document.createElement('style')
       s.id = 'mawj-anim-style'
-      s.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }'
+      s.textContent = `
+        .page { animation: none !important; }
+        .stagger > * { animation: none !important; }
+        @keyframes pageIn { from{} to{} }
+        @keyframes cardEntrance { from{} to{} }
+        @keyframes fadeInUp { from{} to{} }
+        @keyframes shimmerSlide { from{} to{} }
+        @keyframes toastIn { from{} to{} }
+        @keyframes sheetUp { from{} to{} }
+        @keyframes modalIn { from{} to{} }
+      `
       document.head.appendChild(s)
     }
     // Noise off

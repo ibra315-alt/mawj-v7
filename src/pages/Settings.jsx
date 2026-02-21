@@ -338,7 +338,18 @@ function AppearanceTab({ theme, toggleTheme }) {
     localStorage.setItem('mawj_animations', v)
     const s = document.getElementById('mawj-anim-style') || document.createElement('style')
     s.id = 'mawj-anim-style'
-    s.textContent = v ? '' : '*, *::before, *::after { animation: none !important; transition: none !important; }'
+    // Only disable entrance animations — NEVER disable transitions (breaks hover states)
+    s.textContent = v ? '' : `
+      .page { animation: none !important; }
+      .stagger > * { animation: none !important; }
+      @keyframes pageIn { from{} to{} }
+      @keyframes cardEntrance { from{} to{} }
+      @keyframes fadeInUp { from{} to{} }
+      @keyframes shimmerSlide { from{} to{} }
+      @keyframes toastIn { from{} to{} }
+      @keyframes sheetUp { from{} to{} }
+      @keyframes modalIn { from{} to{} }
+    `
     document.head.appendChild(s)
     toast(v ? 'تم تفعيل الحركات' : 'تم إيقاف الحركات')
   }
