@@ -118,11 +118,17 @@ function SettlementForm({ open, onClose, item, partners, onSaved }) {
     finally { setSaving(false) }
   }
 
+  const PARTNERS = ['إبراهيم', 'إحسان', 'حساب الشركة']
   return (
-    <Modal open={open} onClose={onClose} title={item ? 'تعديل القيد' : 'قيد جديد'} maxWidth={440}>
+    <Modal open={open} onClose={onClose} title={item ? 'تعديل القيد' : 'قيد جديد'} width={440}
+      footer={<>
+        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn loading={saving} onClick={handleSave}>{item ? 'حفظ التعديلات' : 'إضافة القيد'}</Btn>
+      </>}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Select label="الشريك" value={form.partner_name || ''} onChange={e => setField('partner_name', e.target.value)}>
-          {partners.map(p => <option key={p} value={p}>{p}</option>)}
+        <Select label="الشريك / المصدر" value={form.partner_name || ''} onChange={e => setField('partner_name', e.target.value)}>
+          {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
           <option value="أخرى">أخرى</option>
         </Select>
         <Select label="النوع" value={form.type || 'income'} onChange={e => setField('type', e.target.value)}>
@@ -133,10 +139,6 @@ function SettlementForm({ open, onClose, item, partners, onSaved }) {
         <Input label="الفئة / السبب" value={form.category || ''} onChange={e => setField('category', e.target.value)} placeholder="مثال: مبيعات، راتب، مسحوبات..." />
         <Input label="التاريخ" type="date" value={form.date || ''} onChange={e => setField('date', e.target.value)} />
         <Textarea label="ملاحظات" value={form.notes || ''} onChange={e => setField('notes', e.target.value)} />
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
-          <Btn loading={saving} onClick={handleSave}>حفظ</Btn>
-        </div>
       </div>
     </Modal>
   )

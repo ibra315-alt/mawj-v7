@@ -146,20 +146,21 @@ function SupplierForm({ open, onClose, item, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={item ? 'تعديل المورد' : 'مورد جديد'} maxWidth={440}>
+    <Modal open={open} onClose={onClose} title={item ? 'تعديل المورد' : 'مورد جديد'} width={440}
+      footer={<>
+        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn loading={saving} onClick={handleSave}>{item ? 'حفظ التعديلات' : 'إضافة المورد'}</Btn>
+      </>}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Input label="اسم المورد *" value={form.name || ''} onChange={e => setField('name', e.target.value)} />
         <Input label="رقم الهاتف" value={form.phone || ''} onChange={e => setField('phone', e.target.value)} dir="ltr" />
         <Input label="البريد الإلكتروني" type="email" value={form.email || ''} onChange={e => setField('email', e.target.value)} dir="ltr" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 14 }}>
           <Input label="المدينة" value={form.city || ''} onChange={e => setField('city', e.target.value)} />
           <Input label="الدولة" value={form.country || ''} onChange={e => setField('country', e.target.value)} />
         </div>
         <Textarea label="ملاحظات" value={form.notes || ''} onChange={e => setField('notes', e.target.value)} />
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
-          <Btn loading={saving} onClick={handleSave}>حفظ</Btn>
-        </div>
       </div>
     </Modal>
   )

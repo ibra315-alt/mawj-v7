@@ -57,13 +57,54 @@ export default function App() {
     localStorage.setItem('mawj_theme', theme)
   }, [theme])
 
-  // Restore saved font on mount
+  // Restore ALL saved appearance settings on mount
   useEffect(() => {
-    const f = localStorage.getItem('mawj_font')
-    if (f) {
+    // Font
+    const font = localStorage.getItem('mawj_font')
+    if (font) {
       const s = document.getElementById('mawj-font-style') || document.createElement('style')
       s.id = 'mawj-font-style'
-      s.textContent = `*, input, button, select, textarea { font-family: ${f} !important; }`
+      s.textContent = `*, input, button, select, textarea { font-family: ${font} !important; }`
+      document.head.appendChild(s)
+    }
+    // Accent color
+    const accent = localStorage.getItem('mawj_accent')
+    if (accent) {
+      const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(accent)
+      if (r) {
+        const rgb = `${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}`
+        document.documentElement.style.setProperty('--teal', accent)
+        document.documentElement.style.setProperty('--teal-glow', `rgba(${rgb},0.18)`)
+        document.documentElement.style.setProperty('--teal-soft', `rgba(${rgb},0.07)`)
+      }
+    }
+    // Font size
+    const fs = localStorage.getItem('mawj_fontsize')
+    if (fs) { const map={small:13,medium:14,large:15}; document.documentElement.style.fontSize=(map[fs]||14)+'px' }
+    // Border radius
+    const rad = localStorage.getItem('mawj_radius')
+    if (rad) {
+      const map={sharp:'6px',rounded:'18px',pill:'28px'}
+      const sm={sharp:'4px',rounded:'12px',pill:'18px'}
+      document.documentElement.style.setProperty('--radius', map[rad]||'18px')
+      document.documentElement.style.setProperty('--radius-sm', sm[rad]||'12px')
+    }
+    // Animations off
+    if (localStorage.getItem('mawj_animations') === 'false') {
+      const s = document.getElementById('mawj-anim-style') || document.createElement('style')
+      s.id = 'mawj-anim-style'
+      s.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }'
+      document.head.appendChild(s)
+    }
+    // Noise off
+    if (localStorage.getItem('mawj_noise') === 'false') {
+      document.documentElement.style.setProperty('--noise-opacity', '0')
+    }
+    // Compact mode
+    if (localStorage.getItem('mawj_compact') === 'true') {
+      const s = document.getElementById('mawj-compact-style') || document.createElement('style')
+      s.id = 'mawj-compact-style'
+      s.textContent = '.page { padding: 14px !important; }'
       document.head.appendChild(s)
     }
   }, [])

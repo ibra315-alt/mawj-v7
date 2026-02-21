@@ -187,8 +187,13 @@ function InventoryForm({ open, onClose, item, suppliers, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={item ? 'تعديل المنتج' : 'منتج جديد'} maxWidth={500}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+    <Modal open={open} onClose={onClose} title={item ? 'تعديل المنتج' : 'منتج جديد'} width={500}
+      footer={<>
+        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn loading={saving} onClick={handleSave}>{item ? 'حفظ التعديلات' : 'إضافة المنتج'}</Btn>
+      </>}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 14 }}>
         <Input label="اسم المنتج *" value={form.name || ''} onChange={e => setField('name', e.target.value)} placeholder="اسم المنتج" containerStyle={{ gridColumn: '1 / -1' }} />
         <Input label="رمز SKU" value={form.sku || ''} onChange={e => setField('sku', e.target.value)} dir="ltr" placeholder="CRY-001" />
         <Input label="الفئة" value={form.category || ''} onChange={e => setField('category', e.target.value)} placeholder="كريستال، هدايا..." />
@@ -203,10 +208,6 @@ function InventoryForm({ open, onClose, item, suppliers, onSaved }) {
           </Select>
         )}
         <Textarea label="ملاحظات" value={form.notes || ''} onChange={e => setField('notes', e.target.value)} containerStyle={{ gridColumn: '1 / -1' }} />
-      </div>
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
-        <Btn loading={saving} onClick={handleSave}>حفظ</Btn>
       </div>
     </Modal>
   )

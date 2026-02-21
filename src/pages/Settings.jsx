@@ -262,73 +262,262 @@ function WhatsAppTab({ templates, onSave }) {
 
 /* ── APPEARANCE TAB ───────────────────────────────────────── */
 function AppearanceTab({ theme, toggleTheme }) {
-  const isLight = theme === 'light'
+  const [accentColor, setAccentColor] = React.useState(
+    () => localStorage.getItem('mawj_accent') || '#00e4b8'
+  )
+  const [fontSize, setFontSize] = React.useState(
+    () => localStorage.getItem('mawj_fontsize') || 'medium'
+  )
+  const [radius, setRadius] = React.useState(
+    () => localStorage.getItem('mawj_radius') || 'rounded'
+  )
+  const [sidebarWidth, setSidebarWidth] = React.useState(
+    () => localStorage.getItem('mawj_sidebarw') || 'normal'
+  )
+  const [animations, setAnimations] = React.useState(
+    () => localStorage.getItem('mawj_animations') !== 'false'
+  )
+  const [noise, setNoise] = React.useState(
+    () => localStorage.getItem('mawj_noise') !== 'false'
+  )
+  const [spotlight, setSpotlight] = React.useState(
+    () => localStorage.getItem('mawj_spotlight') !== 'false'
+  )
+  const [compactCards, setCompactCards] = React.useState(
+    () => localStorage.getItem('mawj_compact') === 'true'
+  )
+
+  const currentFont = localStorage.getItem('mawj_font') || "'Noto Kufi Arabic', sans-serif"
 
   function applyFont(fontFamily) {
     document.documentElement.style.setProperty('--font', fontFamily)
     document.body.style.fontFamily = fontFamily
-    // Also set all inputs/buttons
-    const style = document.getElementById('mawj-font-style') || document.createElement('style')
-    style.id = 'mawj-font-style'
-    style.textContent = `*, input, button, select, textarea { font-family: ${fontFamily} !important; }`
-    document.head.appendChild(style)
+    const s = document.getElementById('mawj-font-style') || document.createElement('style')
+    s.id = 'mawj-font-style'
+    s.textContent = `*, input, button, select, textarea { font-family: ${fontFamily} !important; }`
+    document.head.appendChild(s)
     localStorage.setItem('mawj_font', fontFamily)
     toast('تم تطبيق الخط ✓')
   }
 
-  const currentFont = localStorage.getItem('mawj_font') || "'Noto Kufi Arabic', sans-serif"
+  function applyAccent(hex) {
+    setAccentColor(hex)
+    localStorage.setItem('mawj_accent', hex)
+    // Convert hex to rgb for CSS var
+    const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+    if(r) {
+      const [,rv,gv,bv] = r
+      const rgb = `${parseInt(rv,16)},${parseInt(gv,16)},${parseInt(bv,16)}`
+      document.documentElement.style.setProperty('--teal', hex)
+      document.documentElement.style.setProperty('--teal-glow', `rgba(${rgb},0.18)`)
+      document.documentElement.style.setProperty('--teal-soft', `rgba(${rgb},0.07)`)
+    }
+    toast('تم تطبيق اللون ✓')
+  }
+
+  function applyFontSize(size) {
+    setFontSize(size)
+    localStorage.setItem('mawj_fontsize', size)
+    const map = { small:13, medium:14, large:15 }
+    document.documentElement.style.fontSize = map[size] + 'px'
+    toast('تم تطبيق الحجم ✓')
+  }
+
+  function applyRadius(r) {
+    setRadius(r)
+    localStorage.setItem('mawj_radius', r)
+    const map = { sharp:'6px', rounded:'18px', pill:'28px' }
+    const sm  = { sharp:'4px', rounded:'12px', pill:'18px' }
+    document.documentElement.style.setProperty('--radius', map[r])
+    document.documentElement.style.setProperty('--radius-sm', sm[r])
+    toast('تم تطبيق الشكل ✓')
+  }
+
+  function toggleAnim(v) {
+    setAnimations(v)
+    localStorage.setItem('mawj_animations', v)
+    const s = document.getElementById('mawj-anim-style') || document.createElement('style')
+    s.id = 'mawj-anim-style'
+    s.textContent = v ? '' : '*, *::before, *::after { animation: none !important; transition: none !important; }'
+    document.head.appendChild(s)
+    toast(v ? 'تم تفعيل الحركات' : 'تم إيقاف الحركات')
+  }
+
+  function toggleNoise(v) {
+    setNoise(v)
+    localStorage.setItem('mawj_noise', v)
+    const el = document.querySelector('body::after')
+    document.documentElement.style.setProperty('--noise-opacity', v ? '0.4' : '0')
+    toast(v ? 'تم تفعيل الملمس' : 'تم إيقاف الملمس')
+  }
+
+  function toggleCompact(v) {
+    setCompactCards(v)
+    localStorage.setItem('mawj_compact', v)
+    const s = document.getElementById('mawj-compact-style') || document.createElement('style')
+    s.id = 'mawj-compact-style'
+    s.textContent = v ? '.page { padding: 14px !important; } [class*="gap-"] { gap: 8px !important; }' : ''
+    document.head.appendChild(s)
+    toast(v ? 'وضع الضغط مفعّل' : 'وضع الضغط موقوف')
+  }
+
+  const ACCENT_PRESETS = [
+    { color:'#00e4b8', name:'فيروزي' },
+    { color:'#8b5cf6', name:'بنفسجي' },
+    { color:'#f59e0b', name:'عنبري' },
+    { color:'#ef4444', name:'أحمر' },
+    { color:'#3b82f6', name:'أزرق' },
+    { color:'#10b981', name:'أخضر' },
+    { color:'#ec4899', name:'وردي' },
+    { color:'#f97316', name:'برتقالي' },
+  ]
+
+  function Row({ label, desc, children }) {
+    return (
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 0', borderBottom:'1px solid var(--bg-border)', gap:16 }}>
+        <div style={{ minWidth:0 }}>
+          <div style={{ fontWeight:600, fontSize:13 }}>{label}</div>
+          {desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{desc}</div>}
+        </div>
+        <div style={{ flexShrink:0 }}>{children}</div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+
+      {/* Theme */}
       <Card>
-        <div style={{ fontWeight:800, fontSize:15, marginBottom:20 }}>وضع العرض</div>
-        <div style={{ display:'flex', gap:12 }}>
-          {[
-            { id:'dark',  emoji:'🌙', label:'داكن',  desc:'مريح للعيون' },
-            { id:'light', emoji:'☀️', label:'فاتح',  desc:'إضاءة كاملة' },
-          ].map(t => (
+        <div style={{ fontWeight:800, fontSize:15, marginBottom:16 }}>🌓 وضع العرض</div>
+        <div style={{ display:'flex', gap:10 }}>
+          {[{ id:'dark',emoji:'🌙',label:'داكن',desc:'مريح للعيون'},{id:'light',emoji:'☀️',label:'فاتح',desc:'إضاءة كاملة'}].map(t=>(
             <button key={t.id} onClick={() => { if(theme!==t.id) toggleTheme() }} style={{
-              flex:1, padding:'18px 14px', borderRadius:'var(--radius)',
+              flex:1, padding:'16px 12px', borderRadius:'var(--radius)',
               border:`2px solid ${theme===t.id?'var(--teal)':'var(--bg-border)'}`,
-              background: theme===t.id ? 'rgba(0,228,184,0.08)' : 'var(--bg-surface)',
-              color: theme===t.id ? 'var(--teal)' : 'var(--text-sec)',
-              cursor:'pointer', fontFamily:'inherit', fontWeight:700, fontSize:14,
+              background: theme===t.id?'rgba(0,228,184,0.08)':'var(--bg-surface)',
+              color: theme===t.id?'var(--teal)':'var(--text-sec)',
+              cursor:'pointer', fontFamily:'inherit', fontWeight:700, fontSize:13,
               transition:'all 0.2s ease',
-              boxShadow: theme===t.id ? '0 0 24px rgba(0,228,184,0.18)' : 'none',
+              boxShadow: theme===t.id?'0 0 20px rgba(0,228,184,0.15)':'none',
             }}>
-              <div style={{ fontSize:24, marginBottom:8 }}>{t.emoji}</div>
+              <div style={{ fontSize:22, marginBottom:6 }}>{t.emoji}</div>
               <div>{t.label}</div>
-              <div style={{ fontSize:11, opacity:0.6, marginTop:4, fontWeight:400 }}>{t.desc}</div>
+              <div style={{ fontSize:11, opacity:0.55, marginTop:3, fontWeight:400 }}>{t.desc}</div>
             </button>
           ))}
         </div>
       </Card>
 
+      {/* Accent color */}
       <Card>
-        <div style={{ fontWeight:800, fontSize:15, marginBottom:16 }}>الخط</div>
+        <div style={{ fontWeight:800, fontSize:15, marginBottom:16 }}>🎨 لون التمييز</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginBottom:16 }}>
+          {ACCENT_PRESETS.map(p => (
+            <button key={p.color} onClick={() => applyAccent(p.color)} style={{
+              width:42, height:42, borderRadius:'var(--radius-sm)',
+              background:p.color, border:`3px solid ${accentColor===p.color?'var(--text)':'transparent'}`,
+              cursor:'pointer', transition:'all 0.2s ease',
+              boxShadow: accentColor===p.color?`0 0 16px ${p.color}88`:`0 2px 8px ${p.color}44`,
+              flexShrink:0, position:'relative',
+            }} title={p.name}>
+              {accentColor===p.color && <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#fff', fontWeight:900, textShadow:'0 1px 4px rgba(0,0,0,0.5)' }}>✓</div>}
+            </button>
+          ))}
+          {/* Custom */}
+          <div style={{ position:'relative', width:42, height:42, flexShrink:0 }}>
+            <div style={{ width:42, height:42, borderRadius:'var(--radius-sm)', background:`conic-gradient(red,yellow,lime,cyan,blue,magenta,red)`, cursor:'pointer', border:'2px solid var(--bg-border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>+</div>
+            <input type="color" value={accentColor} onChange={e=>applyAccent(e.target.value)} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%', borderRadius:'var(--radius-sm)' }}/>
+          </div>
+        </div>
+        <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+          اللون الحالي: <span style={{ color:accentColor, fontWeight:700 }}>■ {accentColor}</span>
+        </div>
+      </Card>
+
+      {/* Font */}
+      <Card>
+        <div style={{ fontWeight:800, fontSize:15, marginBottom:16 }}>✏️ الخط</div>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-          {Object.entries(FONTS).map(([name, family]) => {
-            const active = currentFont === family
+          {Object.entries(FONTS).map(([name,family]) => {
+            const active = currentFont===family
             return (
               <button key={name} onClick={() => applyFont(family)} style={{
-                padding:'12px 22px', borderRadius:'var(--radius-pill)',
-                border:`2px solid ${active ? 'var(--teal)' : 'var(--bg-border)'}`,
-                background: active ? 'rgba(0,228,184,0.08)' : 'var(--bg-surface)',
-                color: active ? 'var(--teal)' : 'var(--text-sec)',
+                padding:'12px 20px', borderRadius:'var(--radius-pill)',
+                border:`2px solid ${active?'var(--teal)':'var(--bg-border)'}`,
+                background: active?'rgba(0,228,184,0.08)':'var(--bg-surface)',
+                color: active?'var(--teal)':'var(--text-sec)',
                 cursor:'pointer', fontFamily:family, fontSize:15, fontWeight:700,
                 transition:'all 0.2s ease',
-                boxShadow: active ? '0 0 16px rgba(0,228,184,0.2)' : 'none',
+                boxShadow: active?'0 0 14px rgba(0,228,184,0.2)':'none',
               }}>
                 {name}
-                <div style={{ fontSize:11, marginTop:3, fontWeight:400, opacity:0.7 }}>أبجد هوز</div>
+                <div style={{ fontSize:11, marginTop:3, fontWeight:400, opacity:0.65 }}>أبجد هوز ١٢٣</div>
               </button>
             )
           })}
         </div>
-        <div style={{ marginTop:12, fontSize:12, color:'var(--text-muted)' }}>
-          الخط الحالي: <span style={{ color:'var(--teal)', fontWeight:600 }}>{Object.entries(FONTS).find(([,f])=>f===currentFont)?.[0] || 'Noto Kufi Arabic'}</span>
-        </div>
       </Card>
+
+      {/* Size & Shape */}
+      <Card>
+        <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>📐 الحجم والشكل</div>
+        <Row label="حجم الخط" desc="يؤثر على كل النصوص">
+          <div style={{ display:'flex', gap:6 }}>
+            {[{id:'small',label:'ص'},{id:'medium',label:'م'},{id:'large',label:'ك'}].map(s=>(
+              <button key={s.id} onClick={() => applyFontSize(s.id)} style={{
+                width:36, height:36, borderRadius:'var(--radius-sm)',
+                border:`2px solid ${fontSize===s.id?'var(--teal)':'var(--bg-border)'}`,
+                background: fontSize===s.id?'rgba(0,228,184,0.1)':'var(--bg-surface)',
+                color: fontSize===s.id?'var(--teal)':'var(--text-sec)',
+                cursor:'pointer', fontFamily:'inherit', fontWeight:700,
+                fontSize: s.id==='small'?11:s.id==='medium'?13:15,
+                transition:'all 0.15s ease',
+              }}>{s.label}</button>
+            ))}
+          </div>
+        </Row>
+        <Row label="شكل الزوايا" desc="حواف البطاقات والأزرار">
+          <div style={{ display:'flex', gap:6 }}>
+            {[{id:'sharp',label:'■',title:'حاد'},{id:'rounded',label:'▢',title:'مدوّر'},{id:'pill',label:'⬭',title:'بيضوي'}].map(r=>(
+              <button key={r.id} onClick={() => applyRadius(r.id)} title={r.title} style={{
+                width:36, height:36, borderRadius:'var(--radius-sm)',
+                border:`2px solid ${radius===r.id?'var(--teal)':'var(--bg-border)'}`,
+                background: radius===r.id?'rgba(0,228,184,0.1)':'var(--bg-surface)',
+                color: radius===r.id?'var(--teal)':'var(--text-sec)',
+                cursor:'pointer', fontFamily:'inherit', fontWeight:900, fontSize:18,
+                transition:'all 0.15s ease',
+              }}>{r.label}</button>
+            ))}
+          </div>
+        </Row>
+      </Card>
+
+      {/* Behavior toggles */}
+      <Card>
+        <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>⚙️ تفضيلات العرض</div>
+        {[
+          { label:'حركات وانتقالات', desc:'تأثيرات الحركة والانتقال بين الصفحات', val:animations, set:toggleAnim },
+          { label:'ملمس الخلفية', desc:'نسيج خفيف على الخلفية', val:noise, set:toggleNoise },
+          { label:'تأثير مؤشر الماوس', desc:'هالة ضوئية تتبع المؤشر (الوضع الداكن)', val:spotlight, set:(v)=>{ setSpotlight(v); localStorage.setItem('mawj_spotlight',v); toast(v?'مفعّل':'موقوف') } },
+          { label:'وضع الضغط', desc:'تقليل المسافات لعرض أكثر في الشاشة', val:compactCards, set:toggleCompact },
+        ].map(item => (
+          <Row key={item.label} label={item.label} desc={item.desc}>
+            <Toggle checked={item.val} onChange={item.set} />
+          </Row>
+        ))}
+      </Card>
+
+      {/* Reset */}
+      <div style={{ textAlign:'center' }}>
+        <Btn variant="ghost" size="sm" onClick={() => {
+          ['mawj_accent','mawj_fontsize','mawj_radius','mawj_animations','mawj_noise','mawj_spotlight','mawj_compact','mawj_font']
+            .forEach(k=>localStorage.removeItem(k))
+          window.location.reload()
+        }}>
+          ↺ إعادة ضبط المظهر
+        </Btn>
+      </div>
     </div>
   )
 }

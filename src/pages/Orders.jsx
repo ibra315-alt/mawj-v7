@@ -346,7 +346,12 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'تعديل الطلب' : 'طلب جديد'} maxWidth={680}>
+    <Modal open={open} onClose={onClose} title={isEdit ? 'تعديل الطلب' : 'طلب جديد'} width={680}
+      footer={<>
+        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn loading={saving} onClick={handleSave}><IcSave size={15} /> {isEdit ? 'حفظ التعديلات' : 'إضافة الطلب'}</Btn>
+      </>}
+    >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
         <Input label="اسم العميل (اختياري)" value={form.customer_name || ''} onChange={e => setField('customer_name', e.target.value)} placeholder="اسم العميل" />
         <Input label="رقم الهاتف" value={form.customer_phone || ''} onChange={e => setField('customer_phone', e.target.value)} placeholder="+971..." dir="ltr" />
@@ -445,11 +450,6 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
       </div>
 
       <Textarea label="ملاحظات" value={form.notes || ''} onChange={e => setField('notes', e.target.value)} containerStyle={{ marginTop: 14 }} placeholder="أي ملاحظات إضافية..." />
-
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
-        <Btn loading={saving} onClick={handleSave}><IcSave size={15} /> {isEdit ? 'حفظ التعديلات' : 'إضافة الطلب'}</Btn>
-      </div>
     </Modal>
   )
 }
