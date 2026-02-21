@@ -146,12 +146,26 @@ export default function App() {
   function toggleTheme() { setTheme(t => t === 'dark' ? 'light' : 'dark') }
 
   if (session === undefined) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#07090f', flexDirection:'column', gap:16 }}>
-      <MawjLogo size={56} color="#00e4b8" animated />
-      <svg width="24" height="24" viewBox="0 0 24 24" style={{ animation:'spin 0.7s linear infinite', marginTop:8 }}>
-        <circle cx="12" cy="12" r="10" fill="none" stroke="#00e4b8" strokeWidth="2.5" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round"/>
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#050810', flexDirection:'column', gap:20, position:'relative', overflow:'hidden' }}>
+      {/* Same orbs as login */}
+      <div style={{ position:'absolute', top:'-10%', right:'-5%', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(0,228,184,0.08) 0%, transparent 70%)', animation:'float 8s ease-in-out infinite', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', bottom:'-10%', left:'-5%', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)', animation:'float 11s ease-in-out infinite reverse', pointerEvents:'none' }} />
+      {/* Grid */}
+      <div style={{ position:'absolute', inset:0, backgroundImage:'linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px)', backgroundSize:'64px 64px', pointerEvents:'none' }} />
+      {/* Logo */}
+      <div style={{ position:'relative', width:72, height:72, borderRadius:22, background:'rgba(0,228,184,0.08)', border:'1px solid rgba(0,228,184,0.25)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(0,228,184,0.15)' }}>
+        <MawjLogo size={48} color="#00e4b8" animated />
+      </div>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ fontSize:30, fontWeight:900, letterSpacing:'-0.03em', background:'linear-gradient(135deg,#00e4b8,#ffffff,#7c3aed)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:4 }}>مَوج</div>
+        <div style={{ fontSize:11, color:'rgba(255,255,255,0.25)', letterSpacing:'0.1em', textTransform:'uppercase' }}>جاري التحميل...</div>
+      </div>
+      {/* Wave spinner */}
+      <svg width="28" height="28" viewBox="0 0 28 28" style={{ animation:'spin 1s linear infinite' }}>
+        <circle cx="14" cy="14" r="11" fill="none" stroke="url(#lg)" strokeWidth="2" strokeDasharray="24 46" strokeLinecap="round"/>
+        <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#00e4b8"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
       </svg>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}`}</style>
     </div>
   )
 
@@ -180,7 +194,15 @@ export default function App() {
   const currentIcon  = NAV_ITEMS.find(n => n.id === page)?.icon  || ''
 
   return (
-    <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)' }}>
+    <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)', position:'relative' }}>
+
+      {/* ── ANIMATED WAVE BACKGROUND — موج brand ── */}
+      <div className="wave-bg">
+        <div className="wave-orb-1" />
+        <div className="wave-orb-2" />
+        <div className="wave-orb-3" />
+        <div className="wave-grid" />
+      </div>
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside className="desktop-sidebar" style={{
@@ -225,17 +247,20 @@ export default function App() {
         {/* Mobile sticky header */}
         <header className="mobile-header" style={{
           height:56, background:'var(--header-bg)',
-          backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
+          backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
           borderBottom:'1px solid var(--bg-border)',
           display:'flex', alignItems:'center', justifyContent:'space-between',
           padding:'0 14px', position:'sticky', top:0, zIndex:50, flexShrink:0,
+          position:'relative',
         }}>
-          <button onClick={() => setDrawerOpen(true)} style={{ background:'var(--bg-glass)', border:'1px solid var(--bg-border)', borderRadius:10, width:38, height:38, cursor:'pointer', color:'var(--text)', fontSize:18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {/* Wave bottom accent */}
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, height:1, background:'linear-gradient(90deg, transparent, rgba(0,228,184,0.3), transparent)', pointerEvents:'none' }} />
+          <button onClick={() => setDrawerOpen(true)} className="icon-btn" style={{ background:'var(--bg-glass)', border:'1px solid var(--bg-border)', borderRadius:10, width:38, height:38, cursor:'pointer', color:'var(--text)', fontSize:18, display:'flex', alignItems:'center', justifyContent:'center' }}>
             ☰
           </button>
           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-            <span style={{ fontSize:16 }}>{currentIcon}</span>
-            <span style={{ fontWeight:800, fontSize:15, color:'var(--teal)' }}>{currentLabel || 'موج'}</span>
+            <span style={{ fontSize:15 }}>{currentIcon}</span>
+            <span style={{ fontWeight:900, fontSize:15, letterSpacing:'-0.01em' }}>{currentLabel || 'مَوج'}</span>
           </div>
           <ThemeToggle theme={theme} toggle={toggleTheme} size="sm" />
         </header>
@@ -252,9 +277,10 @@ export default function App() {
       {/* ── MOBILE BOTTOM NAV ── */}
       <nav className="mobile-bottom-nav" style={{
         position:'fixed', bottom:0, left:0, right:0, zIndex:100,
-        height:60, background:'var(--header-bg)',
-        backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
-        borderTop:'1px solid var(--bg-border)',
+        height:64, background:'rgba(5,7,18,0.97)',
+        backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
+        borderTop:'1px solid rgba(0,228,184,0.08)',
+        boxShadow:'0 -8px 32px rgba(0,0,0,0.4)',
         display:'flex', alignItems:'stretch',
       }}>
         {MOBILE_NAV.map(item => {
@@ -262,14 +288,23 @@ export default function App() {
           return (
             <button key={item.id} onClick={() => navigate(item.id)} style={{
               flex:1, display:'flex', flexDirection:'column', alignItems:'center',
-              justifyContent:'center', gap:2, background:'none', border:'none',
+              justifyContent:'center', gap:3, background:'none', border:'none',
               color: active ? 'var(--teal)' : 'var(--text-muted)',
               cursor:'pointer', fontFamily:'inherit',
-              transition:'color 0.2s ease', padding:'4px 2px', position:'relative',
+              transition:'color 0.2s ease', padding:'6px 2px', position:'relative',
+              WebkitTapHighlightColor:'transparent',
             }}>
-              {active && <div style={{ position:'absolute', top:0, left:'15%', right:'15%', height:2, background:'var(--teal)', borderRadius:'0 0 4px 4px', boxShadow:'0 0 8px rgba(0,228,184,0.8)' }} />}
-              <span style={{ fontSize:20, lineHeight:1 }}>{item.icon}</span>
-              <span style={{ fontSize:9, fontWeight: active ? 700 : 400, letterSpacing:'0.02em' }}>{item.label}</span>
+              {/* Top glow bar */}
+              {active && <div style={{ position:'absolute', top:0, left:'20%', right:'20%', height:2, background:'var(--teal)', borderRadius:'0 0 6px 6px', boxShadow:'0 0 12px rgba(0,228,184,0.9)' }} />}
+              {/* Icon bubble when active */}
+              <div style={{
+                width:36, height:28, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center',
+                background: active ? 'rgba(0,228,184,0.1)' : 'transparent',
+                transition:'background 0.2s ease',
+              }}>
+                <span style={{ fontSize:18, lineHeight:1, filter: active ? 'none' : 'grayscale(0.5)' }}>{item.icon}</span>
+              </div>
+              <span style={{ fontSize:9, fontWeight: active ? 700 : 400, letterSpacing:'0.03em' }}>{item.label}</span>
             </button>
           )
         })}
@@ -347,72 +382,97 @@ function ThemeToggle({ theme, toggle, size = 'md' }) {
 /* ── SIDEBAR CONTENT ───────────────────────────────────────── */
 function SidebarContent({ page, onNavigate, user, onLogout, onClose, theme, toggleTheme }) {
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
-      {/* Logo row */}
-      <div style={{ padding:'18px 14px', borderBottom:'1px solid var(--bg-border)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-          <MawjLogo size={36} color="var(--teal)" animated />
-          <div>
-            <div style={{ fontSize:17, fontWeight:900, background:'linear-gradient(135deg,var(--teal),var(--text))', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:'-0.02em', lineHeight:1 }}>موج</div>
-            <div style={{ fontSize:9, color:'var(--text-muted)', letterSpacing:'0.06em', marginTop:2 }}>ERP v7.0</div>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden', position:'relative' }}>
+
+      {/* ── Logo area ── */}
+      <div style={{ padding:'16px 14px 14px', borderBottom:'1px solid var(--bg-border)', flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          {/* Brand mark */}
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ position:'relative', width:38, height:38, borderRadius:12, background:'var(--teal-soft)', border:'1px solid rgba(0,228,184,0.2)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 20px rgba(0,228,184,0.15)', animation:'pulseGlow 4s ease-in-out infinite', flexShrink:0 }}>
+              <MawjLogo size={26} color="var(--teal)" animated />
+            </div>
+            <div>
+              <div style={{ fontSize:18, fontWeight:900, letterSpacing:'-0.03em', lineHeight:1, background:'linear-gradient(135deg,var(--teal) 0%,#fff 60%,rgba(255,255,255,0.6) 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>مَوج</div>
+              <div style={{ fontSize:9, color:'var(--text-muted)', letterSpacing:'0.08em', marginTop:2, textTransform:'uppercase' }}>v7 · نظام المبيعات</div>
+            </div>
           </div>
-        </div>
-        {/* Controls — notification + theme toggle + close */}
-        <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-          <NotificationBell />
-          <ThemeToggle theme={theme} toggle={toggleTheme} size="sm" />
-          {onClose && (
-            <button onClick={onClose} style={{ background:'var(--bg-glass)', border:'1px solid var(--bg-border)', borderRadius:8, width:28, height:28, cursor:'pointer', color:'var(--text-sec)', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>✕</button>
-          )}
+          {/* Controls */}
+          <div style={{ display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
+            <NotificationBell />
+            <ThemeToggle theme={theme} toggle={toggleTheme} size="sm" />
+            {onClose && (
+              <button onClick={onClose} className="icon-btn" style={{ background:'var(--bg-glass)', border:'1px solid var(--bg-border)', borderRadius:8, width:28, height:28, cursor:'pointer', color:'var(--text-sec)', fontSize:12, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>✕</button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Nav — scrollable */}
-      <nav style={{ flex:1, padding:'8px', display:'flex', flexDirection:'column', gap:1, overflowY:'auto' }}>
+      {/* ── Nav — scrollable ── */}
+      <nav style={{ flex:1, padding:'6px', display:'flex', flexDirection:'column', gap:1, overflowY:'auto' }}>
         {NAV_ITEMS.map(item => {
           const active = page === item.id
           return (
-            <button key={item.id} onClick={() => onNavigate(item.id)} style={{
-              display:'flex', alignItems:'center', gap:9,
-              padding:'9px 11px', borderRadius:10,
-              border:`1px solid ${active ? 'rgba(0,228,184,0.2)' : 'transparent'}`,
-              background: active ? 'rgba(0,228,184,0.08)' : 'transparent',
-              color: active ? 'var(--teal)' : 'var(--text-sec)',
-              fontWeight: active ? 700 : 400, fontSize:13,
-              cursor:'pointer', transition:'all 0.15s ease',
-              width:'100%', textAlign:'right', fontFamily:'inherit',
-              flexShrink:0,
-            }}
+            <button key={item.id} onClick={() => onNavigate(item.id)}
               className={active ? 'nav-item nav-active' : 'nav-item'}
+              style={{
+                display:'flex', alignItems:'center', gap:9,
+                padding:'9px 10px', borderRadius:10,
+                border:`1px solid ${active ? 'rgba(0,228,184,0.16)' : 'transparent'}`,
+                background: active ? 'rgba(0,228,184,0.07)' : 'transparent',
+                color: active ? 'var(--teal)' : 'var(--text-sec)',
+                fontWeight: active ? 700 : 400, fontSize:13,
+                cursor:'pointer', width:'100%', textAlign:'right',
+                fontFamily:'inherit', flexShrink:0, position:'relative',
+              }}
             >
-              <span style={{ fontSize:14, flexShrink:0, width:18, textAlign:'center' }}>{item.icon}</span>
+              {/* Active: glowing left bar + wave trail */}
+              {active && (
+                <div style={{ position:'absolute', top:'18%', bottom:'18%', left:0, width:2.5, borderRadius:'0 3px 3px 0', background:'var(--teal)', boxShadow:'0 0 10px rgba(0,228,184,0.9), 0 0 20px rgba(0,228,184,0.4)' }} />
+              )}
+              <span style={{ fontSize:15, flexShrink:0, width:20, textAlign:'center', lineHeight:1 }}>{item.icon}</span>
               <span style={{ flex:1 }}>{item.label}</span>
-              {active && <span style={{ width:5, height:5, borderRadius:'50%', background:'var(--teal)', boxShadow:'0 0 6px var(--teal)', flexShrink:0 }} />}
+              {/* Active dot */}
+              {active && <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--teal)', boxShadow:'0 0 6px var(--teal)', flexShrink:0 }} />}
             </button>
           )
         })}
       </nav>
 
-      {/* User + logout — fixed at bottom */}
-      <div style={{ padding:'8px', borderTop:'1px solid var(--bg-border)', flexShrink:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:9, padding:'9px 11px', marginBottom:4, background:'var(--bg-surface)', borderRadius:10 }}>
-          <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,var(--teal),var(--violet))', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:13, color:'#fff', flexShrink:0 }}>
+      {/* ── User card + logout ── */}
+      <div style={{ padding:'8px', borderTop:'1px solid var(--bg-border)', flexShrink:0, position:'relative', zIndex:1 }}>
+        {/* User row */}
+        <div style={{ display:'flex', alignItems:'center', gap:9, padding:'9px 10px', marginBottom:4, background:'var(--bg-surface)', borderRadius:10, border:'1px solid var(--bg-border)' }}>
+          <div style={{ width:32, height:32, borderRadius:9, background:'linear-gradient(135deg,var(--teal),var(--violet))', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:13, color:'#fff', flexShrink:0, boxShadow:'0 3px 10px rgba(0,228,184,0.2)' }}>
             {user?.name?.[0] || '؟'}
           </div>
           <div style={{ minWidth:0, flex:1 }}>
             <div style={{ fontWeight:700, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text)' }}>{user?.name || 'مستخدم'}</div>
-            <div style={{ fontSize:10, color:'var(--text-muted)' }}>{user?.role === 'admin' ? 'مدير النظام' : user?.role || ''}</div>
+            <div style={{ fontSize:9, color:'var(--teal)', fontWeight:600, marginTop:1, letterSpacing:'0.03em' }}>{user?.role === 'admin' ? '● مدير النظام' : user?.role || ''}</div>
           </div>
         </div>
-        <button onClick={onLogout} className="logout-btn" style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 11px', borderRadius:10, border:'none', background:'transparent', color:'var(--red)', fontSize:13, cursor:'pointer', width:'100%', fontFamily:'inherit' }}>
+        <button onClick={onLogout} className="logout-btn" style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:10, border:'none', background:'transparent', color:'var(--red)', fontSize:12, cursor:'pointer', width:'100%', fontFamily:'inherit' }}>
           🚪 <span>تسجيل الخروج</span>
         </button>
-        {/* Footer credit — always visible */}
-        <div style={{ textAlign:'center', padding:'8px 4px 4px', fontSize:10, color:'var(--text-muted)', borderTop:'1px solid var(--bg-border)', marginTop:6, lineHeight:1.6 }}>
-          تم التصميم بواسطة{' '}
-          <span style={{ color:'var(--teal)', fontWeight:700 }}>إبراهيم كنعي</span>
+        <div style={{ textAlign:'center', padding:'8px 4px 2px', fontSize:10, color:'var(--text-muted)', borderTop:'1px solid var(--bg-border)', marginTop:4, lineHeight:1.7 }}>
+          تم التصميم بواسطة <span style={{ color:'var(--teal)', fontWeight:700 }}>إبراهيم كنعي</span>
         </div>
       </div>
+
+      {/* ── Animated wave at sidebar bottom ── */}
+      <div className="sidebar-waves">
+        <svg viewBox="0 0 400 80" preserveAspectRatio="none" fill="var(--teal)">
+          <path d="M0,40 C20,20 40,60 60,40 C80,20 100,60 120,40 C140,20 160,60 180,40 C200,20 220,60 240,40 C260,20 280,60 300,40 C320,20 340,60 360,40 C380,20 400,60 400,40 L400,80 L0,80 Z"/>
+          <path d="M0,40 C20,20 40,60 60,40 C80,20 100,60 120,40 C140,20 160,60 180,40 C200,20 220,60 240,40 C260,20 280,60 300,40 C320,20 340,60 360,40 C380,20 400,60 400,40 L400,80 L0,80 Z" transform="translate(200,0)"/>
+        </svg>
+      </div>
+      <div className="sidebar-waves-2">
+        <svg viewBox="0 0 400 60" preserveAspectRatio="none" fill="var(--violet)" style={{opacity:0.6}}>
+          <path d="M0,30 C25,10 50,50 75,30 C100,10 125,50 150,30 C175,10 200,50 225,30 C250,10 275,50 300,30 C325,10 350,50 375,30 L400,30 L400,60 L0,60 Z"/>
+          <path d="M0,30 C25,10 50,50 75,30 C100,10 125,50 150,30 C175,10 200,50 225,30 C250,10 275,50 300,30 C325,10 350,50 375,30 L400,30 L400,60 L0,60 Z" transform="translate(200,0)"/>
+        </svg>
+      </div>
+
     </div>
   )
 }
