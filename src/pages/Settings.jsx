@@ -110,7 +110,7 @@ function BusinessTab({ data, onSave, products, onSaveProducts, partners, onSaveP
           <Input label="اسم المتجر" value={form.name || ''} onChange={e => setField('name', e.target.value)} containerStyle={{ gridColumn: '1 / -1' }} />
           <Input label="الهدف الشهري (د.إ)" type="number" value={form.monthly_target || ''} onChange={e => setField('monthly_target', parseFloat(e.target.value) || 0)} />
         </div>
-        <Btn onClick={() => onSave(form)} style={{ marginTop: 16 }}><IcSave size={14}/> حفظ</Btn>
+        <Btn onClick={() => onSave(form)} style={{ marginTop: 16 }}><IcSave size={14} /> حفظ</Btn>
       </Card>
 
       <Card>
@@ -127,7 +127,7 @@ function BusinessTab({ data, onSave, products, onSaveProducts, partners, onSaveP
           <Input value={addCourier} onChange={e => setAddCourier(e.target.value)} placeholder="اسم الشركة الناقلة" containerStyle={{ flex: 1 }} />
           <Btn variant="secondary" onClick={addCourierFn}>إضافة</Btn>
         </div>
-        <Btn onClick={() => onSave(form)} style={{ marginTop: 12 }}><IcSave size={14}/> حفظ</Btn>
+        <Btn onClick={() => onSave(form)} style={{ marginTop: 12 }}><IcSave size={14} /> حفظ</Btn>
       </Card>
 
       <Card>
@@ -150,7 +150,7 @@ function BusinessTab({ data, onSave, products, onSaveProducts, partners, onSaveP
           <Input label="السعر" type="number" value={productForm.price} onChange={e => setProductForm(p => ({ ...p, price: e.target.value }))} />
           <Input label="التكلفة" type="number" value={productForm.cost} onChange={e => setProductForm(p => ({ ...p, cost: e.target.value }))} />
           <Input label="SKU" value={productForm.sku} onChange={e => setProductForm(p => ({ ...p, sku: e.target.value }))} />
-          <Btn onClick={addProduct} style={{ alignSelf: 'flex-end' }}><IcPlus size={14}/></Btn>
+          <Btn onClick={addProduct} style={{ alignSelf: 'flex-end' }}><IcPlus size={14} /></Btn>
         </div>
       </Card>
 
@@ -219,7 +219,7 @@ function StatusesTab({ statuses, onSave }) {
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
         <input type="color" value={newStatus.color} onChange={e => setNewStatus(p => ({ ...p, color: e.target.value }))} style={{ width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer', flexShrink: 0 }} />
         <Input label="اسم الحالة الجديدة" value={newStatus.label} onChange={e => setNewStatus(p => ({ ...p, label: e.target.value }))} containerStyle={{ flex: 1 }} placeholder="مثال: انتظار الدفع" />
-        <Btn onClick={addStatus} style={{ alignSelf: 'flex-end' }}><IcPlus size={14}/> إضافة</Btn>
+        <Btn onClick={addStatus} style={{ alignSelf: 'flex-end' }}><IcPlus size={14} /> إضافة</Btn>
       </div>
     </Card>
   )
@@ -298,7 +298,7 @@ function WhatsAppTab({ templates, onSave }) {
           />
         </Card>
       ))}
-      <Btn onClick={() => onSave(form)} style={{ alignSelf: 'flex-start' }}><IcSave size={14}/> حفظ القوالب</Btn>
+      <Btn onClick={() => onSave(form)} style={{ alignSelf: 'flex-start' }}><IcSave size={14} /> حفظ القوالب</Btn>
     </div>
   )
 }
@@ -369,7 +369,7 @@ function AppearanceTab({ appearance, onSave }) {
           </div>
         </div>
 
-        <Btn onClick={() => onSave(form)}><IcSave size={14}/> حفظ المظهر</Btn>
+        <Btn onClick={() => onSave(form)}><IcSave size={14} /> حفظ المظهر</Btn>
       </div>
     </Card>
   )
@@ -493,7 +493,7 @@ function DiscountsTab() {
           <option value="fixed">مبلغ ثابت</option>
         </Select>
         <Input label="القيمة" type="number" value={form.value} onChange={e => setForm(p => ({ ...p, value: e.target.value }))} placeholder="20" />
-        <Btn loading={saving} onClick={addDiscount} style={{ alignSelf: 'flex-end' }}><IcPlus size={14}/> إضافة</Btn>
+        <Btn loading={saving} onClick={addDiscount} style={{ alignSelf: 'flex-end' }}><IcPlus size={14} /> إضافة</Btn>
       </div>
     </Card>
   )
@@ -539,7 +539,7 @@ function BackupTab() {
         <div style={{ padding: '16px', background: 'rgba(0,228,184,0.06)', border: '1px solid rgba(0,228,184,0.2)', borderRadius: 'var(--radius-sm)' }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>تصدير كامل</div>
           <div style={{ fontSize: 13, color: 'var(--text-sec)', marginBottom: 12 }}>تصدير جميع بياناتك (طلبات، مصاريف، مخزون...) كملف JSON يمكن حفظه أو استيراده لاحقاً.</div>
-          <Btn loading={exporting} onClick={exportData}><IcDownload size={14}/> تصدير البيانات</Btn>
+          <Btn loading={exporting} onClick={exportData}><IcDownload size={14} /> تصدير البيانات</Btn>
         </div>
         <div style={{ padding: '16px', background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 'var(--radius-sm)' }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>⚠️ ملاحظة</div>
@@ -548,10 +548,4 @@ function BackupTab() {
       </div>
     </Card>
   )
-}
-
-const FONTS = {
-  'Noto Kufi Arabic': "'Noto Kufi Arabic', sans-serif",
-  'Cairo': "'Cairo', sans-serif",
-  'Tajawal': "'Tajawal', sans-serif",
 }
