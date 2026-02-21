@@ -372,18 +372,6 @@ function AppearanceTab({ theme, toggleTheme }) {
     { color:'#f97316', name:'برتقالي' },
   ]
 
-  function Row({ label, desc, children }) {
-    return (
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 0', borderBottom:'1px solid var(--bg-border)', gap:16 }}>
-        <div style={{ minWidth:0 }}>
-          <div style={{ fontWeight:600, fontSize:13 }}>{label}</div>
-          {desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{desc}</div>}
-        </div>
-        <div style={{ flexShrink:0 }}>{children}</div>
-      </div>
-    )
-  }
-
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
@@ -462,7 +450,7 @@ function AppearanceTab({ theme, toggleTheme }) {
       {/* Size & Shape */}
       <Card>
         <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>📐 الحجم والشكل</div>
-        <Row label="حجم الخط" desc="يؤثر على كل النصوص">
+        <AppearanceRow label="حجم الخط" desc="يؤثر على كل النصوص">
           <div style={{ display:'flex', gap:6 }}>
             {[{id:'small',label:'ص'},{id:'medium',label:'م'},{id:'large',label:'ك'}].map(s=>(
               <button key={s.id} onClick={() => applyFontSize(s.id)} style={{
@@ -476,8 +464,8 @@ function AppearanceTab({ theme, toggleTheme }) {
               }}>{s.label}</button>
             ))}
           </div>
-        </Row>
-        <Row label="شكل الزوايا" desc="حواف البطاقات والأزرار">
+        </AppearanceRow>
+        <AppearanceRow label="شكل الزوايا" desc="حواف البطاقات والأزرار">
           <div style={{ display:'flex', gap:6 }}>
             {[{id:'sharp',label:'■',title:'حاد'},{id:'rounded',label:'▢',title:'مدوّر'},{id:'pill',label:'⬭',title:'بيضوي'}].map(r=>(
               <button key={r.id} onClick={() => applyRadius(r.id)} title={r.title} style={{
@@ -490,7 +478,7 @@ function AppearanceTab({ theme, toggleTheme }) {
               }}>{r.label}</button>
             ))}
           </div>
-        </Row>
+        </AppearanceRow>
       </Card>
 
       {/* Behavior toggles */}
@@ -502,9 +490,9 @@ function AppearanceTab({ theme, toggleTheme }) {
           { label:'تأثير مؤشر الماوس', desc:'هالة ضوئية تتبع المؤشر (الوضع الداكن)', val:spotlight, set:(v)=>{ setSpotlight(v); localStorage.setItem('mawj_spotlight',v); toast(v?'مفعّل':'موقوف') } },
           { label:'وضع الضغط', desc:'تقليل المسافات لعرض أكثر في الشاشة', val:compactCards, set:toggleCompact },
         ].map(item => (
-          <Row key={item.label} label={item.label} desc={item.desc}>
+          <AppearanceRow key={item.label} label={item.label} desc={item.desc}>
             <Toggle checked={item.val} onChange={item.set} />
-          </Row>
+          </AppearanceRow>
         ))}
       </Card>
 
@@ -667,6 +655,19 @@ function BackupTab() {
           بياناتك محفوظة تلقائياً في Supabase Cloud. النسخ الاحتياطي هنا للأرشفة الشخصية فقط.
         </div>
       </Card>
+    </div>
+  )
+}
+
+/* ── Appearance Row ──────────────────────────────────────── */
+function AppearanceRow({ label, desc, children }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", borderBottom:"1px solid var(--bg-border)", gap:16 }}>
+      <div style={{ minWidth:0 }}>
+        <div style={{ fontWeight:600, fontSize:13 }}>{label}</div>
+        {desc && <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:2 }}>{desc}</div>}
+      </div>
+      <div style={{ flexShrink:0 }}>{children}</div>
     </div>
   )
 }

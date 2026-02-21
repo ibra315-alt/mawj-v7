@@ -144,8 +144,7 @@ export default function AIAssistant({ onClose }) {
         <div style={{ padding:'0 14px 10px', display:'flex', flexWrap:'wrap', gap:6 }}>
           {QUICK_PROMPTS.map(q => (
             <button key={q.label} onClick={() => send(q.text)} style={{ padding:'5px 12px', borderRadius:'var(--radius-pill)', border:'1px solid var(--bg-border)', background:'var(--bg-glass)', color:'var(--text-sec)', fontSize:11, cursor:'pointer', fontFamily:'inherit', fontWeight:600, transition:'all 0.2s ease' }}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--teal)';e.currentTarget.style.color='var(--teal)'}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--bg-border)';e.currentTarget.style.color='var(--text-sec)'}}>
+              className="ghost-btn">
               {q.label}
             </button>
           ))}

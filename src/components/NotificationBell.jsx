@@ -84,8 +84,7 @@ export default function NotificationBell() {
           cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
           color:'var(--text-sec)', transition:'all 0.2s ease', fontSize:17,
         }}
-        onMouseEnter={e=>{e.currentTarget.style.background='var(--bg-glass-hover)';e.currentTarget.style.color='var(--text)'}}
-        onMouseLeave={e=>{e.currentTarget.style.background='var(--bg-glass)';e.currentTarget.style.color='var(--text-sec)'}}
+        className="icon-btn"
       >
         🔔
         {unread > 0 && (

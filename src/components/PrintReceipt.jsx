@@ -212,8 +212,7 @@ ${order.notes ? `<div class="small-note">ملاحظة: ${order.notes}</div><hr c
         cursor:'pointer', fontFamily:'inherit',
         transition:'all 0.2s ease',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor='var(--teal)'; e.currentTarget.style.color='var(--teal)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor='var(--bg-border)'; e.currentTarget.style.color='var(--text-sec)' }}
+      className="ghost-btn"
     >
       🖨️ طباعة الفاتورة
     </button>

@@ -261,3 +261,111 @@ option { background: #0e1120; color: #eef0ff; }
 body::after {
   opacity: var(--noise-opacity) !important;
 }
+
+/* ══════════════════════════════════════════════
+   HOVER CLASSES — replaces all onMouseEnter/Leave
+   CSS handles hover atomically — no ghost states
+══════════════════════════════════════════════ */
+
+/* Stat cards */
+.hover-lift {
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+}
+.hover-lift:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.35) !important;
+}
+
+/* Nav items in sidebar */
+.nav-item {
+  transition: background 0.18s ease, color 0.18s ease !important;
+}
+.nav-item:hover:not(.nav-active) {
+  background: var(--bg-hover) !important;
+  color: var(--text) !important;
+}
+.nav-active {
+  background: rgba(0,228,184,0.1) !important;
+  color: var(--teal) !important;
+}
+
+/* Icon buttons (close, bell, etc.) */
+.icon-btn {
+  transition: background 0.18s ease, color 0.18s ease !important;
+}
+.icon-btn:hover {
+  background: var(--bg-glass-hover) !important;
+  color: var(--text) !important;
+}
+
+/* Ghost buttons (border color change) */
+.ghost-btn {
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease !important;
+}
+.ghost-btn:hover {
+  border-color: var(--teal) !important;
+  color: var(--teal) !important;
+}
+
+/* Order / list row items */
+.list-row {
+  transition: border-color 0.18s ease, transform 0.18s ease !important;
+}
+.list-row:hover {
+  border-color: rgba(0,228,184,0.22) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Danger hover */
+.danger-hover:hover {
+  background: rgba(255,71,87,0.08) !important;
+}
+
+/* Logout button */
+.logout-btn {
+  transition: background 0.18s ease !important;
+}
+.logout-btn:hover {
+  background: rgba(255,71,87,0.1) !important;
+}
+
+/* ══════════════════════════════════════════════
+   BUTTON HOVER — pure CSS, zero JS ghost
+══════════════════════════════════════════════ */
+.mawj-btn {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease !important;
+}
+.mawj-btn:not(:disabled):hover {
+  transform: translateY(-2px) !important;
+}
+.mawj-btn:not(:disabled):active {
+  transform: scale(0.97) !important;
+}
+.mawj-btn-primary:not(:disabled):hover {
+  box-shadow: 0 6px 28px rgba(0,228,184,0.55) !important;
+}
+.mawj-btn-danger:not(:disabled):hover {
+  box-shadow: 0 6px 28px rgba(255,71,87,0.5) !important;
+}
+.mawj-btn-violet:not(:disabled):hover {
+  box-shadow: 0 6px 28px rgba(139,92,246,0.6) !important;
+}
+.mawj-btn-secondary:not(:disabled):hover,
+.mawj-btn-ghost:not(:disabled):hover {
+  background: var(--bg-glass-hover) !important;
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+
+/* CARD hover — pure CSS */
+.mawj-card {
+  transition: border-color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease !important;
+}
+.mawj-card-hover:hover {
+  border-color: rgba(0,228,184,0.28) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.3) !important;
+}
+
+.logo-btn { transition: transform 0.18s ease !important; }
+.logo-btn:hover { transform: scale(1.08) !important; }

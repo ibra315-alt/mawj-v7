@@ -1,32 +1,29 @@
 import React, { useEffect, useRef } from 'react'
 
 export default function CursorSpotlight() {
-  const spotRef = useRef(null)
+  const ref = useRef(null)
 
   useEffect(() => {
-    const el = spotRef.current
+    const el = ref.current
     if (!el) return
 
-    let x = 0, y = 0, tx = 0, ty = 0
+    let x = -500, y = -500
+    let tx = -500, ty = -500
     let raf
 
-    function onMove(e) {
-      tx = e.clientX
-      ty = e.clientY
+    const onMove = (e) => { tx = e.clientX; ty = e.clientY }
+
+    const tick = () => {
+      x += (tx - x) * 0.1
+      y += (ty - y) * 0.1
+      // transform only — never triggers layout or paint, pure compositor layer
+      el.style.transform = `translate3d(${x - 200}px, ${y - 200}px, 0)`
+      raf = requestAnimationFrame(tick)
     }
 
-    function animate() {
-      x += (tx - x) * 0.08
-      y += (ty - y) * 0.08
-      if (el) {
-        el.style.left = x + 'px'
-        el.style.top  = y + 'px'
-      }
-      raf = requestAnimationFrame(animate)
-    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    raf = requestAnimationFrame(tick)
 
-    window.addEventListener('mousemove', onMove)
-    raf = requestAnimationFrame(animate)
     return () => {
       window.removeEventListener('mousemove', onMove)
       cancelAnimationFrame(raf)
@@ -35,17 +32,18 @@ export default function CursorSpotlight() {
 
   return (
     <div
-      ref={spotRef}
+      ref={ref}
       style={{
         position: 'fixed',
-        pointerEvents: 'none',
-        zIndex: 9999,
+        top: 0,
+        left: 0,
         width: 400,
         height: 400,
         borderRadius: '50%',
-        transform: 'translate(-50%, -50%)',
-        background: 'radial-gradient(circle, rgba(0,228,184,0.06) 0%, rgba(0,228,184,0.02) 40%, transparent 70%)',
-        transition: 'opacity 0.3s ease',
+        pointerEvents: 'none',
+        zIndex: 9998,
+        willChange: 'transform',
+        background: 'radial-gradient(circle, rgba(0,228,184,0.055) 0%, rgba(0,228,184,0.015) 50%, transparent 70%)',
       }}
     />
   )

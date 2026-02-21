@@ -168,8 +168,7 @@ export default function Orders({ user }) {
                   key={order.id}
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', cursor: 'pointer' }}
                   onClick={() => { setViewOrder(order); setShowView(true) }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,228,184,0.3)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--bg-border)'}
+                  className="list-row"
                 >
                   <div style={{ flex: '0 0 120px' }}>
                     <div style={{ fontWeight: 700, fontSize: 13 }}>{order.customer_name}</div>
@@ -670,8 +669,7 @@ function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
                     userSelect:'none',
                     position:'relative', overflow:'hidden',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor=status.color+'50'; e.currentTarget.style.transform='translateY(-1px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor='var(--bg-border)'; e.currentTarget.style.transform='translateY(0)' }}
+                  className="list-row"
                 >
                   {/* Color top strip */}
                   <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${status.color},${status.color}80)` }} />

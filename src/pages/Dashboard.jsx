@@ -211,8 +211,7 @@ function StatCardWithSpark({ label, value, color, icon, spark = [], sparkColor }
       padding:'18px 20px', position:'relative', overflow:'hidden',
       transition:'all 0.28s cubic-bezier(0.4,0,0.2,1)', boxShadow:'var(--shadow-card)',
     }}
-      onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 16px 48px rgba(0,0,0,0.35)'}}
-      onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='var(--shadow-card)'}}
+      className="hover-lift"
     >
       {/* Top accent */}
       <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${color},transparent)`,opacity:0.6}} />

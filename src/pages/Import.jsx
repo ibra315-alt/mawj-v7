@@ -225,8 +225,7 @@ export default function Import({ user }) {
             cursor: 'pointer',
             transition: 'all var(--transition)',
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--teal)'; e.currentTarget.style.background = 'rgba(0,228,184,0.04)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--bg-border)'; e.currentTarget.style.background = 'transparent' }}
+          className="ghost-btn"
         >
           <IcUpload size={32} color="var(--teal)" />
           <div style={{ marginTop: 12, fontWeight: 700, fontSize: 15 }}>اضغط لرفع ملف CSV</div>

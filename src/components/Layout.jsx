@@ -266,8 +266,7 @@ function SidebarContent({ page, onNavigate, user, onLogout, onClose }) {
             fontFamily: 'var(--font)',
             transition: 'background var(--transition)',
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,71,87,0.1)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          className="logout-btn"
         >
           <IcLogout size={16} />
           تسجيل الخروج

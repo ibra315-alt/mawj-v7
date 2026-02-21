@@ -281,8 +281,7 @@ export default function App() {
         transition:'all 0.25s ease',
         animation: showAI ? 'none' : 'pulseGlow 3s ease infinite',
       }}
-        onMouseEnter={e => { e.currentTarget.style.transform='scale(1.1)' }}
-        onMouseLeave={e => { e.currentTarget.style.transform='scale(1)' }}
+        className="logo-btn"
       >
         {showAI ? '✕' : '🤖'}
       </button>
@@ -374,8 +373,7 @@ function SidebarContent({ page, onNavigate, user, onLogout, onClose, theme, togg
               width:'100%', textAlign:'right', fontFamily:'inherit',
               flexShrink:0,
             }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.background='var(--bg-hover)'; e.currentTarget.style.color='var(--text)' }}}
-              onMouseLeave={e => { if (!active) { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--text-sec)' }}}
+              className={active ? 'nav-item nav-active' : 'nav-item'}
             >
               <span style={{ fontSize:14, flexShrink:0, width:18, textAlign:'center' }}>{item.icon}</span>
               <span style={{ flex:1 }}>{item.label}</span>
@@ -396,10 +394,7 @@ function SidebarContent({ page, onNavigate, user, onLogout, onClose, theme, togg
             <div style={{ fontSize:10, color:'var(--text-muted)' }}>{user?.role === 'admin' ? 'مدير النظام' : user?.role || ''}</div>
           </div>
         </div>
-        <button onClick={onLogout} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 11px', borderRadius:10, border:'none', background:'transparent', color:'var(--red)', fontSize:13, cursor:'pointer', width:'100%', fontFamily:'inherit', transition:'background 0.15s ease' }}
-          onMouseEnter={e => e.currentTarget.style.background='rgba(255,71,87,0.08)'}
-          onMouseLeave={e => e.currentTarget.style.background='transparent'}
-        >
+        <button onClick={onLogout} className="logout-btn" style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 11px', borderRadius:10, border:'none', background:'transparent', color:'var(--red)', fontSize:13, cursor:'pointer', width:'100%', fontFamily:'inherit' }}>
           🚪 <span>تسجيل الخروج</span>
         </button>
         {/* Footer credit — always visible */}

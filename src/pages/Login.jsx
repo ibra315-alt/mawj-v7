@@ -107,8 +107,7 @@ export default function Login({ theme, toggleTheme }) {
               boxShadow:loading?'none':'0 4px 20px rgba(0,228,184,0.4)',
               letterSpacing:'0.02em',
             }}
-              onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 28px rgba(0,228,184,0.55)'}}}
-              onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='0 4px 20px rgba(0,228,184,0.4)'}}
+              
             >
               {loading
                 ? <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>

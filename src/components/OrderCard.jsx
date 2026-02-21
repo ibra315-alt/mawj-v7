@@ -34,8 +34,6 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
       cursor: 'pointer',
     }}
     onClick={() => onView?.(order)}
-    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,228,184,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--bg-border)'; e.currentTarget.style.transform = 'none' }}
     >
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
