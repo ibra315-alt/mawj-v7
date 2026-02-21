@@ -177,7 +177,7 @@ export default function Orders({ user }) {
       {viewMode === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.length === 0 ? (
-            <Empty title="لا يوجد طلبات" message="أضف طلباً جديداً للبدء" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14}/> طلب جديد</Btn>} />
+            <Empty title="لا يوجد طلبات" message="أضف طلباً جديداً للبدء" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14} /> طلب جديد</Btn>} />
           ) : (
             filtered.map(order => {
               const statusObj = statuses.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
@@ -204,8 +204,8 @@ export default function Orders({ user }) {
                     </div>
                   )}
                   <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                    <Btn variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14}/></Btn>
-                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14}/></Btn>
+                    <Btn variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14} /></Btn>
+                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14} /></Btn>
                   </div>
                 </div>
               )
@@ -566,4 +566,4 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
   )
 }
 
-const SOURCE_LABELS = { instagram: 'إنستغرام', tiktok: 'تيك توك', website: 'الموقع', walk_in: 'زيارة مباشرة', other: 'أخرى' }
+
