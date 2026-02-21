@@ -383,29 +383,42 @@ export function Spinner({ size=24, color='var(--teal)' }) {
 ══════════════════════════════════════════════ */
 export function Modal({ open, onClose, title, children, width=560 }) {
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
+    if (open) document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [open])
   if (!open) return null
   return (
     <div
-      style={{ position:'fixed', inset:0, zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'rgba(0,0,0,0.72)', backdropFilter:'blur(10px)' }}
-      onClick={e => { if(e.target===e.currentTarget) onClose() }}
+      data-modal-overlay
+      style={{
+        position:'fixed', inset:0, zIndex:1000,
+        display:'flex', alignItems:'flex-end', justifyContent:'center',
+        background:'rgba(0,0,0,0.72)', backdropFilter:'blur(10px)',
+        padding:'0',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        width:'100%', maxWidth:width, maxHeight:'92vh', overflowY:'auto',
+        width:'100%', maxWidth:width,
+        /* On mobile: full bottom sheet. On desktop: centered modal */
+        maxHeight:'92dvh',
+        display:'flex', flexDirection:'column',
         background:'var(--modal-bg)',
         backdropFilter:'blur(48px)', WebkitBackdropFilter:'blur(48px)',
         border:'1.5px solid rgba(255,255,255,0.1)',
-        borderRadius:'var(--radius-xl)',
-        boxShadow:'0 32px 100px rgba(0,0,0,0.65), 0 0 50px rgba(0,228,184,0.05)',
-        animation:'modalIn 0.28s cubic-bezier(0.4,0,0.2,1) both',
-        position:'relative', overflow:'hidden',
+        borderRadius:'var(--radius-xl) var(--radius-xl) 0 0',
+        boxShadow:'0 -8px 60px rgba(0,0,0,0.5), 0 0 40px rgba(0,228,184,0.04)',
+        animation:'modalIn 0.3s cubic-bezier(0.4,0,0.2,1) both',
+        position:'relative',
       }}>
-        {/* Top shimmer */}
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(0,228,184,0.6),transparent)', pointerEvents:'none' }} />
+        {/* Top shimmer line */}
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(0,228,184,0.6),transparent)', pointerEvents:'none', borderRadius:'inherit' }} />
 
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 26px', borderBottom:'1px solid var(--bg-border)' }}>
+        {/* Drag handle — mobile */}
+        <div style={{ width:36, height:4, borderRadius:99, background:'rgba(255,255,255,0.15)', margin:'10px auto 0', flexShrink:0 }} />
+
+        {/* Fixed header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 22px', borderBottom:'1px solid var(--bg-border)', flexShrink:0 }}>
           <h2 style={{ fontSize:16, fontWeight:800, letterSpacing:'-0.01em' }}>{title}</h2>
           <button onClick={onClose} style={{ background:'var(--bg-glass)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius-pill)', width:34, height:34, cursor:'pointer', color:'var(--text-sec)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, transition:'all 0.2s ease', flexShrink:0 }}
             onMouseEnter={e => { e.currentTarget.style.background='var(--bg-glass-hover)'; e.currentTarget.style.color='var(--text)' }}
@@ -413,8 +426,19 @@ export function Modal({ open, onClose, title, children, width=560 }) {
             ✕
           </button>
         </div>
-        <div style={{ padding:'22px 26px' }}>{children}</div>
+
+        {/* Scrollable body */}
+        <div style={{ overflowY:'auto', flex:1, padding:'20px 22px', WebkitOverflowScrolling:'touch' }}>
+          {children}
+        </div>
       </div>
+
+      <style>{`
+        @media(min-width:769px){
+          [data-modal-wrap]{align-items:center!important;padding:16px!important}
+          [data-modal-wrap] > div{border-radius:var(--radius-xl)!important;max-height:90vh}
+        }
+      `}</style>
     </div>
   )
 }

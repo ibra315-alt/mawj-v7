@@ -4,6 +4,8 @@ import { formatCurrency, formatDate, SOURCE_LABELS, SOURCE_ICONS } from '../data
 import { Btn, Card, Badge, Modal, Input, Select, Textarea, Spinner, Empty, PageHeader, ConfirmModal, toast } from '../components/ui'
 import { IcPlus, IcSearch, IcFilter, IcGrid, IcList, IcEdit, IcDelete, IcEye, IcWhatsapp, IcClose, IcSave } from '../components/Icons'
 import OrderCard from '../components/OrderCard'
+import PrintReceipt from '../components/PrintReceipt'
+import Confetti from '../components/Confetti'
 
 export default function Orders({ user }) {
   const [orders, setOrders] = useState([])
@@ -54,6 +56,8 @@ export default function Orders({ user }) {
     setOrders(ords.reverse())
   }
 
+  const [confetti, setConfetti] = useState(false)
+
   async function handleStatusChange(id, newStatus) {
     try {
       await DB.update('orders', id, {
@@ -65,6 +69,12 @@ export default function Orders({ user }) {
         ]
       })
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
+      // 🎉 Confetti when order marked delivered
+      if (newStatus === 'delivered') {
+        setConfetti(true)
+        setTimeout(() => setConfetti(false), 4000)
+        toast('تم التسليم! 🎉')
+      }
     } catch (err) { toast('فشل تحديث الحالة', 'error') }
   }
 
@@ -91,6 +101,7 @@ export default function Orders({ user }) {
 
   return (
     <div className="page">
+      <Confetti active={confetti} />
       <PageHeader
         title="الطلبات"
         subtitle={`${orders.length} طلب إجمالي • ${filtered.length} معروض`}
@@ -451,7 +462,18 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
   function sendWhatsApp() {
     const phone = order.customer_phone?.replace(/\D/g, '')
     if (!phone) return
-    const text = `مرحباً ${order.customer_name}،\nطلبكم رقم ${order.order_number}\nالحالة: ${statusObj.label}\nالإجمالي: ${formatCurrency(order.total)}`
+    // Plain text only — no emojis, symbols break on some WhatsApp versions
+    const lines = [
+      `مرحبا${order.customer_name ? ' ' + order.customer_name : ''}`,
+      `رقم الطلب: ${order.order_number}`,
+      `الحالة: ${statusObj.label}`,
+      order.tracking_number ? `رقم التتبع: ${order.tracking_number}` : '',
+      `الاجمالي: ${(order.total || 0).toLocaleString()} درهم`,
+      order.expected_delivery ? `موعد التسليم: ${order.expected_delivery}` : '',
+      '',
+      'شكرا لتسوقك مع موج',
+    ].filter(Boolean)
+    const text = lines.join('\n')
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -532,6 +554,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
               <IcWhatsapp size={15} /> إرسال واتساب
             </Btn>
           )}
+          <PrintReceipt order={order} statuses={statuses} />
           <Btn variant="secondary" onClick={onEdit}><IcEdit size={15} /> تعديل الطلب</Btn>
         </div>
       </div>
