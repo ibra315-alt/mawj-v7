@@ -97,7 +97,15 @@ export default function Orders({ user }) {
     return matchSearch && matchStatus && matchSource
   })
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><Spinner size={36} /></div>
+  if (loading) return (
+    <div className="page">
+      <PageHeader title="الطلبات" subtitle="جاري التحميل..." />
+      <SkeletonStats count={4} />
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:16 }}>
+        {[1,2,3,4,5].map(i => <SkeletonCard key={i} rows={2} />)}
+      </div>
+    </div>
+  )
 
   return (
     <div className="page">
@@ -122,25 +130,25 @@ export default function Orders({ user }) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="بحث بالاسم، رقم الطلب، الهاتف..."
-            style={{ width: '100%', padding: '9px 36px 9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', outline: 'none' }}
+            style={{ width: '100%', padding: '9px 36px 9px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', outline: 'none' }}
           />
         </div>
 
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          style={{ padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
+          style={{ padding: '9px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
           <option value="all">كل الحالات</option>
           {statuses.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
 
         <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
-          style={{ padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
+          style={{ padding: '9px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
           <option value="all">كل المصادر</option>
           {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
 
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius-sm)', padding: 3 }}>
-          <button onClick={() => setViewMode('kanban')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'kanban' ? 'var(--teal)' : 'transparent', color: viewMode === 'kanban' ? '#07080f' : 'var(--text-muted)', cursor: 'pointer' }}><IcGrid size={16} /></button>
-          <button onClick={() => setViewMode('list')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'list' ? 'var(--teal)' : 'transparent', color: viewMode === 'list' ? '#07080f' : 'var(--text-muted)', cursor: 'pointer' }}><IcList size={16} /></button>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', padding: 3 }}>
+          <button onClick={() => setViewMode('kanban')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'kanban' ? 'var(--teal)' : 'transparent', color: viewMode === 'kanban' ? '#07051c' : 'var(--text-muted)', cursor: 'pointer' }}><IcGrid size={16} /></button>
+          <button onClick={() => setViewMode('list')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'list' ? 'var(--teal)' : 'transparent', color: viewMode === 'list' ? '#07051c' : 'var(--text-muted)', cursor: 'pointer' }}><IcList size={16} /></button>
         </div>
       </div>
 
@@ -166,7 +174,7 @@ export default function Orders({ user }) {
               return (
                 <div
                   key={order.id}
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', cursor: 'pointer' }}
+                  style={{ background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', cursor: 'pointer' }}
                   onClick={() => { setViewOrder(order); setShowView(true) }}
                   className="list-row"
                 >
@@ -370,7 +378,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
 
         <div>
           <label style={{fontSize:11,fontWeight:600,color:'var(--text-sec)',letterSpacing:'0.03em',display:'block',marginBottom:5}}>الشركة الناقلة</label>
-          <div style={{padding:'9px 12px',background:'var(--bg-surface)',border:'1px solid var(--bg-border)',borderRadius:'var(--radius-sm)',fontSize:13,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:8}}>
+          <div style={{padding:'9px 12px',background:'var(--bg-surface)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:8}}>
             <span>🚚</span> <span style={{fontWeight:600,color:'var(--teal)'}}>Hayyak</span>
           </div>
         </div>
@@ -387,7 +395,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
             <button
               key={p.id}
               onClick={() => addItem(p)}
-              style={{ padding: '6px 12px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-sec)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)' }}
+              style={{ padding: '6px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-sec)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)' }}
             >
               + {p.name} ({formatCurrency(p.price)})
             </button>
@@ -396,7 +404,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         {items.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {items.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }}>
                 <span style={{ flex: 1, fontSize: 13 }}>{item.name}</span>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatCurrency(item.price)} × </span>
                 <input
@@ -404,7 +412,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
                   min="1"
                   value={item.qty}
                   onChange={e => updateItemQty(item.id, parseInt(e.target.value))}
-                  style={{ width: 48, padding: '4px 6px', background: 'var(--bg-card)', border: '1px solid var(--bg-border)', borderRadius: 6, color: 'var(--text)', fontSize: 13, textAlign: 'center', fontFamily: 'var(--font)' }}
+                  style={{ width: 48, padding: '4px 6px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 6, color: 'var(--text)', fontSize: 13, textAlign: 'center', fontFamily: 'var(--font)' }}
                 />
                 <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: 13, minWidth: 70, textAlign: 'left' }}>{formatCurrency(item.price * item.qty)}</span>
                 <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>✕</button>
@@ -430,7 +438,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
               onChange={e => setField('discount_code', e.target.value)}
               placeholder="PROMO2024"
               dir="ltr"
-              style={{ flex: 1, padding: '10px 12px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)' }}
+              style={{ flex: 1, padding: '10px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)' }}
             />
             <Btn variant="secondary" size="sm" onClick={() => applyDiscount(form.discount_code)}>تطبيق</Btn>
           </div>
@@ -438,7 +446,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
       </div>
 
       {/* Totals */}
-      <div style={{ marginTop: 16, padding: 14, background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', flexWrap: 'wrap', gap: '8px 24px' }}>
+      <div style={{ marginTop: 16, padding: 14, background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)', display: 'flex', flexWrap: 'wrap', gap: '8px 24px' }}>
         <span style={{ fontSize: 13, color: 'var(--text-sec)' }}>المجموع: <b style={{ color: 'var(--text)' }}>{formatCurrency(subtotal)}</b></span>
         <span style={{ fontSize: 13, color: 'var(--text-sec)' }}>التوصيل: <b style={{ color: 'var(--text)' }}>{formatCurrency(form.delivery_cost || 0)}</b></span>
         {form.discount_amount > 0 && <span style={{ fontSize: 13, color: 'var(--red)' }}>خصم: -{formatCurrency(form.discount_amount)}</span>}
@@ -501,7 +509,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: 'var(--text-sec)' }}>المنتجات</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {order.items.map((item, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 8 }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-glass)', borderRadius: 8 }}>
                   <span style={{ fontSize: 13 }}>{item.name} × {item.qty}</span>
                   <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: 13 }}>{formatCurrency(item.price * item.qty)}</span>
                 </div>
@@ -510,7 +518,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: 14, background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: 14, background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }}>
           <span style={{ fontSize: 13 }}>المجموع: <b>{formatCurrency(order.subtotal)}</b></span>
           <span style={{ fontSize: 13 }}>التوصيل: <b>{formatCurrency(order.delivery_cost)}</b></span>
           {order.discount_amount > 0 && <span style={{ fontSize: 13, color: 'var(--red)' }}>خصم: -{formatCurrency(order.discount_amount)}</span>}
@@ -523,7 +531,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
         </div>
 
         {order.notes && (
-          <div style={{ padding: 12, background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ padding: 12, background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }}>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>ملاحظات</div>
             <div style={{ fontSize: 13 }}>{order.notes}</div>
           </div>
@@ -645,7 +653,7 @@ function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
               transition:'all 0.2s ease',
             }}>
               {col.length === 0 && !isOver && (
-                <div style={{ padding:'24px 10px', textAlign:'center', color:'var(--text-muted)', fontSize:12, background:'var(--bg-surface)', borderRadius:'var(--radius)', border:'1.5px dashed var(--bg-border)' }}>
+                <div style={{ padding:'24px 10px', textAlign:'center', color:'var(--text-muted)', fontSize:12, background:'var(--bg-glass)', borderRadius:'var(--radius)', border:'1.5px dashed var(--glass-border)' }}>
                   اسحب طلباً هنا
                 </div>
               )}
@@ -658,8 +666,8 @@ function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
                   onDragEnd={onDragEnd}
                   style={{
                     background:'var(--bg-glass)',
-                    backdropFilter:'blur(20px)',
-                    border:`1.5px solid ${dragId===order.id ? status.color+'60' : 'var(--bg-border)'}`,
+                    backdropFilter:'var(--blur-md)',
+                    border:`1.5px solid ${dragId===order.id ? status.color+'60' : 'var(--glass-border)'}`,
                     borderRadius:'var(--radius)',
                     padding:'12px 14px',
                     cursor:'grab',
@@ -701,11 +709,11 @@ function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
                     <div style={{ display:'flex', gap:4 }}>
                       <button
                         onClick={e => { e.stopPropagation(); onView(order) }}
-                        style={{ background:'rgba(0,228,184,0.1)', border:'none', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--teal)', cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'inherit' }}
+                        style={{ background:'rgba(0,228,184,0.12)', border:'1px solid rgba(0,228,184,0.22)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--teal)', cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'inherit' }}
                       >عرض</button>
                       <button
                         onClick={e => { e.stopPropagation(); onEdit(order) }}
-                        style={{ background:'var(--bg-glass)', border:'1px solid var(--bg-border)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--text-sec)', cursor:'pointer', fontSize:11, fontFamily:'inherit' }}
+                        style={{ background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--text-sec)', cursor:'pointer', fontSize:11, fontFamily:'inherit' }}
                       >تعديل</button>
                     </div>
                   </div>
