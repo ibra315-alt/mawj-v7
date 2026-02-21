@@ -4,7 +4,7 @@ import { UAE_CITIES, FONTS } from '../data/constants'
 import { Btn, Card, Input, Select, Textarea, Spinner, Tabs, Toggle, ColorPicker, Badge, Modal, toast } from '../components/ui'
 import { IcPlus, IcDelete, IcEdit, IcSave, IcDownload, IcUpload } from '../components/Icons'
 
-export default function Settings() {
+export default function Settings({ theme, toggleTheme }) {
   const [tab, setTab] = useState('business')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState({})
@@ -61,7 +61,7 @@ export default function Settings() {
       {tab === 'statuses' && <StatusesTab statuses={data.statuses} onSave={v => { setData(p => ({ ...p, statuses: v })); saveSetting('statuses', v) }} />}
       {tab === 'team' && <TeamTab />}
       {tab === 'whatsapp' && <WhatsAppTab templates={data.templates} onSave={v => { setData(p => ({ ...p, templates: v })); saveSetting('whatsapp_templates', v) }} />}
-      {tab === 'appearance' && <AppearanceTab appearance={data.appearance} onSave={v => { setData(p => ({ ...p, appearance: v })); saveSetting('appearance', v) }} />}
+      {tab === 'appearance' && <AppearanceTab appearance={data.appearance} theme={theme} toggleTheme={toggleTheme} onSave={v => { setData(p => ({ ...p, appearance: v })); saveSetting('appearance', v) }} />}
       {tab === 'delivery' && <DeliveryTab business={data.business} onSave={v => { setData(p => ({ ...p, business: v })); saveSetting('business', v) }} />}
       {tab === 'discounts' && <DiscountsTab />}
       {tab === 'backup' && <BackupTab />}
@@ -110,7 +110,7 @@ function BusinessTab({ data, onSave, products, onSaveProducts, partners, onSaveP
           <Input label="اسم المتجر" value={form.name || ''} onChange={e => setField('name', e.target.value)} containerStyle={{ gridColumn: '1 / -1' }} />
           <Input label="الهدف الشهري (د.إ)" type="number" value={form.monthly_target || ''} onChange={e => setField('monthly_target', parseFloat(e.target.value) || 0)} />
         </div>
-        <Btn onClick={() => onSave(form)} style={{ marginTop: 16 }}><IcSave size={14} /> حفظ</Btn>
+        <Btn onClick={() => onSave(form)} style={{ marginTop: 16 }}><IcSave size={14}/> حفظ</Btn>
       </Card>
 
       <Card>
@@ -127,7 +127,7 @@ function BusinessTab({ data, onSave, products, onSaveProducts, partners, onSaveP
           <Input value={addCourier} onChange={e => setAddCourier(e.target.value)} placeholder="اسم الشركة الناقلة" containerStyle={{ flex: 1 }} />
           <Btn variant="secondary" onClick={addCourierFn}>إضافة</Btn>
         </div>
-        <Btn onClick={() => onSave(form)} style={{ marginTop: 12 }}><IcSave size={14} /> حفظ</Btn>
+        <Btn onClick={() => onSave(form)} style={{ marginTop: 12 }}><IcSave size={14}/> حفظ</Btn>
       </Card>
 
       <Card>
@@ -150,7 +150,7 @@ function BusinessTab({ data, onSave, products, onSaveProducts, partners, onSaveP
           <Input label="السعر" type="number" value={productForm.price} onChange={e => setProductForm(p => ({ ...p, price: e.target.value }))} />
           <Input label="التكلفة" type="number" value={productForm.cost} onChange={e => setProductForm(p => ({ ...p, cost: e.target.value }))} />
           <Input label="SKU" value={productForm.sku} onChange={e => setProductForm(p => ({ ...p, sku: e.target.value }))} />
-          <Btn onClick={addProduct} style={{ alignSelf: 'flex-end' }}><IcPlus size={14} /></Btn>
+          <Btn onClick={addProduct} style={{ alignSelf: 'flex-end' }}><IcPlus size={14}/></Btn>
         </div>
       </Card>
 
@@ -219,7 +219,7 @@ function StatusesTab({ statuses, onSave }) {
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
         <input type="color" value={newStatus.color} onChange={e => setNewStatus(p => ({ ...p, color: e.target.value }))} style={{ width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer', flexShrink: 0 }} />
         <Input label="اسم الحالة الجديدة" value={newStatus.label} onChange={e => setNewStatus(p => ({ ...p, label: e.target.value }))} containerStyle={{ flex: 1 }} placeholder="مثال: انتظار الدفع" />
-        <Btn onClick={addStatus} style={{ alignSelf: 'flex-end' }}><IcPlus size={14} /> إضافة</Btn>
+        <Btn onClick={addStatus} style={{ alignSelf: 'flex-end' }}><IcPlus size={14}/> إضافة</Btn>
       </div>
     </Card>
   )
@@ -298,80 +298,62 @@ function WhatsAppTab({ templates, onSave }) {
           />
         </Card>
       ))}
-      <Btn onClick={() => onSave(form)} style={{ alignSelf: 'flex-start' }}><IcSave size={14} /> حفظ القوالب</Btn>
+      <Btn onClick={() => onSave(form)} style={{ alignSelf: 'flex-start' }}><IcSave size={14}/> حفظ القوالب</Btn>
     </div>
   )
 }
 
 // ─── APPEARANCE TAB ──────────────────────────────────────────
-function AppearanceTab({ appearance, onSave }) {
-  const [form, setForm] = useState(appearance || { theme: 'dark', font: 'Noto Kufi Arabic', fontSize: 14, primaryColor: '#00e4b8', accentColor: '#7c3aed' })
-  function setField(k, v) { setForm(p => ({ ...p, [k]: v })) }
-
+function AppearanceTab({ appearance, theme, toggleTheme, onSave }) {
+  const isLight = theme === 'light'
   return (
-    <Card>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 20 }}>إعدادات المظهر</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div>
-          <div style={{ fontSize: 12, color: 'var(--text-sec)', fontWeight: 600, marginBottom: 8 }}>السمة</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {['dark', 'light'].map(theme => (
-              <button
-                key={theme}
-                onClick={() => setField('theme', theme)}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: 'var(--radius-sm)',
-                  border: `2px solid ${form.theme === theme ? 'var(--teal)' : 'var(--bg-border)'}`,
-                  background: theme === 'dark' ? '#07080f' : '#f8f7ff',
-                  color: theme === 'dark' ? '#f0f2ff' : '#1a1a2e',
-                  cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 600, fontSize: 13,
-                  transition: 'all var(--transition)',
-                }}
-              >
-                {theme === 'dark' ? '🌙 داكن' : '☀️ فاتح'}
-              </button>
-            ))}
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Card>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 20 }}>وضع العرض</div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {[
+            { id: 'dark', label: '🌙 داكن', desc: 'مريح للعيون' },
+            { id: 'light', label: '☀️ فاتح', desc: 'إضاءة كاملة' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => { if (theme !== t.id) toggleTheme() }}
+              style={{
+                flex: 1, padding: '16px', borderRadius: 'var(--radius)',
+                border: `2px solid ${theme === t.id ? 'var(--teal)' : 'var(--bg-border)'}`,
+                background: theme === t.id ? 'rgba(0,228,184,0.08)' : 'var(--bg-surface)',
+                color: theme === t.id ? 'var(--teal)' : 'var(--text-sec)',
+                cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 14,
+                transition: 'all 0.2s ease',
+                boxShadow: theme === t.id ? '0 0 20px rgba(0,228,184,0.15)' : 'none',
+              }}
+            >
+              <div style={{ fontSize: 20, marginBottom: 6 }}>{t.label.split(' ')[0]}</div>
+              <div>{t.label.split(' ').slice(1).join(' ')}</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>{t.desc}</div>
+            </button>
+          ))}
         </div>
-
-        <div>
-          <div style={{ fontSize: 12, color: 'var(--text-sec)', fontWeight: 600, marginBottom: 8 }}>الخط</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {Object.keys(FONTS).map(f => (
-              <button
-                key={f}
-                onClick={() => setField('font', f)}
-                style={{
-                  padding: '10px 16px', borderRadius: 'var(--radius-sm)',
-                  border: `2px solid ${form.font === f ? 'var(--teal)' : 'var(--bg-border)'}`,
-                  background: 'var(--bg-surface)',
-                  color: form.font === f ? 'var(--teal)' : 'var(--text-sec)',
-                  cursor: 'pointer', fontFamily: FONTS[f], fontSize: 13, fontWeight: 600,
-                }}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+        <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--text-sec)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>الوضع الحالي: <strong style={{ color: 'var(--teal)' }}>{isLight ? 'فاتح' : 'داكن'}</strong></span>
+          <button onClick={toggleTheme} style={{ padding: '6px 16px', borderRadius: 99, border: '1px solid var(--bg-border)', background: 'var(--bg-glass)', color: 'var(--text)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+            تبديل
+          </button>
         </div>
+      </Card>
 
-        <div>
-          <div style={{ fontSize: 12, color: 'var(--text-sec)', fontWeight: 600, marginBottom: 8 }}>الألوان</div>
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>اللون الرئيسي</div>
-              <ColorPicker value={form.primaryColor || '#00e4b8'} onChange={v => setField('primaryColor', v)} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>لون التمييز</div>
-              <ColorPicker value={form.accentColor || '#7c3aed'} onChange={v => setField('accentColor', v)} />
-            </div>
-          </div>
+      <Card>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>الخط</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {Object.keys(FONTS).map(f => (
+            <button key={f} style={{ padding: '10px 18px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--bg-border)', background: 'var(--bg-surface)', color: 'var(--text-sec)', cursor: 'pointer', fontFamily: FONTS[f], fontSize: 13, fontWeight: 600 }}>
+              {f}
+            </button>
+          ))}
         </div>
-
-        <Btn onClick={() => onSave(form)}><IcSave size={14} /> حفظ المظهر</Btn>
-      </div>
-    </Card>
+        <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)' }}>الخط الافتراضي هو Noto Kufi Arabic</div>
+      </Card>
+    </div>
   )
 }
 
@@ -493,7 +475,7 @@ function DiscountsTab() {
           <option value="fixed">مبلغ ثابت</option>
         </Select>
         <Input label="القيمة" type="number" value={form.value} onChange={e => setForm(p => ({ ...p, value: e.target.value }))} placeholder="20" />
-        <Btn loading={saving} onClick={addDiscount} style={{ alignSelf: 'flex-end' }}><IcPlus size={14} /> إضافة</Btn>
+        <Btn loading={saving} onClick={addDiscount} style={{ alignSelf: 'flex-end' }}><IcPlus size={14}/> إضافة</Btn>
       </div>
     </Card>
   )
@@ -539,7 +521,7 @@ function BackupTab() {
         <div style={{ padding: '16px', background: 'rgba(0,228,184,0.06)', border: '1px solid rgba(0,228,184,0.2)', borderRadius: 'var(--radius-sm)' }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>تصدير كامل</div>
           <div style={{ fontSize: 13, color: 'var(--text-sec)', marginBottom: 12 }}>تصدير جميع بياناتك (طلبات، مصاريف، مخزون...) كملف JSON يمكن حفظه أو استيراده لاحقاً.</div>
-          <Btn loading={exporting} onClick={exportData}><IcDownload size={14} /> تصدير البيانات</Btn>
+          <Btn loading={exporting} onClick={exportData}><IcDownload size={14}/> تصدير البيانات</Btn>
         </div>
         <div style={{ padding: '16px', background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 'var(--radius-sm)' }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>⚠️ ملاحظة</div>
@@ -549,3 +531,5 @@ function BackupTab() {
     </Card>
   )
 }
+
+

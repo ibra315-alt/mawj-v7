@@ -177,7 +177,7 @@ export default function Orders({ user }) {
       {viewMode === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.length === 0 ? (
-            <Empty title="لا يوجد طلبات" message="أضف طلباً جديداً للبدء" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14} /> طلب جديد</Btn>} />
+            <Empty title="لا يوجد طلبات" message="أضف طلباً جديداً للبدء" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14}/> طلب جديد</Btn>} />
           ) : (
             filtered.map(order => {
               const statusObj = statuses.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
@@ -204,8 +204,8 @@ export default function Orders({ user }) {
                     </div>
                   )}
                   <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                    <Btn variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14} /></Btn>
-                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14} /></Btn>
+                    <Btn variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14}/></Btn>
+                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14}/></Btn>
                   </div>
                 </div>
               )
@@ -280,7 +280,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
           delivery_cost: order.delivery_cost || 0,
           source: order.source || 'instagram',
           status: order.status || 'new',
-          courier: order.courier || '',
+          courier: 'Hayyak',
           tracking_number: order.tracking_number || '',
           expected_delivery: order.expected_delivery || '',
           notes: order.notes || '',
@@ -317,7 +317,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
   const profit = total - cost - (parseFloat(form.delivery_cost) || 0)
 
   async function handleSave() {
-    if (!form.customer_name) { toast('أدخل اسم العميل', 'error'); return }
+    // customer_name is optional
     setSaving(true)
     try {
       const payload = {
@@ -366,7 +366,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'تعديل الطلب' : 'طلب جديد'} maxWidth={680}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <Input label="اسم العميل *" value={form.customer_name || ''} onChange={e => setField('customer_name', e.target.value)} placeholder="اسم العميل" />
+        <Input label="اسم العميل (اختياري)" value={form.customer_name || ''} onChange={e => setField('customer_name', e.target.value)} placeholder="اسم العميل" />
         <Input label="رقم الهاتف" value={form.customer_phone || ''} onChange={e => setField('customer_phone', e.target.value)} placeholder="+971..." dir="ltr" />
 
         <Select label="المدينة" value={form.customer_city || ''} onChange={e => applyZone(e.target.value)}>
@@ -382,10 +382,12 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
           {statuses.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
         </Select>
 
-        <Select label="الشركة الناقلة" value={form.courier || ''} onChange={e => setField('courier', e.target.value)}>
-          <option value="">اختر شركة الشحن</option>
-          {couriers.map(c => <option key={c} value={c}>{c}</option>)}
-        </Select>
+        <div>
+          <label style={{fontSize:11,fontWeight:600,color:'var(--text-sec)',letterSpacing:'0.03em',display:'block',marginBottom:5}}>الشركة الناقلة</label>
+          <div style={{padding:'9px 12px',background:'var(--bg-surface)',border:'1px solid var(--bg-border)',borderRadius:'var(--radius-sm)',fontSize:13,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:8}}>
+            <span>🚚</span> <span style={{fontWeight:600,color:'var(--teal)'}}>Hayyak</span>
+          </div>
+        </div>
 
         <Input label="رقم التتبع" value={form.tracking_number || ''} onChange={e => setField('tracking_number', e.target.value)} dir="ltr" />
         <Input label="تاريخ التسليم المتوقع" type="date" value={form.expected_delivery || ''} onChange={e => setField('expected_delivery', e.target.value)} />
