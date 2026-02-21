@@ -1,64 +1,143 @@
+import { createClient } from '@supabase/supabase-js'
 
-import { createClient } from "@supabase/supabase-js";
-var URL  = import.meta.env.VITE_SUPABASE_URL  || "";
-var ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-export var supabase = createClient(URL, ANON);
-var _c = {};
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-async function rows(table, orderBy) {
-  var q = supabase.from(table).select("*").order(orderBy || "created_at", { ascending: false });
-  var { data, error } = await q;
-  if (error) { console.error("[DB]", table, error.message); return _c[table] || []; }
-  return (_c[table] = data || []);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+})
+
+// ─── AUTH ────────────────────────────────────────────────────
+export const Auth = {
+  async signIn(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+    return data
+  },
+  async signOut() {
+    await supabase.auth.signOut()
+  },
+  async getSession() {
+    const { data } = await supabase.auth.getSession()
+    return data.session
+  },
+  onAuthChange(callback) {
+    const { data } = supabase.auth.onAuthStateChange(callback)
+    return data.subscription.unsubscribe
+  }
 }
 
-var DB = {
-  list: function(table, orderBy) { return rows(table, orderBy); },
+// ─── SETTINGS ────────────────────────────────────────────────
+const settingsCache = {}
 
-  save: async function(table, row) {
-    var cached = _c[table] || [];
-    var exists = cached.find(function(r) { return r.id === row.id; });
-    if (exists) { _c[table] = cached.map(function(r) { return r.id === row.id ? row : r; }); }
-    else { _c[table] = [row].concat(cached); }
-    var { error } = await supabase.from(table).upsert(row, { onConflict: "id" });
-    if (error) console.error("[DB save]", table, error.message);
+export const Settings = {
+  async get(key) {
+    if (settingsCache[key] !== undefined) return settingsCache[key]
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', key)
+      .single()
+    if (error) return null
+    settingsCache[key] = data.value
+    return data.value
+  },
+  async set(key, value) {
+    settingsCache[key] = value
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key, value, updated_at: new Date().toISOString() })
+    if (error) throw error
+  },
+  clearCache(key) {
+    if (key) delete settingsCache[key]
+    else Object.keys(settingsCache).forEach(k => delete settingsCache[k])
+  }
+}
+
+// ─── DB (CRUD) ───────────────────────────────────────────────
+export const DB = {
+  async list(table, options = {}) {
+    let query = supabase.from(table).select('*')
+    if (options.orderBy) query = query.order(options.orderBy, { ascending: options.asc ?? false })
+    if (options.filters) {
+      options.filters.forEach(([col, op, val]) => {
+        query = query.filter(col, op, val)
+      })
+    }
+    if (options.limit) query = query.limit(options.limit)
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
   },
 
-  remove: async function(table, id) {
-    _c[table] = (_c[table] || []).filter(function(r) { return r.id !== id; });
-    var { error } = await supabase.from(table).delete().eq("id", id);
-    if (error) console.error("[DB remove]", table, error.message);
+  async get(table, id) {
+    const { data, error } = await supabase.from(table).select('*').eq('id', id).single()
+    if (error) throw error
+    return data
   },
 
-  getSetting: async function(key) {
-    if (_c["_s_" + key] !== undefined) return _c["_s_" + key];
-    var { data, error } = await supabase.from("settings").select("value").eq("key", key).single();
-    if (error) return null;
-    _c["_s_" + key] = data.value;
-    return data.value;
+  async insert(table, row) {
+    const { data, error } = await supabase.from(table).insert(row).select().single()
+    if (error) throw error
+    return data
   },
 
-  setSetting: async function(key, value) {
-    _c["_s_" + key] = value;
-    var { error } = await supabase.from("settings").upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
-    if (error) console.error("[DB setting]", key, error.message);
+  async update(table, id, updates) {
+    const { data, error } = await supabase
+      .from(table)
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
   },
 
-  signIn:    function(email, password) { return supabase.auth.signInWithPassword({ email, password }); },
-  signOut:   function() { _c = {}; return supabase.auth.signOut(); },
-  getSession:function() { return supabase.auth.getSession().then(function(r) { return r.data.session; }); },
-  onAuthChange: function(cb) {
-    var { data: { subscription } } = supabase.auth.onAuthStateChange(cb);
-    return function() { subscription.unsubscribe(); };
+  async delete(table, id) {
+    const { error } = await supabase.from(table).delete().eq('id', id)
+    if (error) throw error
   },
 
-  uploadPhoto: async function(file, path) {
-    var { error } = await supabase.storage.from("order-photos").upload(path, file, { upsert: true });
-    if (error) { console.error("[Storage]", error.message); return null; }
-    var { data } = supabase.storage.from("order-photos").getPublicUrl(path);
-    return data.publicUrl;
-  },
+  async upsert(table, row) {
+    const { data, error } = await supabase.from(table).upsert(row).select().single()
+    if (error) throw error
+    return data
+  }
+}
 
-  clearCache: function(table) { if (table) delete _c[table]; else _c = {}; },
-};
-export default DB;
+// ─── ORDER NUMBER ────────────────────────────────────────────
+export async function generateOrderNumber() {
+  const today = new Date()
+  const prefix = `MWJ-${today.getFullYear().toString().slice(-2)}${String(today.getMonth() + 1).padStart(2, '0')}`
+  const { data } = await supabase
+    .from('orders')
+    .select('order_number')
+    .like('order_number', `${prefix}%`)
+    .order('order_number', { ascending: false })
+    .limit(1)
+  if (data && data.length > 0) {
+    const lastNum = parseInt(data[0].order_number.split('-').pop(), 10)
+    return `${prefix}-${String(lastNum + 1).padStart(4, '0')}`
+  }
+  return `${prefix}-0001`
+}
+
+// ─── REALTIME ────────────────────────────────────────────────
+export function subscribeToOrders(callback) {
+  const channel = supabase
+    .channel('orders-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, callback)
+    .subscribe()
+  return () => supabase.removeChannel(channel)
+}
+
+// ─── STORAGE ─────────────────────────────────────────────────
+export const Storage = {
+  async upload(bucket, path, file) {
+    const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true })
+    if (error) throw error
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path)
+    return urlData.publicUrl
+  }
+}
