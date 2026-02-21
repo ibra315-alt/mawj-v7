@@ -13,6 +13,7 @@ import Inventory from './pages/Inventory'
 import Suppliers from './pages/Suppliers'
 import Accounting from './pages/Accounting'
 import Settings from './pages/Settings'
+import Import from './pages/Import'
 
 // ── NAV ITEMS ─────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { id: 'partners', label: 'الشركاء' },
   { id: 'reports', label: 'التقارير' },
   { id: 'settings', label: 'الإعدادات' },
+  { id: 'import', label: 'استيراد البيانات' },
 ]
 
 const MOBILE_NAV = [
@@ -64,7 +66,7 @@ export default function App() {
     try {
       const users = await supabase.from('users').select('*').eq('email', email).single()
       if (users.data) setUser(users.data)
-    } catch {}
+    } catch { }
   }
 
   // ── LOADING STATE ─────────────────────────────────────────
@@ -75,7 +77,7 @@ export default function App() {
           <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--teal)', marginBottom: 16 }}>مَوج</div>
           <svg width="32" height="32" viewBox="0 0 24 24" style={{ animation: 'spin 0.7s linear infinite' }}>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <circle cx="12" cy="12" r="10" fill="none" stroke="var(--teal)" strokeWidth="2.5" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round"/>
+            <circle cx="12" cy="12" r="10" fill="none" stroke="var(--teal)" strokeWidth="2.5" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round" />
           </svg>
         </div>
       </div>
@@ -86,7 +88,7 @@ export default function App() {
   if (!session) {
     return (
       <>
-        <Login onLogin={() => {}} />
+        <Login onLogin={() => { }} />
         <ToastContainer />
       </>
     )
@@ -96,18 +98,19 @@ export default function App() {
   function renderPage() {
     const props = { user, onNavigate: setPage }
     switch (page) {
-      case 'dashboard':   return <Dashboard {...props} />
-      case 'orders':      return <Orders {...props} />
-      case 'customers':   return <Customers {...props} />
-      case 'inventory':   return <Inventory {...props} />
-      case 'suppliers':   return <Suppliers {...props} />
-      case 'expenses':    return <Expenses {...props} />
+      case 'dashboard': return <Dashboard {...props} />
+      case 'orders': return <Orders {...props} />
+      case 'customers': return <Customers {...props} />
+      case 'inventory': return <Inventory {...props} />
+      case 'suppliers': return <Suppliers {...props} />
+      case 'expenses': return <Expenses {...props} />
       case 'settlements': return <Settlements {...props} />
-      case 'accounting':  return <Accounting {...props} />
-      case 'partners':    return <Partners {...props} />
-      case 'reports':     return <Reports {...props} />
-      case 'settings':    return <Settings {...props} />
-      default:            return <Dashboard {...props} />
+      case 'accounting': return <Accounting {...props} />
+      case 'partners': return <Partners {...props} />
+      case 'reports': return <Reports {...props} />
+      case 'settings': return <Settings {...props} />
+      case 'import': return <Import {...props} />
+      default: return <Dashboard {...props} />
     }
   }
 
@@ -298,7 +301,7 @@ function SidebarContent({ page, onNavigate, user, onLogout, onClose }) {
           const active = page === item.id
           const NAV_ICONS = {
             dashboard: '🏠', orders: '📦', customers: '👥', inventory: '🗃️', suppliers: '🏭',
-            expenses: '💸', settlements: '⏰', accounting: '📚', partners: '🤝', reports: '📊', settings: '⚙️',
+            expenses: '💸', settlements: '⏰', accounting: '📚', partners: '🤝', reports: '📊', settings: '⚙️', import: '📥',
           }
           return (
             <button
