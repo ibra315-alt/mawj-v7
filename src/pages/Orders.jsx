@@ -135,42 +135,13 @@ export default function Orders({ user }) {
 
       {/* KANBAN VIEW */}
       {viewMode === 'kanban' && (
-        <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16, alignItems: 'flex-start' }}>
-          {statuses.map(status => {
-            const colOrders = filtered.filter(o => o.status === status.id)
-            const colTotal = colOrders.reduce((s, o) => s + (o.total || 0), 0)
-            return (
-              <div key={status.id} style={{ minWidth: 280, flex: '0 0 280px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: `${status.color}15`, border: `1px solid ${status.color}30`, borderRadius: 'var(--radius-sm)', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: status.color }} />
-                    <span style={{ fontWeight: 700, fontSize: 13, color: status.color }}>{status.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, padding: '1px 7px', background: `${status.color}25`, borderRadius: 99, color: status.color }}>{colOrders.length}</span>
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatCurrency(colTotal)}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {colOrders.length === 0 ? (
-                    <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--bg-border)' }}>
-                      لا يوجد طلبات
-                    </div>
-                  ) : (
-                    colOrders.map(order => (
-                      <OrderCard
-                        key={order.id}
-                        order={order}
-                        statuses={statuses}
-                        onView={() => { setViewOrder(order); setShowView(true) }}
-                        onEdit={() => { setEditOrder(order); setShowForm(true) }}
-                        onStatusChange={handleStatusChange}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <KanbanBoard
+          statuses={statuses}
+          orders={filtered}
+          onStatusChange={handleStatusChange}
+          onView={order => { setViewOrder(order); setShowView(true) }}
+          onEdit={order => { setEditOrder(order); setShowForm(true) }}
+        />
       )}
 
       {/* LIST VIEW */}
@@ -568,4 +539,170 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
   )
 }
 
+/* ══════════════════════════════════════════════
+   KANBAN BOARD — native HTML5 drag & drop
+══════════════════════════════════════════════ */
+function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
+  const [dragId, setDragId] = useState(null)
+  const [dragOver, setDragOver] = useState(null)
+  const [dropping, setDropping] = useState(null)
 
+  function onDragStart(e, orderId) {
+    setDragId(orderId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', orderId)
+    // ghost image
+    e.currentTarget.style.opacity = '0.5'
+  }
+
+  function onDragEnd(e) {
+    e.currentTarget.style.opacity = '1'
+    setDragId(null)
+    setDragOver(null)
+  }
+
+  function onDragOver(e, statusId) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOver(statusId)
+  }
+
+  async function onDrop(e, statusId) {
+    e.preventDefault()
+    const id = dragId || e.dataTransfer.getData('text/plain')
+    if (!id) return
+    const order = orders.find(o => o.id === id)
+    if (!order || order.status === statusId) { setDragOver(null); setDragId(null); return }
+    setDropping(id)
+    await onStatusChange(id, statusId)
+    setDropping(null)
+    setDragOver(null)
+    setDragId(null)
+  }
+
+  return (
+    <div style={{ display:'flex', gap:14, overflowX:'auto', paddingBottom:20, alignItems:'flex-start', minHeight:300 }}>
+      {statuses.map(status => {
+        const col = orders.filter(o => o.status === status.id)
+        const total = col.reduce((s,o) => s+(o.total||0), 0)
+        const isOver = dragOver === status.id
+
+        return (
+          <div
+            key={status.id}
+            style={{ minWidth:270, flex:'0 0 270px', transition:'all 0.2s ease' }}
+            onDragOver={e => onDragOver(e, status.id)}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={e => onDrop(e, status.id)}
+          >
+            {/* Column header */}
+            <div style={{
+              display:'flex', alignItems:'center', justifyContent:'space-between',
+              padding:'10px 14px', marginBottom:10,
+              background: isOver ? `${status.color}20` : `${status.color}10`,
+              border:`1.5px solid ${isOver ? status.color : status.color+'30'}`,
+              borderRadius:'var(--radius)',
+              transition:'all 0.2s ease',
+              boxShadow: isOver ? `0 0 16px ${status.color}30` : 'none',
+            }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:9, height:9, borderRadius:'50%', background:status.color, boxShadow:`0 0 6px ${status.color}`, flexShrink:0 }} />
+                <span style={{ fontWeight:800, fontSize:13, color:status.color }}>{status.label}</span>
+                <span style={{ fontSize:11, fontWeight:800, padding:'2px 8px', background:`${status.color}22`, borderRadius:'var(--radius-pill)', color:status.color }}>{col.length}</span>
+              </div>
+              <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>{total.toLocaleString()} د.إ</span>
+            </div>
+
+            {/* Drop zone */}
+            <div style={{
+              display:'flex', flexDirection:'column', gap:9,
+              minHeight:80, padding: isOver ? '6px' : '0',
+              background: isOver ? `${status.color}06` : 'transparent',
+              borderRadius:'var(--radius)',
+              border: isOver ? `2px dashed ${status.color}50` : '2px dashed transparent',
+              transition:'all 0.2s ease',
+            }}>
+              {col.length === 0 && !isOver && (
+                <div style={{ padding:'24px 10px', textAlign:'center', color:'var(--text-muted)', fontSize:12, background:'var(--bg-surface)', borderRadius:'var(--radius)', border:'1.5px dashed var(--bg-border)' }}>
+                  اسحب طلباً هنا
+                </div>
+              )}
+
+              {col.map(order => (
+                <div
+                  key={order.id}
+                  draggable
+                  onDragStart={e => onDragStart(e, order.id)}
+                  onDragEnd={onDragEnd}
+                  style={{
+                    background:'var(--bg-glass)',
+                    backdropFilter:'blur(20px)',
+                    border:`1.5px solid ${dragId===order.id ? status.color+'60' : 'var(--bg-border)'}`,
+                    borderRadius:'var(--radius)',
+                    padding:'12px 14px',
+                    cursor:'grab',
+                    transition:'all 0.2s ease',
+                    opacity: dropping===order.id ? 0.5 : 1,
+                    boxShadow: dragId===order.id ? `0 8px 24px rgba(0,0,0,0.4)` : 'var(--shadow-card)',
+                    userSelect:'none',
+                    position:'relative', overflow:'hidden',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor=status.color+'50'; e.currentTarget.style.transform='translateY(-1px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor='var(--bg-border)'; e.currentTarget.style.transform='translateY(0)' }}
+                >
+                  {/* Color top strip */}
+                  <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${status.color},${status.color}80)` }} />
+
+                  {/* Order number */}
+                  <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600, marginBottom:7, letterSpacing:'0.05em' }}>
+                    {order.order_number}
+                  </div>
+
+                  {/* Customer */}
+                  <div style={{ fontWeight:700, fontSize:13, marginBottom:4, lineHeight:1.3 }}>
+                    {order.customer_name || order.customer_phone || 'طلب'}
+                  </div>
+
+                  {order.customer_city && (
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8 }}>📍 {order.customer_city}</div>
+                  )}
+
+                  {/* Items preview */}
+                  {order.items?.length > 0 && (
+                    <div style={{ fontSize:11, color:'var(--text-sec)', marginBottom:8, lineHeight:1.4 }}>
+                      {order.items.slice(0,2).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
+                      {order.items.length > 2 && ` +${order.items.length-2}`}
+                    </div>
+                  )}
+
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <span style={{ fontWeight:900, fontSize:14, color:'var(--teal)' }}>{(order.total||0).toLocaleString()} د.إ</span>
+                    <div style={{ display:'flex', gap:4 }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); onView(order) }}
+                        style={{ background:'rgba(0,228,184,0.1)', border:'none', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--teal)', cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'inherit' }}
+                      >عرض</button>
+                      <button
+                        onClick={e => { e.stopPropagation(); onEdit(order) }}
+                        style={{ background:'var(--bg-glass)', border:'1px solid var(--bg-border)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--text-sec)', cursor:'pointer', fontSize:11, fontFamily:'inherit' }}
+                      >تعديل</button>
+                    </div>
+                  </div>
+
+                  {/* Drag handle hint */}
+                  <div style={{ position:'absolute', top:'50%', left:8, transform:'translateY(-50%)', color:'var(--text-muted)', fontSize:10, opacity:0.4, pointerEvents:'none' }}>⠿</div>
+                </div>
+              ))}
+
+              {isOver && (
+                <div style={{ height:60, border:`2px dashed ${status.color}60`, borderRadius:'var(--radius)', display:'flex', alignItems:'center', justifyContent:'center', color:status.color, fontSize:12, fontWeight:700, background:`${status.color}08` }}>
+                  ⬇ أفلت هنا
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}

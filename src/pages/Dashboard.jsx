@@ -3,6 +3,7 @@ import { DB, Settings } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
 import { StatCard, Card, Badge, Spinner, Empty } from '../components/ui'
 import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcAlert, IcArrowLeft } from '../components/Icons'
+import Sparkline from '../components/Sparkline'
 
 export default function Dashboard({ onNavigate }) {
   const [stats, setStats] = useState(null)
@@ -11,10 +12,9 @@ export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(true)
   const [lowStock, setLowStock] = useState([])
   const [target, setTarget] = useState(50000)
+  const [sparkData, setSparkData] = useState({ revenue:[], orders:[], profit:[] })
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   async function loadData() {
     try {
@@ -48,22 +48,32 @@ export default function Dashboard({ onNavigate }) {
         pending: monthOrders.filter(o => !['delivered', 'returned', 'cancelled'].includes(o.status)).length,
       })
 
+      // Build last-14-days sparkline data
+      const days = 14
+      const revByDay = [], ordByDay = [], profByDay = []
+      for (let i = days-1; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate()-i)
+        const ds = d.toDateString()
+        const dayOrds = orders.filter(o => new Date(o.created_at).toDateString()===ds)
+        revByDay.push(dayOrds.reduce((s,o)=>s+(o.total||0),0))
+        ordByDay.push(dayOrds.length)
+        profByDay.push(dayOrds.reduce((s,o)=>s+(o.profit||0),0))
+      }
+      setSparkData({ revenue:revByDay, orders:ordByDay, profit:profByDay })
+
       setRecentOrders(orders.slice(-8).reverse())
       setLowStock(inventory.filter(i => i.stock_qty <= i.low_stock_threshold && i.active))
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { console.error(err) }
+    finally { setLoading(false) }
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh' }}>
       <Spinner size={36} />
     </div>
   )
 
-  const progressPct = Math.min(100, ((stats?.revenue || 0) / target) * 100)
+  const progressPct = Math.min(100, ((stats?.revenue||0)/target)*100)
 
   return (
     <div className="page">
@@ -101,17 +111,17 @@ export default function Dashboard({ onNavigate }) {
       </Card>
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 12, marginBottom: 20 }}>
-        <StatCard label="طلبات الشهر" value={stats?.totalOrders || 0} icon={<IcOrders size={18} />} color="var(--teal)" />
-        <StatCard label="إجمالي المبيعات" value={formatCurrency(stats?.revenue || 0)} icon={<IcTrendUp size={18} />} color="var(--green)" />
-        <StatCard label="صافي الربح" value={formatCurrency(stats?.profit || 0)} icon={<IcTrendUp size={18} />} color="var(--gold)" />
-        <StatCard label="طلبات معلقة" value={stats?.pending || 0} icon={<IcPackage size={18} />} color="var(--amber)" />
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(190px, 1fr))', gap:12, marginBottom:20 }} className="stagger">
+        <StatCardWithSpark label="طلبات الشهر" value={stats?.totalOrders||0} icon={<IcOrders size={18}/>} color="var(--teal)" spark={sparkData.orders} sparkColor="#00e4b8" />
+        <StatCardWithSpark label="إجمالي المبيعات" value={formatCurrency(stats?.revenue||0)} icon={<IcTrendUp size={18}/>} color="var(--green)" spark={sparkData.revenue} sparkColor="#10b981" />
+        <StatCardWithSpark label="صافي الربح" value={formatCurrency(stats?.profit||0)} icon={<IcTrendUp size={18}/>} color="var(--gold)" spark={sparkData.profit} sparkColor="#e6b94a" />
+        <StatCard label="طلبات معلقة" value={stats?.pending||0} icon={<IcPackage size={18}/>} color="var(--amber)" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <StatCard label="تم التسليم" value={stats?.delivered || 0} color="var(--green)" />
-        <StatCard label="مرتجعات" value={stats?.returned || 0} color="var(--red)" />
-        <StatCard label="متوسط الطلب" value={formatCurrency(stats?.avgOrder || 0)} color="var(--blue)" />
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px, 1fr))', gap:12, marginBottom:24 }}>
+        <StatCard label="تم التسليم" value={stats?.delivered||0} color="var(--green)" />
+        <StatCard label="مرتجعات" value={stats?.returned||0} color="var(--red)" />
+        <StatCard label="متوسط الطلب" value={formatCurrency(stats?.avgOrder||0)} color="var(--blue)" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
@@ -188,6 +198,42 @@ export default function Dashboard({ onNavigate }) {
           </Card>
         )}
       </div>
+    </div>
+  )
+}
+
+/* Stat card with sparkline chart */
+function StatCardWithSpark({ label, value, color, icon, spark = [], sparkColor }) {
+  return (
+    <div style={{
+      background:'var(--bg-glass)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)',
+      border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius)',
+      padding:'18px 20px', position:'relative', overflow:'hidden',
+      transition:'all 0.28s cubic-bezier(0.4,0,0.2,1)', boxShadow:'var(--shadow-card)',
+    }}
+      onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 16px 48px rgba(0,0,0,0.35)'}}
+      onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='var(--shadow-card)'}}
+    >
+      {/* Top accent */}
+      <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${color},transparent)`,opacity:0.6}} />
+      {/* Orb */}
+      <div style={{position:'absolute',top:-20,right:-20,width:80,height:80,borderRadius:'50%',background:color,opacity:0.07,filter:'blur(20px)'}} />
+
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:10}}>
+        <div style={{fontSize:10,color:'var(--text-muted)',fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase'}}>{label}</div>
+        {icon && <div style={{color,opacity:0.75}}>{icon}</div>}
+      </div>
+
+      <div style={{fontSize:22,fontWeight:900,color,letterSpacing:'-0.03em',lineHeight:1.1,marginBottom:10}}>
+        {value}
+      </div>
+
+      {/* Sparkline at bottom */}
+      {spark.length > 1 && (
+        <div style={{position:'absolute',bottom:0,left:0,right:0,opacity:0.8}}>
+          <Sparkline data={spark} color={sparkColor||color} width={200} height={36} />
+        </div>
+      )}
     </div>
   )
 }

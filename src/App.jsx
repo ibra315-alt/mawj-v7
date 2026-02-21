@@ -15,6 +15,9 @@ import Accounting from './pages/Accounting'
 import SettingsPage from './pages/Settings'
 import Import from './pages/Import'
 import MawjLogo from './components/Logo'
+import CursorSpotlight from './components/CursorSpotlight'
+import NotificationBell from './components/NotificationBell'
+import AIAssistant from './components/AIAssistant'
 
 const NAV_ITEMS = [
   { id:'dashboard',   label:'الرئيسية',        icon:'🏠' },
@@ -45,6 +48,7 @@ export default function App() {
   const [page, setPage]           = useState('dashboard')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [theme, setTheme]         = useState(() => localStorage.getItem('mawj_theme') || 'dark')
+  const [showAI, setShowAI]       = useState(false)
 
   // Apply theme to <html>
   useEffect(() => {
@@ -202,6 +206,32 @@ export default function App() {
 
       <ToastContainer/>
 
+      {/* Cursor spotlight — dark mode only */}
+      {theme === 'dark' && <CursorSpotlight />}
+
+      {/* AI Assistant panel */}
+      {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
+
+      {/* Floating AI button */}
+      <button
+        onClick={() => setShowAI(p => !p)}
+        title="موج AI"
+        style={{
+          position:'fixed', bottom:80, left:20, zIndex:700,
+          width:52, height:52, borderRadius:'50%',
+          background:'linear-gradient(135deg,var(--teal),var(--violet))',
+          border:'none', cursor:'pointer', fontSize:22,
+          boxShadow:'0 8px 28px rgba(0,228,184,0.45)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          transition:'all 0.25s ease',
+          animation:'pulseGlow 3s ease infinite',
+        }}
+        onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.12)';e.currentTarget.style.boxShadow='0 12px 36px rgba(0,228,184,0.6)'}}
+        onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 8px 28px rgba(0,228,184,0.45)'}}
+      >
+        {showAI ? '✕' : '🤖'}
+      </button>
+
       <style>{`
         @media(min-width:769px){
           .mobile-header,.mobile-bottom-nav{display:none!important}
@@ -266,6 +296,7 @@ function SidebarContent({ page, onNavigate, user, onLogout, onClose, theme, togg
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <NotificationBell />
           <ThemeToggle theme={theme} toggle={toggleTheme} />
           {onClose && (
             <button onClick={onClose} style={{background:'var(--bg-glass)',border:'1px solid var(--bg-border)',borderRadius:8,width:28,height:28,cursor:'pointer',color:'var(--text-sec)',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
