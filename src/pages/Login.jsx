@@ -95,9 +95,9 @@ export default function Login({ theme, toggleTheme }) {
             <div>
               <label style={{display:'block',fontSize:10,fontWeight:700,color:isLight?'#4a5280':'var(--text-sec)',marginBottom:7,letterSpacing:'0.07em',textTransform:'uppercase'}}>البريد الإلكتروني</label>
               <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="you@example.com"
-                style={{width:'100%',padding:'11px 14px',background:isLight?'rgba(0,0,0,0.04)':'rgba(255,255,255,0.04)',border:`1.5px solid ${isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.08)'}`,borderRadius:12,color:isLight?'#0c1030':'#eef0ff',fontSize:13,outline:'none',transition:'all 0.18s ease',direction:'ltr',textAlign:'left',fontFamily:'inherit',boxSizing:'border-box'}}
+                style={{width:'100%',padding:'11px 14px',background:isLight?'rgba(0,0,0,0.04)':'rgba(255,255,255,0.06)',border:`1.5px solid ${isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.10)'}`,borderRadius:12,color:isLight?'#0c1030':'#eef0ff',fontSize:13,outline:'none',transition:'all 0.18s ease',direction:'ltr',textAlign:'right',fontFamily:'inherit',boxSizing:'border-box'}}
                 onFocus={e=>{e.target.style.borderColor='#00e4b8';e.target.style.boxShadow='0 0 0 3px rgba(0,228,184,0.1)'}}
-                onBlur={e=>{e.target.style.borderColor=isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.08)';e.target.style.boxShadow='none'}}
+                onBlur={e=>{e.target.style.borderColor=isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.10)';e.target.style.boxShadow='none'}}
               />
             </div>
 
@@ -106,12 +106,12 @@ export default function Login({ theme, toggleTheme }) {
               <label style={{display:'block',fontSize:10,fontWeight:700,color:isLight?'#4a5280':'var(--text-sec)',marginBottom:7,letterSpacing:'0.07em',textTransform:'uppercase'}}>كلمة المرور</label>
               <div style={{position:'relative'}}>
                 <input type={showPass?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} required placeholder="••••••••"
-                  style={{width:'100%',padding:'11px 44px 11px 14px',background:isLight?'rgba(0,0,0,0.04)':'rgba(255,255,255,0.04)',border:`1.5px solid ${isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.08)'}`,borderRadius:12,color:isLight?'#0c1030':'#eef0ff',fontSize:13,outline:'none',transition:'all 0.18s ease',direction:'ltr',textAlign:'left',fontFamily:'inherit',boxSizing:'border-box'}}
+                  style={{width:'100%',padding:'11px 14px 11px 44px',background:isLight?'rgba(0,0,0,0.04)':'rgba(255,255,255,0.06)',border:`1.5px solid ${isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.10)'}`,borderRadius:12,color:isLight?'#0c1030':'#eef0ff',fontSize:13,outline:'none',transition:'all 0.18s ease',direction:'ltr',textAlign:'right',fontFamily:'inherit',boxSizing:'border-box'}}
                   onFocus={e=>{e.target.style.borderColor='#00e4b8';e.target.style.boxShadow='0 0 0 3px rgba(0,228,184,0.1)'}}
-                  onBlur={e=>{e.target.style.borderColor=isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.08)';e.target.style.boxShadow='none'}}
+                  onBlur={e=>{e.target.style.borderColor=isLight?'rgba(0,0,0,0.09)':'rgba(255,255,255,0.10)';e.target.style.boxShadow='none'}}
                 />
-                <button type="button" onClick={()=>setShowPass(p=>!p)} style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:15,lineHeight:1,padding:4,color:isLight?'#9098c0':'#454870'}}>
-                  {showPass?'🙈':'👁️'}
+                <button type="button" onClick={()=>setShowPass(p=>!p)} style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,lineHeight:1,padding:4,color:isLight?'#9098c0':'rgba(255,255,255,0.35)'}}>
+                  {showPass ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
