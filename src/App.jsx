@@ -76,6 +76,67 @@ export default function App() {
 
   // Restore ALL saved appearance settings on mount
   useEffect(() => {
+    // ── Restore color theme ──
+    const THEMES = [
+      { id: 'mawj', vars: { '--bg': '#050c1a', '--bg-alt': '#070f22', '--violet': '#2563eb', '--violet-light': '#60a5fa', '--teal': '#00e4b8', '--pink': '#ec4899' } },
+      { id: 'galaxy', vars: { '--bg': '#0a0618', '--bg-alt': '#0d0820', '--violet': '#7c3aed', '--violet-light': '#a78bfa', '--teal': '#c084fc', '--pink': '#f472b6' } },
+      { id: 'obsidian', vars: { '--bg': '#0a0a0a', '--bg-alt': '#111111', '--violet': '#525252', '--violet-light': '#a3a3a3', '--teal': '#e6b94a', '--pink': '#f5f5f5' } },
+      { id: 'emerald', vars: { '--bg': '#051510', '--bg-alt': '#071a13', '--violet': '#065f46', '--violet-light': '#34d399', '--teal': '#10b981', '--pink': '#86efac' } },
+      { id: 'ember', vars: { '--bg': '#0f0a08', '--bg-alt': '#150d09', '--violet': '#9a3412', '--violet-light': '#fb923c', '--teal': '#f97316', '--pink': '#fbbf24' } },
+      { id: 'sakura', vars: { '--bg': '#0f080e', '--bg-alt': '#140a12', '--violet': '#9d174d', '--violet-light': '#f9a8d4', '--teal': '#ec4899', '--pink': '#fda4af' } },
+      { id: 'arctic', vars: { '--bg': '#050d14', '--bg-alt': '#07111b', '--violet': '#164e63', '--violet-light': '#67e8f9', '--teal': '#22d3ee', '--pink': '#a5f3fc' } },
+      { id: 'golden', vars: { '--bg': '#080600', '--bg-alt': '#0f0c00', '--violet': '#78350f', '--violet-light': '#fbbf24', '--teal': '#f59e0b', '--pink': '#fde68a' } },
+    ]
+    const savedTheme = localStorage.getItem('mawj_theme')
+    const savedMode = localStorage.getItem('mawj_theme_mode') || 'dark'
+    // Only apply color theme in dark mode — light mode uses its own CSS vars
+    if (savedMode === 'dark' && savedTheme) {
+      const t = THEMES.find(t => t.id === savedTheme)
+      if (t) {
+        const root = document.documentElement
+        function hexRgb(hex) {
+          const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+          return r ? `${parseInt(r[1], 16)},${parseInt(r[2], 16)},${parseInt(r[3], 16)}` : null
+        }
+        const bg = t.vars['--bg'], violet = t.vars['--violet'], vLight = t.vars['--violet-light']
+        const teal = t.vars['--teal'], pink = t.vars['--pink'] || vLight
+        const bgRgb = hexRgb(bg), vRgb = hexRgb(violet), tRgb = hexRgb(teal), pRgb = hexRgb(pink)
+        const all = {
+          '--bg': bg, '--bg-alt': t.vars['--bg-alt'] || bg,
+          '--violet': violet, '--violet-light': vLight, '--violet-bright': vLight,
+          '--violet-glow': vRgb ? `rgba(${vRgb},0.28)` : '',
+          '--violet-soft': vRgb ? `rgba(${vRgb},0.14)` : '',
+          '--violet-faint': vRgb ? `rgba(${vRgb},0.06)` : '',
+          '--teal': teal, '--teal-deep': teal,
+          '--teal-glow': tRgb ? `rgba(${tRgb},0.22)` : '',
+          '--teal-soft': tRgb ? `rgba(${tRgb},0.10)` : '',
+          '--teal-faint': tRgb ? `rgba(${tRgb},0.05)` : '',
+          '--pink': pink,
+          '--pink-glow': pRgb ? `rgba(${pRgb},0.22)` : '',
+          '--pink-soft': pRgb ? `rgba(${pRgb},0.10)` : '',
+          '--bg-card': bgRgb ? `rgba(${bgRgb},0.88)` : '',
+          '--bg-glass': vRgb ? `rgba(${vRgb},0.07)` : '',
+          '--bg-glass-hover': vRgb ? `rgba(${vRgb},0.14)` : '',
+          '--bg-hover': vRgb ? `rgba(${vRgb},0.08)` : '',
+          '--bg-border': vRgb ? `rgba(${vRgb},0.16)` : '',
+          '--bg-surface': vRgb ? `rgba(${vRgb},0.05)` : '',
+          '--sidebar-bg': bgRgb ? `rgba(${bgRgb},0.97)` : '',
+          '--header-bg': bgRgb ? `rgba(${bgRgb},0.93)` : '',
+          '--modal-bg': bgRgb ? `rgba(${bgRgb},0.99)` : '',
+          '--input-bg': vRgb ? `rgba(${vRgb},0.08)` : '',
+          '--input-border': vRgb ? `rgba(${vRgb},0.18)` : '',
+          '--input-focus': vRgb ? `rgba(${vRgb},0.35)` : '',
+          '--glass-border': vRgb ? `rgba(${vRgb},0.18)` : '',
+          '--glass-border-strong': vRgb ? `rgba(${vRgb},0.30)` : '',
+          '--glass-border-teal': tRgb ? `rgba(${tRgb},0.22)` : '',
+          '--shadow-card': bgRgb && vRgb ? `0 4px 32px rgba(${bgRgb},0.6), 0 1px 0 rgba(${vRgb},0.08) inset` : '',
+          '--shadow-float': bgRgb && vRgb ? `0 24px 64px rgba(${bgRgb},0.75), 0 0 0 1px rgba(${vRgb},0.10)` : '',
+          '--shadow-violet': vRgb ? `0 8px 32px rgba(${vRgb},0.35)` : '',
+          '--shadow-teal': tRgb ? `0 8px 32px rgba(${tRgb},0.28)` : '',
+        }
+        Object.entries(all).forEach(([k, v]) => { if (v) root.style.setProperty(k, v) })
+      }
+    }
     // Font
     const font = localStorage.getItem('mawj_font')
     if (font) {
