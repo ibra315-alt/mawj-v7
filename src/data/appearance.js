@@ -133,12 +133,12 @@ export function applyAppearance(prefs) {
   // already updates p.mode via the update() call in Settings
   const effectiveMode = p.mode
   document.documentElement.setAttribute('data-theme', effectiveMode)
+  // Always clear ALL inline overrides first — prevents light theme text colors
+  // bleeding into dark mode and vice versa
+  ALL_THEME_VARS.forEach(v => document.documentElement.style.removeProperty(v))
   if (effectiveMode === 'light') {
-    ALL_THEME_VARS.forEach(v => document.documentElement.style.removeProperty(v))
-    // Apply light theme specific overrides if a light theme is selected
     if (t?.mode === 'light') applyThemeVars(p.theme)
   } else {
-    // Use dark theme vars — if current theme is a light one, fall back to mawj
     const darkThemeId = (t?.mode === 'dark') ? p.theme : 'mawj'
     applyThemeVars(darkThemeId)
     const darkT = THEMES.find(th => th.id === darkThemeId)
