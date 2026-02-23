@@ -128,18 +128,21 @@ export function applyThemeVars(themeId) {
 export function applyAppearance(prefs) {
   const p = { ...DEFAULT_PREFS, ...prefs }
   const t = THEMES.find(th => th.id === p.theme)
-  // p.mode is the user's explicit toggle (dark/light). 
-  // If selected theme is a light theme, force light regardless.
-  const effectiveMode = (t?.mode === 'light') ? 'light' : p.mode
+  // p.mode is always the source of truth — the user's toggle
+  // Theme's own mode is irrelevant here; picking a light/dark theme 
+  // already updates p.mode via the update() call in Settings
+  const effectiveMode = p.mode
   document.documentElement.setAttribute('data-theme', effectiveMode)
   if (effectiveMode === 'light') {
-    // Clear dark inline overrides first
     ALL_THEME_VARS.forEach(v => document.documentElement.style.removeProperty(v))
-    // If a light theme is selected, apply its specific vars
+    // Apply light theme specific overrides if a light theme is selected
     if (t?.mode === 'light') applyThemeVars(p.theme)
   } else {
-    applyThemeVars(p.theme)
-    const themeDefault = t?.vars['--teal']
+    // Use dark theme vars — if current theme is a light one, fall back to mawj
+    const darkThemeId = (t?.mode === 'dark') ? p.theme : 'mawj'
+    applyThemeVars(darkThemeId)
+    const darkT = THEMES.find(th => th.id === darkThemeId)
+    const themeDefault = darkT?.vars['--teal']
     if (p.accent && p.accent !== themeDefault) {
       const rgb = hexRgb(p.accent)
       if (rgb) { setVar('--teal', p.accent); setVar('--teal-glow', `rgba(${rgb},0.22)`); setVar('--teal-soft', `rgba(${rgb},0.10)`); setVar('--teal-faint', `rgba(${rgb},0.05)`) }

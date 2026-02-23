@@ -665,7 +665,12 @@ function AppearanceTab({ theme, toggleTheme, user }) {
   }, [])
 
   function update(patch) {
-    const next = { ...prefs, ...patch }
+    let next = { ...prefs, ...patch }
+    // When user picks a theme, auto-switch mode to match that theme's type
+    if (patch.theme) {
+      const picked = THEMES.find(t => t.id === patch.theme)
+      if (picked?.mode) next.mode = picked.mode
+    }
     setPrefs(next)
     window.__mawjPrefs = next
     saveAppearance(next)

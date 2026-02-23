@@ -92,7 +92,13 @@ export default function App() {
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'
-    const prefs = { ...(window.__mawjPrefs || DEFAULT_PREFS), mode: next }
+    const current = window.__mawjPrefs || DEFAULT_PREFS
+    // If switching to dark but current theme is a light theme, reset to mawj
+    // If switching to light but current theme is a dark theme, use first light theme
+    let themeId = current.theme
+    if (next === 'dark' && current.theme?.startsWith('l_')) themeId = 'mawj'
+    if (next === 'light' && !current.theme?.startsWith('l_')) themeId = 'l_mist'
+    const prefs = { ...current, mode: next, theme: themeId }
     window.__mawjPrefs = prefs
     setTheme(next)
     saveAppearance(prefs)
