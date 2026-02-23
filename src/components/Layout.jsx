@@ -106,6 +106,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
           minHeight: '100vh',
           paddingRight: 32,
           paddingTop: 32,
+          paddingLeft: 32,
           transition: 'margin-right 220ms cubic-bezier(0.4,0,0.2,1), width 220ms cubic-bezier(0.4,0,0.2,1)',
           animation: 'pageSlideIn var(--dur-page) var(--ease-out) both',
         }}
