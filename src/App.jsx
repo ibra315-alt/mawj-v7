@@ -277,10 +277,10 @@ export default function App() {
       {/* ── MOBILE BOTTOM NAV ── */}
       <nav className="mobile-bottom-nav" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(5,7,18,0.97)',
+        height: 64, background: theme === 'light' ? 'rgba(232,229,245,0.98)' : 'rgba(5,7,18,0.97)',
         backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-        borderTop: '1px solid rgba(0,228,184,0.08)',
-        boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+        borderTop: theme === 'light' ? '1px solid rgba(37,99,235,0.14)' : '1px solid rgba(0,228,184,0.08)',
+        boxShadow: theme === 'light' ? '0 -4px 20px rgba(37,99,235,0.08)' : '0 -8px 32px rgba(0,0,0,0.4)',
         display: 'flex', alignItems: 'stretch',
       }}>
         {MOBILE_NAV.map(item => {
@@ -294,9 +294,7 @@ export default function App() {
               transition: 'color 0.2s ease', padding: '6px 2px', position: 'relative',
               WebkitTapHighlightColor: 'transparent',
             }}>
-              {/* Top glow bar */}
               {active && <div style={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: 2, background: 'var(--teal)', borderRadius: '0 0 6px 6px', boxShadow: '0 0 12px rgba(0,228,184,0.9)' }} />}
-              {/* Icon bubble when active */}
               <div style={{
                 width: 36, height: 28, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: active ? 'rgba(0,228,184,0.1)' : 'transparent',
@@ -315,15 +313,16 @@ export default function App() {
       {theme === 'dark' && <CursorSpotlight />}
       {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
 
-      {/* Floating AI button */}
+      {/* Floating AI button — bottom left, above mobile navbar */}
       <button onClick={() => setShowAI(p => !p)} title="موج AI" className="ai-float-btn logo-btn" style={{
-        position: 'fixed', top: 8, left: 8, zIndex: 700,
-        width: 40, height: 40, borderRadius: '50%',
+        position: 'fixed', bottom: 72, left: 16, zIndex: 700,
+        width: 44, height: 44, borderRadius: '50%',
         background: showAI ? 'rgba(255,71,87,0.9)' : 'linear-gradient(135deg,var(--teal),var(--violet))',
-        border: 'none', cursor: 'pointer', fontSize: 16,
+        border: 'none', cursor: 'pointer', fontSize: 18,
         boxShadow: showAI ? '0 4px 20px rgba(255,71,87,0.5)' : '0 6px 24px rgba(0,228,184,0.45)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.25s ease',
+        animation: showAI ? 'none' : 'pulseGlow 3s ease infinite',
       }}>
         {showAI ? '✕' : '🤖'}
       </button>
