@@ -408,6 +408,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
           courier: 'Hayyak',
           tracking_number: order.tracking_number || '',
           delivery_date: order.delivery_date || '',
+          order_created_at: order.created_at ? order.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
           notes: order.notes || '',
           discount_code: order.discount_code || '',
           discount_amount: order.discount_amount || 0,
@@ -432,7 +433,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         })
         setItems(repeatFrom.items || [])
       } else {
-        setForm({ source: 'instagram', status: statuses[0]?.id || 'new', delivery_cost: 0, discount_amount: 0 })
+        setForm({ source: 'instagram', status: statuses[0]?.id || 'new', delivery_cost: 0, discount_amount: 0, order_created_at: new Date().toISOString().split('T')[0] })
         setItems([])
       }
       setDupWarning(null)
@@ -545,10 +546,11 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
       }
 
       // Remove fields that don't exist in DB schema
-      const { order_date, ...formClean } = form
+      const { order_date, order_created_at, ...formClean } = form
 
       const payload = cleanDates({
         ...formClean,
+        ...(order_created_at ? { created_at: new Date(order_created_at).toISOString() } : {}),
         items,
         subtotal,
         cost,
@@ -656,6 +658,8 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         </div>
 
         <Input label="رقم التتبع" value={form.tracking_number || ''} onChange={e => setField('tracking_number', e.target.value)} dir="ltr" />
+
+        <Input label="تاريخ الطلب" type="date" value={form.order_created_at || ''} onChange={e => setField('order_created_at', e.target.value)} />
         {isEdit && form.delivery_date && (
           <div style={{ padding:'10px 12px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--radius-sm)' }}>
             <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>تاريخ التسليم</div>
