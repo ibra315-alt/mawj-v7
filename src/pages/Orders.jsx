@@ -531,7 +531,17 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
     // customer_name is optional
     setSaving(true)
     try {
-      const payload = {
+      // Convert empty date strings to null so Postgres doesn't reject them
+      const cleanDates = obj => {
+        const DATE_FIELDS = ['expected_delivery', 'order_date', 'created_at', 'updated_at']
+        const out = { ...obj }
+        DATE_FIELDS.forEach(k => {
+          if (out[k] === '' || out[k] === undefined) out[k] = null
+        })
+        return out
+      }
+
+      const payload = cleanDates({
         ...form,
         items,
         subtotal,
@@ -541,7 +551,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         delivery_cost: parseFloat(form.delivery_cost) || 0,
         discount_amount: parseFloat(form.discount_amount) || 0,
         updated_at: new Date().toISOString(),
-      }
+      })
       let saved
       if (isEdit) {
         saved = await DB.update('orders', order.id, payload)
