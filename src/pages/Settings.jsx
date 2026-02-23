@@ -595,26 +595,50 @@ function AppearanceTab({ theme, toggleTheme }) {
   function applyTheme(t) {
     setActiveTheme(t.id)
     localStorage.setItem('mawj_theme', t.id)
-    Object.entries(t.vars).forEach(([k, v]) => {
-      document.documentElement.style.setProperty(k, v)
-    })
-    // Auto bg-glass from new violet
-    const v = t.vars['--violet']
-    if (v) {
-      const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(v)
-      if (r) {
-        const rgb = `${parseInt(r[1], 16)},${parseInt(r[2], 16)},${parseInt(r[3], 16)}`
-        document.documentElement.style.setProperty('--bg-glass', `rgba(${rgb},0.07)`)
-        document.documentElement.style.setProperty('--bg-glass-hover', `rgba(${rgb},0.14)`)
-        document.documentElement.style.setProperty('--violet-soft', `rgba(${rgb},0.14)`)
-        document.documentElement.style.setProperty('--violet-faint', `rgba(${rgb},0.06)`)
-        document.documentElement.style.setProperty('--glass-border', `rgba(${rgb},0.18)`)
-        document.documentElement.style.setProperty('--glass-border-strong', `rgba(${rgb},0.30)`)
-      }
+    const root = document.documentElement
+    function hexRgb(hex) {
+      const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+      return r ? `${parseInt(r[1], 16)},${parseInt(r[2], 16)},${parseInt(r[3], 16)}` : null
     }
+    const bg = t.vars['--bg'], violet = t.vars['--violet'], vLight = t.vars['--violet-light']
+    const teal = t.vars['--teal'], pink = t.vars['--pink'] || vLight
+    const bgRgb = hexRgb(bg), vRgb = hexRgb(violet), tRgb = hexRgb(teal), pRgb = hexRgb(pink)
+    const all = {
+      '--bg': bg, '--bg-alt': t.vars['--bg-alt'] || bg,
+      '--violet': violet, '--violet-light': vLight, '--violet-bright': vLight,
+      '--violet-glow': vRgb ? `rgba(${vRgb},0.28)` : '',
+      '--violet-soft': vRgb ? `rgba(${vRgb},0.14)` : '',
+      '--violet-faint': vRgb ? `rgba(${vRgb},0.06)` : '',
+      '--teal': teal, '--teal-deep': teal,
+      '--teal-glow': tRgb ? `rgba(${tRgb},0.22)` : '',
+      '--teal-soft': tRgb ? `rgba(${tRgb},0.10)` : '',
+      '--teal-faint': tRgb ? `rgba(${tRgb},0.05)` : '',
+      '--pink': pink,
+      '--pink-glow': pRgb ? `rgba(${pRgb},0.22)` : '',
+      '--pink-soft': pRgb ? `rgba(${pRgb},0.10)` : '',
+      '--bg-card': bgRgb ? `rgba(${bgRgb},0.88)` : '',
+      '--bg-glass': vRgb ? `rgba(${vRgb},0.07)` : '',
+      '--bg-glass-hover': vRgb ? `rgba(${vRgb},0.14)` : '',
+      '--bg-hover': vRgb ? `rgba(${vRgb},0.08)` : '',
+      '--bg-border': vRgb ? `rgba(${vRgb},0.16)` : '',
+      '--bg-surface': vRgb ? `rgba(${vRgb},0.05)` : '',
+      '--sidebar-bg': bgRgb ? `rgba(${bgRgb},0.97)` : '',
+      '--header-bg': bgRgb ? `rgba(${bgRgb},0.93)` : '',
+      '--modal-bg': bgRgb ? `rgba(${bgRgb},0.99)` : '',
+      '--input-bg': vRgb ? `rgba(${vRgb},0.08)` : '',
+      '--input-border': vRgb ? `rgba(${vRgb},0.18)` : '',
+      '--input-focus': vRgb ? `rgba(${vRgb},0.35)` : '',
+      '--glass-border': vRgb ? `rgba(${vRgb},0.18)` : '',
+      '--glass-border-strong': vRgb ? `rgba(${vRgb},0.30)` : '',
+      '--glass-border-teal': tRgb ? `rgba(${tRgb},0.22)` : '',
+      '--shadow-card': bgRgb && vRgb ? `0 4px 32px rgba(${bgRgb},0.6), 0 1px 0 rgba(${vRgb},0.08) inset` : '',
+      '--shadow-float': bgRgb && vRgb ? `0 24px 64px rgba(${bgRgb},0.75), 0 0 0 1px rgba(${vRgb},0.10)` : '',
+      '--shadow-violet': vRgb ? `0 8px 32px rgba(${vRgb},0.35)` : '',
+      '--shadow-teal': tRgb ? `0 8px 32px rgba(${tRgb},0.28)` : '',
+    }
+    Object.entries(all).forEach(([k, v]) => { if (v) root.style.setProperty(k, v) })
     toast(`تم تطبيق ثيم ${t.name} ${t.emoji}`)
   }
-
   function applyFont(fontFamily) {
     document.documentElement.style.setProperty('--font', fontFamily)
     document.body.style.fontFamily = fontFamily

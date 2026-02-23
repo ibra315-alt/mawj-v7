@@ -279,8 +279,8 @@ export default function App() {
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
         height: 64, background: theme === 'light' ? 'rgba(232,229,245,0.98)' : 'rgba(5,7,18,0.97)',
         backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-        borderTop: theme === 'light' ? '1px solid rgba(37,99,235,0.14)' : '1px solid rgba(0,228,184,0.08)',
-        boxShadow: theme === 'light' ? '0 -4px 20px rgba(37,99,235,0.08)' : '0 -8px 32px rgba(0,0,0,0.4)',
+        borderTop: '1px solid var(--glass-border)',
+        boxShadow: '0 -8px 32px rgba(0,0,0,0.25)',
         display: 'flex', alignItems: 'stretch',
       }}>
         {MOBILE_NAV.map(item => {
@@ -297,7 +297,7 @@ export default function App() {
               {active && <div style={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: 2, background: 'var(--teal)', borderRadius: '0 0 6px 6px', boxShadow: '0 0 12px rgba(0,228,184,0.9)' }} />}
               <div style={{
                 width: 36, height: 28, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: active ? 'rgba(0,228,184,0.1)' : 'transparent',
+                background: active ? 'var(--teal-soft)' : 'transparent',
                 transition: 'background 0.2s ease',
               }}>
                 <span style={{ fontSize: 18, lineHeight: 1, filter: active ? 'none' : 'grayscale(0.5)' }}>{item.icon}</span>
@@ -385,7 +385,7 @@ function SidebarContent({ page, onNavigate, user, onLogout, onClose, theme, togg
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Brand mark */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ position: 'relative', width: 38, height: 38, borderRadius: 12, background: 'var(--teal-soft)', border: '1px solid rgba(0,228,184,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,228,184,0.15)', animation: 'pulseGlow 4s ease-in-out infinite', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 38, height: 38, borderRadius: 12, background: 'var(--teal-soft)', border: '1px solid var(--glass-border-teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px var(--teal-glow)', animation: 'pulseGlow 4s ease-in-out infinite', flexShrink: 0 }}>
               <MawjLogo size={26} color="var(--teal)" animated />
             </div>
             <div>
@@ -414,8 +414,8 @@ function SidebarContent({ page, onNavigate, user, onLogout, onClose, theme, togg
               style={{
                 display: 'flex', alignItems: 'center', gap: 9,
                 padding: '9px 10px', borderRadius: 10,
-                border: `1px solid ${active ? 'rgba(0,228,184,0.16)' : 'transparent'}`,
-                background: active ? 'rgba(0,228,184,0.07)' : 'transparent',
+                border: `1px solid ${active ? 'var(--glass-border-teal)' : 'transparent'}`,
+                background: active ? 'var(--teal-faint)' : 'transparent',
                 color: active ? 'var(--teal)' : 'var(--text-sec)',
                 fontWeight: active ? 700 : 400, fontSize: 13,
                 cursor: 'pointer', width: '100%', textAlign: 'right',
