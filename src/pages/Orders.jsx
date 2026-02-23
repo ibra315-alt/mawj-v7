@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { DB, Settings, generateOrderNumber, subscribeToOrders } from '../data/db'
+import { DB, Settings, generateOrderNumber } from '../data/db'
+import { subscribeOrders } from '../data/realtime'
 import { formatCurrency, formatDate, SOURCE_LABELS, SOURCE_ICONS } from '../data/constants'
 import { Btn, Card, Badge, Modal, Input, Select, Textarea, Spinner, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcSearch, IcFilter, IcGrid, IcList, IcEdit, IcDelete, IcEye, IcWhatsapp, IcClose, IcSave } from '../components/Icons'
@@ -28,7 +29,7 @@ export default function Orders({ user }) {
 
   useEffect(() => {
     loadAll()
-    const unsub = subscribeToOrders(() => loadOrders())
+    const unsub = subscribeOrders(() => loadOrders())
     return unsub
   }, [])
 
@@ -101,8 +102,8 @@ export default function Orders({ user }) {
     <div className="page">
       <PageHeader title="الطلبات" subtitle="جاري التحميل..." />
       <SkeletonStats count={4} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-        {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} rows={2} />)}
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:16 }}>
+        {[1,2,3,4,5].map(i => <SkeletonCard key={i} rows={2} />)}
       </div>
     </div>
   )
@@ -123,47 +124,47 @@ export default function Orders({ user }) {
       />
 
       {/* ── Stats bar ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 16 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:16 }}>
         {[
-          { label: 'إجمالي', value: orders.length, color: 'var(--blue)' },
-          { label: 'إيرادات', value: formatCurrency(orders.reduce((s, o) => s + (o.total || 0), 0)), color: 'var(--teal)' },
-          { label: 'معلق', value: orders.filter(o => !['delivered', 'returned', 'cancelled'].includes(o.status)).length, color: 'var(--amber)' },
-          { label: 'مسلم', value: orders.filter(o => o.status === 'delivered').length, color: 'var(--green)' },
+          { label:'إجمالي', value: orders.length, color:'var(--blue)' },
+          { label:'إيرادات', value: formatCurrency(orders.reduce((s,o)=>s+(o.total||0),0)), color:'var(--teal)' },
+          { label:'معلق', value: orders.filter(o=>!['delivered','returned','cancelled'].includes(o.status)).length, color:'var(--amber)' },
+          { label:'مسلم', value: orders.filter(o=>o.status==='delivered').length, color:'var(--green)' },
         ].map(s => (
-          <div key={s.label} style={{ background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: s.color }}>{s.value}</div>
+          <div key={s.label} style={{ background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:'10px 12px', textAlign:'center' }}>
+            <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>{s.label}</div>
+            <div style={{ fontSize:15, fontWeight:900, color:s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
         {/* Row 1: search */}
-        <div style={{ position: 'relative' }}>
-          <IcSearch size={15} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+        <div style={{ position:'relative' }}>
+          <IcSearch size={15} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="بحث بالاسم، رقم الطلب، الهاتف..."
-            style={{ width: '100%', padding: '10px 34px 10px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', outline: 'none' }}
+            style={{ width:'100%', padding:'10px 34px 10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', outline:'none' }}
           />
         </div>
         {/* Row 2: status · source · view toggle */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-            style={{ flex: 1, padding: '9px 10px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
+            style={{ flex:1, padding:'9px 10px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
             <option value="all">كل الحالات</option>
             {statuses.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
           <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
-            style={{ flex: 1, padding: '9px 10px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
+            style={{ flex:1, padding:'9px 10px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
             <option value="all">كل المصادر</option>
-            {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.entries(SOURCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <div style={{ display: 'flex', gap: 3, background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', padding: 3, flexShrink: 0 }}>
-            <button onClick={() => setViewMode('kanban')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'kanban' ? 'var(--teal)' : 'transparent', color: viewMode === 'kanban' ? '#050c1a' : 'var(--text-muted)', cursor: 'pointer' }}><IcGrid size={15} /></button>
-            <button onClick={() => setViewMode('list')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'list' ? 'var(--teal)' : 'transparent', color: viewMode === 'list' ? '#050c1a' : 'var(--text-muted)', cursor: 'pointer' }}><IcList size={15} /></button>
+          <div style={{ display:'flex', gap:3, background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:3, flexShrink:0 }}>
+            <button onClick={() => setViewMode('kanban')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='kanban'?'var(--teal)':'transparent', color:viewMode==='kanban'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcGrid size={15}/></button>
+            <button onClick={() => setViewMode('list')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='list'?'var(--teal)':'transparent', color:viewMode==='list'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcList size={15}/></button>
           </div>
         </div>
       </div>
@@ -181,46 +182,46 @@ export default function Orders({ user }) {
 
       {/* LIST VIEW */}
       {viewMode === 'list' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {filtered.length === 0 ? (
-            <Empty title="لا يوجد طلبات" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14} /> طلب جديد</Btn>} />
+            <Empty title="لا يوجد طلبات" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14}/> طلب جديد</Btn>} />
           ) : (
             filtered.map(order => {
               const statusObj = statuses.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
               return (
                 <div key={order.id} className="list-row" onClick={() => { setViewOrder(order); setShowView(true) }}
-                  style={{ background: 'var(--bg-glass)', border: `1.5px solid var(--glass-border)`, borderRadius: 'var(--radius)', padding: '14px 16px', cursor: 'pointer', borderRight: `3px solid ${statusObj.color}` }}
+                  style={{ background:'var(--bg-glass)', border:`1.5px solid var(--glass-border)`, borderRadius:'var(--radius)', padding:'14px 16px', cursor:'pointer', borderRight:`3px solid ${statusObj.color}` }}
                 >
                   {/* Row 1: order number + status + total */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', fontWeight: 600 }}>{order.order_number}</span>
-                      <Badge color={statusObj.color} style={{ fontSize: 11 }}>{statusObj.label}</Badge>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600 }}>{order.order_number}</span>
+                      <Badge color={statusObj.color} style={{ fontSize:11 }}>{statusObj.label}</Badge>
                     </div>
-                    <span style={{ fontWeight: 900, fontSize: 15, color: 'var(--teal)' }}>{formatCurrency(order.total)}</span>
+                    <span style={{ fontWeight:900, fontSize:15, color:'var(--teal)' }}>{formatCurrency(order.total)}</span>
                   </div>
                   {/* Row 2: phone + city */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: order.items?.length ? 8 : 0 }}>
-                    {order.customer_phone && <span style={{ fontSize: 13, fontWeight: 700, direction: 'ltr' }}>{order.customer_phone}</span>}
-                    {order.customer_city && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>📍 {order.customer_city}</span>}
+                  <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:order.items?.length ? 8 : 0 }}>
+                    {order.customer_phone && <span style={{ fontSize:13, fontWeight:700, direction:'ltr' }}>{order.customer_phone}</span>}
+                    {order.customer_city && <span style={{ fontSize:12, color:'var(--text-muted)' }}>📍 {order.customer_city}</span>}
                     {order.profit !== undefined && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: order.profit >= 0 ? 'var(--green)' : 'var(--red)', marginRight: 'auto' }}>
+                      <span style={{ fontSize:12, fontWeight:700, color: order.profit >= 0 ? 'var(--green)' : 'var(--red)', marginRight:'auto' }}>
                         ربح: {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
                       </span>
                     )}
                   </div>
                   {/* Row 3: products */}
                   {order.items?.length > 0 && (
-                    <div style={{ fontSize: 11, color: 'var(--text-sec)', marginBottom: 8 }}>
-                      {order.items.slice(0, 3).map(i => `${i.name} ×${i.qty}`).join(' · ')}
-                      {order.items.length > 3 && ` +${order.items.length - 3}`}
+                    <div style={{ fontSize:11, color:'var(--text-sec)', marginBottom:8 }}>
+                      {order.items.slice(0,3).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
+                      {order.items.length > 3 && ` +${order.items.length-3}`}
                     </div>
                   )}
                   {/* Row 4: actions */}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }} onClick={e => e.stopPropagation()}>
-                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={13} /> عرض</Btn>
-                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={13} /> تعديل</Btn>
-                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={13} /></Btn>
+                  <div style={{ display:'flex', gap:6, marginTop:4 }} onClick={e => e.stopPropagation()}>
+                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={13}/> عرض</Btn>
+                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={13}/> تعديل</Btn>
+                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={13}/></Btn>
                   </div>
                 </div>
               )
@@ -398,9 +399,9 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         </Select>
 
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-sec)', letterSpacing: '0.03em', display: 'block', marginBottom: 5 }}>الشركة الناقلة</label>
-          <div style={{ padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--text-sec)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>🚚</span> <span style={{ fontWeight: 600, color: 'var(--teal)' }}>Hayyak</span>
+          <label style={{fontSize:11,fontWeight:600,color:'var(--text-sec)',letterSpacing:'0.03em',display:'block',marginBottom:5}}>الشركة الناقلة</label>
+          <div style={{padding:'9px 12px',background:'var(--bg-surface)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:8}}>
+            <span>🚚</span> <span style={{fontWeight:600,color:'var(--teal)'}}>Hayyak</span>
           </div>
         </div>
 
@@ -632,49 +633,49 @@ function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 20, alignItems: 'flex-start', minHeight: 300 }}>
+    <div style={{ display:'flex', gap:14, overflowX:'auto', paddingBottom:20, alignItems:'flex-start', minHeight:300 }}>
       {statuses.map(status => {
         const col = orders.filter(o => o.status === status.id)
-        const total = col.reduce((s, o) => s + (o.total || 0), 0)
+        const total = col.reduce((s,o) => s+(o.total||0), 0)
         const isOver = dragOver === status.id
 
         return (
           <div
             key={status.id}
-            style={{ minWidth: 270, flex: '0 0 270px', transition: 'all 0.2s ease' }}
+            style={{ minWidth:270, flex:'0 0 270px', transition:'all 0.2s ease' }}
             onDragOver={e => onDragOver(e, status.id)}
             onDragLeave={() => setDragOver(null)}
             onDrop={e => onDrop(e, status.id)}
           >
             {/* Column header */}
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 14px', marginBottom: 10,
+              display:'flex', alignItems:'center', justifyContent:'space-between',
+              padding:'10px 14px', marginBottom:10,
               background: isOver ? `${status.color}20` : `${status.color}10`,
-              border: `1.5px solid ${isOver ? status.color : status.color + '30'}`,
-              borderRadius: 'var(--radius)',
-              transition: 'all 0.2s ease',
+              border:`1.5px solid ${isOver ? status.color : status.color+'30'}`,
+              borderRadius:'var(--radius)',
+              transition:'all 0.2s ease',
               boxShadow: isOver ? `0 0 16px ${status.color}30` : 'none',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: status.color, boxShadow: `0 0 6px ${status.color}`, flexShrink: 0 }} />
-                <span style={{ fontWeight: 800, fontSize: 13, color: status.color }}>{status.label}</span>
-                <span style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', background: `${status.color}22`, borderRadius: 'var(--radius-pill)', color: status.color }}>{col.length}</span>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:9, height:9, borderRadius:'50%', background:status.color, boxShadow:`0 0 6px ${status.color}`, flexShrink:0 }} />
+                <span style={{ fontWeight:800, fontSize:13, color:status.color }}>{status.label}</span>
+                <span style={{ fontSize:11, fontWeight:800, padding:'2px 8px', background:`${status.color}22`, borderRadius:'var(--radius-pill)', color:status.color }}>{col.length}</span>
               </div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{total.toLocaleString()} د.إ</span>
+              <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>{total.toLocaleString()} د.إ</span>
             </div>
 
             {/* Drop zone */}
             <div style={{
-              display: 'flex', flexDirection: 'column', gap: 9,
-              minHeight: 80, padding: isOver ? '6px' : '0',
+              display:'flex', flexDirection:'column', gap:9,
+              minHeight:80, padding: isOver ? '6px' : '0',
               background: isOver ? `${status.color}06` : 'transparent',
-              borderRadius: 'var(--radius)',
+              borderRadius:'var(--radius)',
               border: isOver ? `2px dashed ${status.color}50` : '2px dashed transparent',
-              transition: 'all 0.2s ease',
+              transition:'all 0.2s ease',
             }}>
               {col.length === 0 && !isOver && (
-                <div style={{ padding: '24px 10px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, background: 'var(--bg-glass)', borderRadius: 'var(--radius)', border: '1.5px dashed var(--glass-border)' }}>
+                <div style={{ padding:'24px 10px', textAlign:'center', color:'var(--text-muted)', fontSize:12, background:'var(--bg-glass)', borderRadius:'var(--radius)', border:'1.5px dashed var(--glass-border)' }}>
                   اسحب طلباً هنا
                 </div>
               )}
@@ -686,66 +687,66 @@ function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
                   onDragStart={e => onDragStart(e, order.id)}
                   onDragEnd={onDragEnd}
                   style={{
-                    background: 'var(--bg-glass)',
-                    backdropFilter: 'var(--blur-md)',
-                    border: `1.5px solid ${dragId === order.id ? status.color + '60' : 'var(--glass-border)'}`,
-                    borderRadius: 'var(--radius)',
-                    padding: '12px 14px',
-                    cursor: 'grab',
-                    transition: 'all 0.2s ease',
-                    opacity: dropping === order.id ? 0.5 : 1,
-                    boxShadow: dragId === order.id ? `0 8px 24px rgba(0,0,0,0.4)` : 'var(--shadow-card)',
-                    userSelect: 'none',
-                    position: 'relative', overflow: 'hidden',
+                    background:'var(--bg-glass)',
+                    backdropFilter:'var(--blur-md)',
+                    border:`1.5px solid ${dragId===order.id ? status.color+'60' : 'var(--glass-border)'}`,
+                    borderRadius:'var(--radius)',
+                    padding:'12px 14px',
+                    cursor:'grab',
+                    transition:'all 0.2s ease',
+                    opacity: dropping===order.id ? 0.5 : 1,
+                    boxShadow: dragId===order.id ? `0 8px 24px rgba(0,0,0,0.4)` : 'var(--shadow-card)',
+                    userSelect:'none',
+                    position:'relative', overflow:'hidden',
                   }}
                   className="list-row"
                 >
                   {/* Color top strip */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${status.color},${status.color}80)` }} />
+                  <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${status.color},${status.color}80)` }} />
 
                   {/* Order number */}
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace', fontWeight: 600, marginBottom: 7, letterSpacing: '0.05em' }}>
+                  <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600, marginBottom:7, letterSpacing:'0.05em' }}>
                     {order.order_number}
                   </div>
 
                   {/* Customer */}
-                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, lineHeight: 1.3 }}>
+                  <div style={{ fontWeight:700, fontSize:13, marginBottom:4, lineHeight:1.3 }}>
                     {order.customer_name || order.customer_phone || 'طلب'}
                   </div>
 
                   {order.customer_city && (
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>📍 {order.customer_city}</div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8 }}>📍 {order.customer_city}</div>
                   )}
 
                   {/* Items preview */}
                   {order.items?.length > 0 && (
-                    <div style={{ fontSize: 11, color: 'var(--text-sec)', marginBottom: 8, lineHeight: 1.4 }}>
-                      {order.items.slice(0, 2).map(i => `${i.name} ×${i.qty}`).join(' · ')}
-                      {order.items.length > 2 && ` +${order.items.length - 2}`}
+                    <div style={{ fontSize:11, color:'var(--text-sec)', marginBottom:8, lineHeight:1.4 }}>
+                      {order.items.slice(0,2).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
+                      {order.items.length > 2 && ` +${order.items.length-2}`}
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 900, fontSize: 14, color: 'var(--teal)' }}>{(order.total || 0).toLocaleString()} د.إ</span>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <span style={{ fontWeight:900, fontSize:14, color:'var(--teal)' }}>{(order.total||0).toLocaleString()} د.إ</span>
+                    <div style={{ display:'flex', gap:4 }}>
                       <button
                         onClick={e => { e.stopPropagation(); onView(order) }}
-                        style={{ background: 'rgba(0,228,184,0.12)', border: '1px solid rgba(0,228,184,0.22)', borderRadius: 'var(--radius-pill)', padding: '4px 10px', color: 'var(--teal)', cursor: 'pointer', fontSize: 11, fontWeight: 700, fontFamily: 'inherit' }}
+                        style={{ background:'rgba(0,228,184,0.12)', border:'1px solid rgba(0,228,184,0.22)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--teal)', cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'inherit' }}
                       >عرض</button>
                       <button
                         onClick={e => { e.stopPropagation(); onEdit(order) }}
-                        style={{ background: 'var(--bg-glass)', border: '1.5px solid var(--glass-border)', borderRadius: 'var(--radius-pill)', padding: '4px 10px', color: 'var(--text-sec)', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}
+                        style={{ background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--text-sec)', cursor:'pointer', fontSize:11, fontFamily:'inherit' }}
                       >تعديل</button>
                     </div>
                   </div>
 
                   {/* Drag handle hint */}
-                  <div style={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 10, opacity: 0.4, pointerEvents: 'none' }}>⠿</div>
+                  <div style={{ position:'absolute', top:'50%', left:8, transform:'translateY(-50%)', color:'var(--text-muted)', fontSize:10, opacity:0.4, pointerEvents:'none' }}>⠿</div>
                 </div>
               ))}
 
               {isOver && (
-                <div style={{ height: 60, border: `2px dashed ${status.color}60`, borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: status.color, fontSize: 12, fontWeight: 700, background: `${status.color}08` }}>
+                <div style={{ height:60, border:`2px dashed ${status.color}60`, borderRadius:'var(--radius)', display:'flex', alignItems:'center', justifyContent:'center', color:status.color, fontSize:12, fontWeight:700, background:`${status.color}08` }}>
                   ⬇ أفلت هنا
                 </div>
               )}
