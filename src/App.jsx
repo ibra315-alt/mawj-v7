@@ -480,9 +480,11 @@ function Footer() {
   return (
     <footer style={{
       padding: '14px 28px',
+      paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
       borderTop: '1px solid var(--bg-border)',
       textAlign: 'center',
       flexShrink: 0,
+      marginBottom: 0,
     }}>
       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
         تم التصميم بواسطة{' '}
