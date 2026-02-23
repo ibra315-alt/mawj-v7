@@ -266,7 +266,7 @@ export default function App() {
         </header>
 
         {/* Page content — scrollable, with bottom padding for nav */}
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 16px))' }}>
           <div style={{ flex: 1 }}>
             {renderPage()}
           </div>
@@ -317,14 +317,13 @@ export default function App() {
 
       {/* Floating AI button */}
       <button onClick={() => setShowAI(p => !p)} title="موج AI" className="ai-float-btn logo-btn" style={{
-        position: 'fixed', bottom: 148, left: 16, zIndex: 700,
-        width: 50, height: 50, borderRadius: '50%',
+        position: 'fixed', top: 8, left: 8, zIndex: 700,
+        width: 40, height: 40, borderRadius: '50%',
         background: showAI ? 'rgba(255,71,87,0.9)' : 'linear-gradient(135deg,var(--teal),var(--violet))',
-        border: 'none', cursor: 'pointer', fontSize: 20,
+        border: 'none', cursor: 'pointer', fontSize: 16,
         boxShadow: showAI ? '0 4px 20px rgba(255,71,87,0.5)' : '0 6px 24px rgba(0,228,184,0.45)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.25s ease',
-        animation: showAI ? 'none' : 'pulseGlow 3s ease infinite',
       }}>
         {showAI ? '✕' : '🤖'}
       </button>
@@ -480,11 +479,10 @@ function Footer() {
   return (
     <footer style={{
       padding: '14px 28px',
-      paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+      paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 16px))',
       borderTop: '1px solid var(--bg-border)',
       textAlign: 'center',
       flexShrink: 0,
-      marginBottom: 0,
     }}>
       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
         تم التصميم بواسطة{' '}
