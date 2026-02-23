@@ -27,7 +27,10 @@ export default function Orders({ user }) {
   const [deleteId, setDeleteId] = useState(null)
   const [deleting, setDeleting]     = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [repeatOrder, setRepeatOrder] = useState(null)
+  const [repeatOrder, setRepeatOrder]   = useState(null)
+  const [templates, setTemplates]       = useState([])
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [quickStatusId, setQuickStatusId] = useState(null) // order id with open status picker
 
   useEffect(() => {
     loadAll()
@@ -44,12 +47,14 @@ export default function Orders({ user }) {
         Settings.get('business'),
         DB.list('discounts', { filters: [['active', 'eq', true]] }),
       ])
+      const tmplList = await Settings.get('order_templates')
       setOrders(ords.reverse())
       setStatuses(statusList || [])
       setProducts(productList || [])
       setCouriers(business?.couriers || [])
       setDeliveryZones(business?.delivery_zones || [])
       setDiscounts(discList)
+      setTemplates(tmplList || [])
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
@@ -93,6 +98,33 @@ export default function Orders({ user }) {
     finally { setDeleting(false) }
   }
 
+  async function saveTemplate(order) {
+    const name = prompt('اسم القالب (مثال: طقم كريستال دبي):')
+    if (!name?.trim()) return
+    const tmpl = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      items: order.items || [],
+      customer_city: order.customer_city || '',
+      delivery_zone: order.delivery_zone || '',
+      delivery_cost: order.delivery_cost || 0,
+      source: order.source || 'instagram',
+    }
+    const updated = [...templates, tmpl]
+    await Settings.set('order_templates', updated)
+    Settings.clearCache('order_templates')
+    setTemplates(updated)
+    toast('تم حفظ القالب ✓')
+  }
+
+  async function deleteTemplate(id) {
+    const updated = templates.filter(t => t.id !== id)
+    await Settings.set('order_templates', updated)
+    Settings.clearCache('order_templates')
+    setTemplates(updated)
+    toast('تم حذف القالب')
+  }
+
   const filtered = orders.filter(o => {
     const matchSearch = !search || o.customer_name.includes(search) || o.order_number.includes(search) || o.customer_phone?.includes(search)
     const matchStatus = filterStatus === 'all' || o.status === filterStatus
@@ -118,7 +150,12 @@ export default function Orders({ user }) {
         subtitle={`${orders.length} طلب إجمالي • ${filtered.length} معروض`}
         actions={
           <>
-            <Btn onClick={() => { setEditOrder(null); setShowForm(true) }} style={{ gap: 6 }}>
+            {templates.length > 0 && (
+              <Btn variant="secondary" onClick={() => setShowTemplates(true)} style={{ gap:6 }}>
+                📋 قوالب
+              </Btn>
+            )}
+            <Btn onClick={() => { setEditOrder(null); setRepeatOrder(null); setShowForm(true) }} style={{ gap: 6 }}>
               <IcPlus size={16} /> طلب جديد
             </Btn>
           </>
@@ -232,7 +269,13 @@ export default function Orders({ user }) {
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600 }}>{order.order_number}</span>
-                      <Badge color={statusObj.color} style={{ fontSize:11 }}>{statusObj.label}</Badge>
+                      {/* Tap status badge to quick-change */}
+                      <span
+                        onClick={e => { e.stopPropagation(); setQuickStatusId(order.id) }}
+                        style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:`${statusObj.color}22`, color:statusObj.color, border:`1px solid ${statusObj.color}44`, cursor:'pointer', userSelect:'none' }}
+                      >
+                        {statusObj.label} <span style={{fontSize:9,opacity:0.7}}>▼</span>
+                      </span>
                     </div>
                     <span style={{ fontWeight:900, fontSize:15, color:'var(--teal)' }}>{formatCurrency(order.total)}</span>
                   </div>
@@ -264,6 +307,26 @@ export default function Orders({ user }) {
             })
           )}
         </div>
+      )}
+
+      {/* TEMPLATES MODAL */}
+      <OrderTemplatesModal
+        open={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        templates={templates}
+        onUse={tmpl => { setRepeatOrder(tmpl); setShowTemplates(false); setShowForm(true) }}
+        onDelete={deleteTemplate}
+      />
+
+      {/* QUICK STATUS PICKER */}
+      {quickStatusId && (
+        <QuickStatusPicker
+          orderId={quickStatusId}
+          statuses={statuses}
+          currentStatus={orders.find(o=>o.id===quickStatusId)?.status}
+          onSelect={async (id, status) => { await handleStatusChange(id, status); setQuickStatusId(null) }}
+          onClose={() => setQuickStatusId(null)}
+        />
       )}
 
       {/* ORDER FORM MODAL */}
@@ -298,6 +361,7 @@ export default function Orders({ user }) {
         statuses={statuses}
         onEdit={() => { setEditOrder(viewOrder); setShowView(false); setShowForm(true) }}
         onRepeat={order => { setRepeatOrder(order); setShowView(false); setShowForm(true) }}
+        onSaveTemplate={saveTemplate}
         onStatusChange={async (id, status) => {
           await handleStatusChange(id, status)
           setViewOrder(prev => prev ? { ...prev, status } : prev)
@@ -567,7 +631,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
 }
 
 // ─── ORDER VIEW MODAL ────────────────────────────────────────
-function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange, onRepeat }) {
+function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange, onRepeat, onSaveTemplate }) {
   if (!order) return null
   const statusObj = statuses?.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
 
@@ -676,6 +740,11 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
           {onRepeat && (
             <Btn variant="ghost" onClick={() => onRepeat(order)} style={{ borderColor:'var(--violet-soft)', color:'var(--violet-light)' }}>
               🔁 تكرار
+            </Btn>
+          )}
+          {onSaveTemplate && (
+            <Btn variant="ghost" onClick={() => onSaveTemplate(order)} style={{ borderColor:'rgba(245,158,11,0.3)', color:'#f59e0b' }}>
+              📋 حفظ كقالب
             </Btn>
           )}
         </div>
@@ -988,6 +1057,101 @@ function BottomSheetFilters({ open, onClose, filterStatus, setFilterStatus, filt
         @keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
         @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
       `}</style>
+    </>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   ORDER TEMPLATES MODAL
+   Browse, use, or delete saved templates
+══════════════════════════════════════════════ */
+function OrderTemplatesModal({ open, onClose, templates, onUse, onDelete }) {
+  if (!open) return null
+  return (
+    <Modal open={open} onClose={onClose} title="قوالب الطلبات" maxWidth={480}>
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        {templates.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'32px 0', color:'var(--text-muted)' }}>
+            <div style={{ fontSize:40, marginBottom:10 }}>📋</div>
+            <div style={{ fontWeight:700, marginBottom:6 }}>لا يوجد قوالب بعد</div>
+            <div style={{ fontSize:12 }}>افتح أي طلب واضغط "حفظ كقالب" لإنشاء قالب</div>
+          </div>
+        ) : templates.map(t => (
+          <div key={t.id} style={{
+            display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
+            background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)',
+            borderRadius:'var(--radius)', 
+          }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontWeight:800, fontSize:14, color:'var(--text)', marginBottom:3 }}>{t.name}</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)' }}>
+                {t.items?.length > 0
+                  ? t.items.map(i=>`${i.name} ×${i.qty}`).join(' · ')
+                  : 'بدون منتجات'}
+                {t.customer_city ? ` • ${t.customer_city}` : ''}
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+              <Btn size="sm" onClick={() => onUse(t)}>استخدام</Btn>
+              <Btn variant="danger" size="sm" onClick={() => onDelete(t.id)}>✕</Btn>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   QUICK STATUS PICKER
+   Floating pill menu that appears when tapping
+   status badge on a list row
+══════════════════════════════════════════════ */
+function QuickStatusPicker({ orderId, statuses, currentStatus, onSelect, onClose }) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:997 }} />
+      {/* Bottom sheet style on mobile */}
+      <div style={{
+        position:'fixed', bottom:0, left:0, right:0, zIndex:998,
+        background:'var(--modal-bg)',
+        backdropFilter:'blur(32px)', WebkitBackdropFilter:'blur(32px)',
+        border:'1.5px solid var(--glass-border-strong)',
+        borderRadius:'24px 24px 0 0',
+        padding:'16px 20px env(safe-area-inset-bottom,20px)',
+        animation:'slideUp 0.22s ease both',
+      }}>
+        {/* Handle */}
+        <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}>
+          <div style={{ width:36, height:4, borderRadius:2, background:'var(--glass-border-strong)' }} />
+        </div>
+        <div style={{ fontWeight:800, fontSize:15, color:'var(--text)', marginBottom:14, textAlign:'center' }}>
+          تغيير حالة الطلب
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {statuses.map(s => (
+            <button
+              key={s.id}
+              onClick={() => onSelect(orderId, s.id)}
+              style={{
+                padding:'13px 16px', borderRadius:'var(--radius)',
+                border:`1.5px solid ${currentStatus===s.id ? s.color : 'var(--glass-border)'}`,
+                background: currentStatus===s.id ? `${s.color}18` : 'var(--bg-glass)',
+                color: currentStatus===s.id ? s.color : 'var(--text)',
+                cursor:'pointer', fontFamily:'inherit', fontSize:14,
+                fontWeight: currentStatus===s.id ? 800 : 500,
+                display:'flex', alignItems:'center', gap:10,
+                transition:'all 0.15s ease',
+              }}
+            >
+              <span style={{ width:10, height:10, borderRadius:'50%', background:s.color, flexShrink:0, boxShadow: currentStatus===s.id ? `0 0 8px ${s.color}` : 'none' }} />
+              {s.label}
+              {currentStatus===s.id && <span style={{ marginRight:'auto', fontSize:16 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      </div>
     </>
   )
 }
