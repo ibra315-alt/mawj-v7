@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 /* ══════════════════════════════════════════════════
    موج UI v8.5 — Indigo · Violet · Teal glassmorphism
@@ -508,11 +509,11 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
 
   if (!open) return null
 
-  /* ── MOBILE: full-screen page takeover — navbar is behind zIndex:9000 ── */
+  /* ── MOBILE: full-screen page takeover ── */
   if (mobile) {
-    return (
+    return createPortal(
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 9000,
+        position: 'fixed', inset: 0, zIndex: 99999,
         background: 'var(--bg)',
         display: 'flex', flexDirection: 'column',
         animation: 'pageIn 0.22s var(--ease-smooth) both',
@@ -544,17 +545,16 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
             fontSize: 16, fontWeight: 900, margin: 0,
             color: 'var(--text)', letterSpacing: '-0.01em',
           }}>{title}</h2>
-          {/* spacer to center title */}
           <div style={{ width: 64 }} />
         </div>
         {/* Scrollable body */}
         <div style={{
           flex: 1, overflowY: 'auto', overflowX: 'hidden',
-          padding: '16px 16px 16px',
+          padding: '16px',
           WebkitOverflowScrolling: 'touch',
         }}>
           {children}
-          {/* Footer buttons INSIDE scroll area on mobile — always visible */}
+          {/* Footer buttons INSIDE scroll — always visible, never hidden */}
           {footer && (
             <div style={{
               marginTop: 24,
@@ -562,9 +562,8 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
               borderTop: '1px solid var(--glass-border)',
               display: 'flex', gap: 10,
               flexDirection: 'column',
-              paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))',
+              paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 16px))',
             }}>
-              {/* Render footer children as full-width buttons */}
               {React.Children.map(footer, child =>
                 child ? React.cloneElement(child, {
                   style: {
@@ -579,15 +578,16 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
             </div>
           )}
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 
   /* ── DESKTOP: centered modal ── */
-  return (
+  return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 9000,
+        position: 'fixed', inset: 0, zIndex: 99999,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'rgba(7,5,28,0.82)',
         backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
@@ -607,13 +607,11 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
         animation: 'modalIn 0.22s var(--ease-smooth) both',
         overflow: 'hidden',
       }}>
-        {/* Violet-teal top accent line */}
         <div style={{
           height: 2, flexShrink: 0,
           background: 'linear-gradient(90deg,transparent,var(--violet-light),var(--teal),var(--pink),transparent)',
           opacity: 0.6,
         }} />
-        {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '14px 20px',
@@ -629,11 +627,9 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
           }}>✕</button>
           <h2 style={{ fontSize: 'var(--t-md)', fontWeight: 800, letterSpacing: '-0.01em', margin: 0, color: 'var(--text)' }}>{title}</h2>
         </div>
-        {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 'var(--s5)', WebkitOverflowScrolling: 'touch' }}>
           {children}
         </div>
-        {/* Sticky footer */}
         {footer && (
           <div style={{
             padding: '14px 20px',
@@ -646,8 +642,141 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
+}
+{/* Top accent bar */ }
+<div style={{
+  height: 3, flexShrink: 0,
+  background: 'linear-gradient(90deg, var(--violet-light), var(--teal), var(--pink))',
+}} />
+{/* Header */ }
+<div style={{
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  padding: '14px 16px',
+  borderBottom: '1px solid var(--glass-border)',
+  flexShrink: 0,
+  background: 'var(--header-bg)',
+  backdropFilter: 'var(--blur-md)', WebkitBackdropFilter: 'var(--blur-md)',
+}}>
+  <button onClick={onClose} style={{
+    display: 'flex', alignItems: 'center', gap: 6,
+    background: 'none', border: 'none',
+    color: 'var(--teal)', fontSize: 14, fontWeight: 700,
+    cursor: 'pointer', fontFamily: 'inherit',
+    WebkitTapHighlightColor: 'transparent', padding: '4px 0',
+  }}>
+    ← رجوع
+  </button>
+  <h2 style={{
+    fontSize: 16, fontWeight: 900, margin: 0,
+    color: 'var(--text)', letterSpacing: '-0.01em',
+  }}>{title}</h2>
+  {/* spacer to center title */}
+  <div style={{ width: 64 }} />
+</div>
+{/* Scrollable body */ }
+<div style={{
+  flex: 1, overflowY: 'auto', overflowX: 'hidden',
+  padding: '16px 16px 16px',
+  WebkitOverflowScrolling: 'touch',
+}}>
+  {children}
+  {/* Footer buttons INSIDE scroll area on mobile — always visible */}
+  {footer && (
+    <div style={{
+      marginTop: 24,
+      paddingTop: 16,
+      borderTop: '1px solid var(--glass-border)',
+      display: 'flex', gap: 10,
+      flexDirection: 'column',
+      paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))',
+    }}>
+      {/* Render footer children as full-width buttons */}
+      {React.Children.map(footer, child =>
+        child ? React.cloneElement(child, {
+          style: {
+            ...child.props?.style,
+            width: '100%',
+            justifyContent: 'center',
+            padding: '14px 20px',
+            fontSize: 15,
+          }
+        }) : null
+      )}
+    </div>
+  )}
+</div>
+      </div >
+    )
+  }
+
+/* ── DESKTOP: centered modal ── */
+return (
+  <div
+    style={{
+      position: 'fixed', inset: 0, zIndex: 9000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(7,5,28,0.82)',
+      backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+      padding: '20px',
+    }}
+    onClick={e => { if (e.target === e.currentTarget) onClose() }}
+  >
+    <div style={{
+      width: '100%', maxWidth: width,
+      maxHeight: '88dvh',
+      display: 'flex', flexDirection: 'column',
+      background: 'var(--modal-bg)',
+      backdropFilter: 'var(--blur-lg)', WebkitBackdropFilter: 'var(--blur-lg)',
+      border: '1.5px solid var(--glass-border-strong)',
+      borderRadius: 'var(--radius-xl)',
+      boxShadow: 'var(--shadow-float)',
+      animation: 'modalIn 0.22s var(--ease-smooth) both',
+      overflow: 'hidden',
+    }}>
+      {/* Violet-teal top accent line */}
+      <div style={{
+        height: 2, flexShrink: 0,
+        background: 'linear-gradient(90deg,transparent,var(--violet-light),var(--teal),var(--pink),transparent)',
+        opacity: 0.6,
+      }} />
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 20px',
+        borderBottom: '1px solid var(--glass-border)',
+        flexShrink: 0,
+      }}>
+        <button onClick={onClose} className="icon-btn" style={{
+          background: 'var(--bg-glass)', border: '1.5px solid var(--glass-border)',
+          borderRadius: 999, width: 32, height: 32, cursor: 'pointer',
+          color: 'var(--text-sec)', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontSize: 13, flexShrink: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}>✕</button>
+        <h2 style={{ fontSize: 'var(--t-md)', fontWeight: 800, letterSpacing: '-0.01em', margin: 0, color: 'var(--text)' }}>{title}</h2>
+      </div>
+      {/* Body */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 'var(--s5)', WebkitOverflowScrolling: 'touch' }}>
+        {children}
+      </div>
+      {/* Sticky footer */}
+      {footer && (
+        <div style={{
+          padding: '14px 20px',
+          borderTop: '1px solid var(--glass-border)',
+          background: 'var(--modal-bg)', flexShrink: 0,
+          display: 'flex', gap: 8, justifyContent: 'flex-end',
+          flexWrap: 'wrap',
+        }}>
+          {footer}
+        </div>
+      )}
+    </div>
+  </div>
+)
 }
 
 /* ══════════════════════════════════════════════════

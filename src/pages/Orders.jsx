@@ -360,16 +360,11 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
       </>}
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
-        <Input label="اسم العميل (اختياري)" value={form.customer_name || ''} onChange={e => setField('customer_name', e.target.value)} placeholder="اسم العميل" />
         <Input label="رقم الهاتف" value={form.customer_phone || ''} onChange={e => setField('customer_phone', e.target.value)} placeholder="+971..." dir="ltr" />
 
         <Select label="المدينة" value={form.customer_city || ''} onChange={e => applyZone(e.target.value)}>
           <option value="">اختر المدينة</option>
           {deliveryZones.map(z => <option key={z.city} value={z.city}>{z.city} — {z.cost} د.إ</option>)}
-        </Select>
-
-        <Select label="مصدر الطلب" value={form.source || 'instagram'} onChange={e => setField('source', e.target.value)}>
-          {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </Select>
 
         <Select label="الحالة" value={form.status || ''} onChange={e => setField('status', e.target.value)}>
