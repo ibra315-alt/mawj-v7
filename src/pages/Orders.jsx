@@ -68,15 +68,18 @@ export default function Orders({ user }) {
 
   async function handleStatusChange(id, newStatus) {
     try {
-      await DB.update('orders', id, {
+      const deliveryDate = newStatus === 'delivered' ? new Date().toISOString().split('T')[0] : undefined
+      const updatePayload = {
         status: newStatus,
         updated_at: new Date().toISOString(),
         internal_notes: [
           ...(orders.find(o => o.id === id)?.internal_notes || []),
           { text: `تم تغيير الحالة إلى ${statuses.find(s => s.id === newStatus)?.label}`, time: new Date().toISOString() }
-        ]
-      })
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
+        ],
+        ...(deliveryDate ? { delivery_date: deliveryDate } : {}),
+      }
+      await DB.update('orders', id, updatePayload)
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus, ...(deliveryDate ? { delivery_date: deliveryDate } : {}) } : o))
       // 🎉 Confetti when order marked delivered
       if (newStatus === 'delivered') {
         setConfetti(true)
@@ -404,7 +407,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
           status: order.status || 'new',
           courier: 'Hayyak',
           tracking_number: order.tracking_number || '',
-          expected_delivery: order.expected_delivery || '',
+          delivery_date: order.delivery_date || '',
           notes: order.notes || '',
           discount_code: order.discount_code || '',
           discount_amount: order.discount_amount || 0,
@@ -422,7 +425,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
           status: statuses[0]?.id || 'new',
           courier: 'Hayyak',
           tracking_number: '',
-          expected_delivery: '',
+          delivery_date: '',
           notes: '',
           discount_code: '',
           discount_amount: 0,
@@ -533,7 +536,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
     try {
       // Convert empty date strings to null so Postgres doesn't reject them
       const cleanDates = obj => {
-        const DATE_FIELDS = ['expected_delivery', 'order_date', 'created_at', 'updated_at']
+        const DATE_FIELDS = ['delivery_date', 'created_at', 'updated_at']
         const out = { ...obj }
         DATE_FIELDS.forEach(k => {
           if (out[k] === '' || out[k] === undefined) out[k] = null
@@ -541,8 +544,11 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         return out
       }
 
+      // Remove fields that don't exist in DB schema
+      const { order_date, ...formClean } = form
+
       const payload = cleanDates({
-        ...form,
+        ...formClean,
         items,
         subtotal,
         cost,
@@ -650,7 +656,12 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         </div>
 
         <Input label="رقم التتبع" value={form.tracking_number || ''} onChange={e => setField('tracking_number', e.target.value)} dir="ltr" />
-        <Input label="تاريخ التسليم المتوقع" type="date" value={form.expected_delivery || ''} onChange={e => setField('expected_delivery', e.target.value)} />
+        {isEdit && form.delivery_date && (
+          <div style={{ padding:'10px 12px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--radius-sm)' }}>
+            <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>تاريخ التسليم</div>
+            <div style={{ fontWeight:800, color:'var(--teal)', fontSize:14 }}>✅ {form.delivery_date}</div>
+          </div>
+        )}
       </div>
 
       {/* Products */}
@@ -742,7 +753,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
       `الحالة: ${statusObj.label}`,
       order.tracking_number ? `رقم التتبع: ${order.tracking_number}` : '',
       `الاجمالي: ${(order.total || 0).toLocaleString()} درهم`,
-      order.expected_delivery ? `موعد التسليم: ${order.expected_delivery}` : '',
+      order.delivery_date ? `تاريخ التسليم: ${order.delivery_date}` : '',
       '',
       'شكرا لتسوقك مع موج',
     ].filter(Boolean)
@@ -766,7 +777,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
           {order.source && <div style={{ fontSize: 13 }}><span style={{ color: 'var(--text-muted)' }}>المصدر: </span>{SOURCE_LABELS[order.source]}</div>}
           {order.courier && <div style={{ fontSize: 13 }}><span style={{ color: 'var(--text-muted)' }}>الشركة الناقلة: </span>{order.courier}</div>}
           {order.tracking_number && <div style={{ fontSize: 13 }}><span style={{ color: 'var(--text-muted)' }}>رقم التتبع: </span><span dir="ltr">{order.tracking_number}</span></div>}
-          {order.expected_delivery && <div style={{ fontSize: 13 }}><span style={{ color: 'var(--text-muted)' }}>التسليم المتوقع: </span>{formatDate(order.expected_delivery)}</div>}
+          {order.delivery_date && <div style={{ fontSize: 13 }}><span style={{ color: 'var(--text-muted)' }}>تاريخ التسليم: </span><span style={{ color:'var(--teal)', fontWeight:700 }}>{formatDate(order.delivery_date)}</span></div>}
           {order.discount_code && <div style={{ fontSize: 13 }}><span style={{ color: 'var(--text-muted)' }}>كود الخصم: </span>{order.discount_code}</div>}
         </div>
 
