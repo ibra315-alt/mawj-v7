@@ -354,7 +354,7 @@ option { background: var(--option-bg); color: var(--option-color); }
    PAGE
 ══════════════════════════════════════════════════════════════ */
 .page {
-  padding: var(--sp-6);
+  padding: var(--sp-6) var(--sp-8);
   min-height: 100vh;
   animation: pageSlideIn var(--dur-page) var(--ease-out) both;
 }
