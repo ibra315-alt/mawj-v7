@@ -140,35 +140,36 @@ export default function Orders({ user }) {
         ))}
       </div>
 
-      {/* ── Search + Filter trigger ── */}
+      {/* ── Search + Filter + View toggle row ── */}
       <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center' }}>
+        {/* View mode toggle */}
+        <div style={{ display:'flex', gap:2, background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:3, flexShrink:0 }}>
+          <button onClick={() => setViewMode('list')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='list'?'var(--teal)':'transparent', color:viewMode==='list'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcList size={15}/></button>
+          <button onClick={() => setViewMode('kanban')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='kanban'?'var(--teal)':'transparent', color:viewMode==='kanban'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcGrid size={15}/></button>
+        </div>
+        {/* Filter button */}
+        <button onClick={() => setShowFilters(true)} style={{
+          position:'relative', padding:'10px 12px', background:'var(--bg-glass)',
+          border:`1.5px solid ${(filterStatus!=='all'||filterSource!=='all') ? 'var(--teal)' : 'var(--glass-border)'}`,
+          borderRadius:'var(--radius-sm)', color:(filterStatus!=='all'||filterSource!=='all') ? 'var(--teal)' : 'var(--text-sec)',
+          cursor:'pointer', display:'flex', alignItems:'center', flexShrink:0,
+        }}>
+          <IcFilter size={16}/>
+          {(filterStatus!=='all'||filterSource!=='all') && (
+            <span style={{ position:'absolute', top:-5, right:-5, width:16, height:16, borderRadius:'50%', background:'var(--teal)', color:'#050c1a', fontSize:9, fontWeight:900, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {(filterStatus!=='all'?1:0)+(filterSource!=='all'?1:0)}
+            </span>
+          )}
+        </button>
+        {/* Search */}
         <div style={{ position:'relative', flex:1 }}>
           <IcSearch size={15} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="بحث بالاسم، رقم الطلب، الهاتف..."
+            placeholder="بحث..."
             style={{ width:'100%', padding:'10px 34px 10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', outline:'none', boxSizing:'border-box' }}
           />
-        </div>
-        {/* Filter button — shows active count badge */}
-        <button onClick={() => setShowFilters(true)} style={{
-          position:'relative', padding:'10px 14px', background:'var(--bg-glass)',
-          border:`1.5px solid ${(filterStatus!=='all'||filterSource!=='all') ? 'var(--teal)' : 'var(--glass-border)'}`,
-          borderRadius:'var(--radius-sm)', color:(filterStatus!=='all'||filterSource!=='all') ? 'var(--teal)' : 'var(--text-sec)',
-          cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', gap:6, flexShrink:0, fontFamily:'inherit',
-        }}>
-          <IcFilter size={15}/>
-          {(filterStatus!=='all'||filterSource!=='all') && (
-            <span style={{ position:'absolute', top:-5, left:-5, width:16, height:16, borderRadius:'50%', background:'var(--teal)', color:'#050c1a', fontSize:9, fontWeight:900, display:'flex', alignItems:'center', justifyContent:'center' }}>
-              {(filterStatus!=='all'?1:0)+(filterSource!=='all'?1:0)}
-            </span>
-          )}
-        </button>
-        {/* View mode toggle */}
-        <div style={{ display:'flex', gap:2, background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:3, flexShrink:0 }}>
-          <button onClick={() => setViewMode('kanban')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='kanban'?'var(--teal)':'transparent', color:viewMode==='kanban'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcGrid size={15}/></button>
-          <button onClick={() => setViewMode('list')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='list'?'var(--teal)':'transparent', color:viewMode==='list'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcList size={15}/></button>
         </div>
       </div>
 
@@ -226,12 +227,10 @@ export default function Orders({ user }) {
               return (
                 <SwipeableRow
                   key={order.id}
-                  onSwipeLeft={() => { setEditOrder(order); setShowForm(true) }}
-                  onSwipeRight={() => { const phone = order.customer_phone?.replace(/\D/g,''); if(phone) window.open(`https://wa.me/${phone}`,'_blank') }}
                   actions={[
-                    { label:'واتساب', color:'#25d166', icon:'💬', onClick:() => { const p=order.customer_phone?.replace(/\D/g,''); if(p) window.open(`https://wa.me/${p}`,'_blank') } },
-                    { label:'تعديل',  color:'var(--violet-light)', icon:'✏️', onClick:() => { setEditOrder(order); setShowForm(true) } },
-                    { label:'حذف',   color:'var(--red,#ef4444)', icon:'🗑', onClick:() => setDeleteId(order.id) },
+                    { label:'حذف',    color:'#ef4444',  icon:'🗑',  onClick:() => setDeleteId(order.id) },
+                    { label:'تعديل',  color:'#7c3aed',  icon:'✏️', onClick:() => { setEditOrder(order); setShowForm(true) } },
+                    { label:'واتساب', color:'#25d166',  icon:'💬',  onClick:() => { const p=order.customer_phone?.replace(/\D/g,''); if(p) window.open(`https://wa.me/${p}`,'_blank') } },
                   ]}
                 >
                 <div onClick={() => { setViewOrder(order); setShowView(true) }}
@@ -246,28 +245,19 @@ export default function Orders({ user }) {
                     <span style={{ fontWeight:900, fontSize:15, color:'var(--teal)' }}>{formatCurrency(order.total)}</span>
                   </div>
                   {/* Row 2: phone + city */}
-                  <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:order.items?.length ? 8 : 0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                     {order.customer_phone && <span style={{ fontSize:13, fontWeight:700, direction:'ltr' }}>{order.customer_phone}</span>}
                     {order.customer_city && <span style={{ fontSize:12, color:'var(--text-muted)' }}>📍 {order.customer_city}</span>}
-                    {order.profit !== undefined && (
-                      <span style={{ fontSize:12, fontWeight:700, color: order.profit >= 0 ? 'var(--green)' : 'var(--red)', marginRight:'auto' }}>
-                        ربح: {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
-                      </span>
-                    )}
                   </div>
                   {/* Row 3: products */}
                   {order.items?.length > 0 && (
-                    <div style={{ fontSize:11, color:'var(--text-sec)', marginBottom:8 }}>
+                    <div style={{ fontSize:11, color:'var(--text-sec)', marginTop:6 }}>
                       {order.items.slice(0,3).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
                       {order.items.length > 3 && ` +${order.items.length-3}`}
                     </div>
                   )}
-                  {/* Row 4: actions */}
-                  <div style={{ display:'flex', gap:6, marginTop:4 }} onClick={e => e.stopPropagation()}>
-                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={13}/> عرض</Btn>
-                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={13}/> تعديل</Btn>
-                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={13}/></Btn>
-                  </div>
+                  {/* Swipe hint — only shown on first render */}
+                  <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6, opacity:0.5 }}>← اسحب للإجراءات السريعة</div>
                 </div>
                 </SwipeableRow>
               )
@@ -886,19 +876,17 @@ function SwipeableRow({ children, actions = [], onSwipeLeft, onSwipeRight }) {
     if (!isSwipe.current && Math.abs(dy) > Math.abs(dx)) { setDragging(false); return }
     isSwipe.current = true
     e.preventDefault()
-    const maxLeft = -(actions.length * ACTION_W)
-    const clamped = Math.max(maxLeft, Math.min(60, dx))
+    // RTL: swipe right (positive dx) reveals actions on the right side
+    const maxRight = actions.length * ACTION_W
+    const clamped = Math.max(-40, Math.min(maxRight, dx))
     setOffset(clamped)
   }
 
   function onTouchEnd() {
     setDragging(false)
-    const maxLeft = -(actions.length * ACTION_W)
-    if (offset < maxLeft / 2) {
-      setOffset(maxLeft) // snap open
-    } else if (offset > 30) {
-      onSwipeRight?.()
-      setOffset(0)
+    const maxRight = actions.length * ACTION_W
+    if (offset > maxRight / 2) {
+      setOffset(maxRight) // snap open
     } else {
       setOffset(0) // snap closed
     }
@@ -906,8 +894,8 @@ function SwipeableRow({ children, actions = [], onSwipeLeft, onSwipeRight }) {
 
   return (
     <div style={{ position:'relative', overflow:'hidden', borderRadius:'var(--radius)', userSelect:'none' }}>
-      {/* Action buttons revealed behind */}
-      <div style={{ position:'absolute', top:0, bottom:0, left:0, display:'flex', alignItems:'stretch' }}>
+      {/* Action buttons on the RIGHT side (RTL — revealed by swiping right) */}
+      <div style={{ position:'absolute', top:0, bottom:0, right:0, display:'flex', alignItems:'stretch' }}>
         {actions.map((a, i) => (
           <button key={i} onClick={() => { a.onClick(); setOffset(0) }} style={{
             width:ACTION_W, border:'none', cursor:'pointer', fontFamily:'inherit',
@@ -915,13 +903,13 @@ function SwipeableRow({ children, actions = [], onSwipeLeft, onSwipeRight }) {
             display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
             fontSize:10, fontWeight:800,
           }}>
-            <span style={{fontSize:18}}>{a.icon}</span>
+            <span style={{fontSize:20}}>{a.icon}</span>
             {a.label}
           </button>
         ))}
       </div>
 
-      {/* Sliding content */}
+      {/* Sliding content — moves right to reveal actions */}
       <div
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
