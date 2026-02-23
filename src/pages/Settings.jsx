@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Settings as SettingsDB, DB, supabase } from '../data/db'
-import { THEMES, LIGHT_THEMES, DEFAULT_PREFS, saveAppearance, saveGlobalDefault } from '../data/appearance'
+import { THEMES, DARK_THEMES, LIGHT_THEMES, DEFAULT_PREFS, saveAppearance } from '../data/appearance'
 import { UAE_CITIES, FONTS } from '../data/constants'
 import { Btn, Card, Input, Select, Textarea, Spinner, Toggle, Badge, toast } from '../components/ui'
 import { IcPlus, IcSave, IcDownload } from '../components/Icons'
@@ -650,37 +650,38 @@ function WhatsAppTab({ templates, updateData }) {
 ══════════════════════════════════════════════════ */
 
 
-function AppearanceTab({ theme, toggleTheme }) {
+function AppearanceTab({ theme, toggleTheme, user }) {
   const [prefs, setPrefs] = useState(() => window.__mawjPrefs || DEFAULT_PREFS)
-  const [globalDefault, setGlobalDefault] = useState(false)
+  const [isGlobal, setIsGlobal] = useState(false)
   const [savingGlobal, setSavingGlobal] = useState(false)
+  const [globalPrefs, setGlobalPrefs] = useState(null)
+  const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
-    // Check if current prefs match global default
-    import('../data/appearance').then(({ loadGlobalDefault }) => {
-      loadGlobalDefault().then(gd => {
-        if (gd && gd.theme === prefs.theme && gd.mode === prefs.mode) setGlobalDefault(true)
-      })
+    SettingsDB.get('global_appearance').then(gp => {
+      setGlobalPrefs(gp)
+      if (gp && gp.theme === prefs.theme) setIsGlobal(true)
     })
   }, [])
 
-  async function setAsGlobalDefault() {
-    setSavingGlobal(true)
-    try {
-      await saveGlobalDefault(prefs)
-      setGlobalDefault(true)
-      toast('تم تعيين الثيم الافتراضي لجميع المستخدمين ✓')
-    } catch { toast('فشل الحفظ', 'error') }
-    finally { setSavingGlobal(false) }
-  }
-
-  // Save and apply a partial prefs update
   function update(patch) {
     const next = { ...prefs, ...patch }
     setPrefs(next)
     window.__mawjPrefs = next
     saveAppearance(next)
-    toast('تم الحفظ ✓')
+  }
+
+  async function handleSetGlobal(val) {
+    if (!val) return
+    setSavingGlobal(true)
+    try {
+      const { saveGlobalDefault } = await import('../data/appearance')
+      await saveGlobalDefault(prefs)
+      setIsGlobal(true)
+      setGlobalPrefs(prefs)
+      toast('✓ تم تعيين هذا الثيم افتراضياً لجميع المستخدمين')
+    } catch { toast('فشل الحفظ', 'error') }
+    finally { setSavingGlobal(false) }
   }
 
   const ACCENT_PRESETS = [
@@ -690,136 +691,98 @@ function AppearanceTab({ theme, toggleTheme }) {
     { color: '#ef4444', name: 'أحمر' }, { color: '#f97316', name: 'برتقالي' },
   ]
 
+  function ThemeGrid({ themes }) {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
+        {themes.map(t => {
+          const isActive = prefs.theme === t.id
+          const isGlobalTheme = globalPrefs?.theme === t.id
+          return (
+            <button key={t.id} onClick={() => update({ theme: t.id })} style={{
+              padding: '12px 8px', borderRadius: 'var(--radius)',
+              border: `2px solid ${isActive ? 'var(--teal)' : 'var(--glass-border)'}`,
+              background: isActive
+                ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))'
+                : 'var(--bg-glass)',
+              cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s ease',
+              boxShadow: isActive ? '0 0 20px rgba(0,228,184,0.18)' : 'none',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              {/* Color swatches */}
+              <div style={{ display: 'flex', gap: 3, justifyContent: 'center', marginBottom: 8 }}>
+                <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--bg'], border: `1px solid ${t.mode === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)'}` }} />
+                <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--teal'], boxShadow: `0 0 6px ${t.vars['--teal']}88` }} />
+                <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--violet-light'] }} />
+                <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--pink'] || t.vars['--violet-light'] }} />
+              </div>
+              <div style={{ fontSize: 18, marginBottom: 4 }}>{t.emoji}</div>
+              <div style={{ fontSize: 12, fontWeight: isActive ? 800 : 600, color: isActive ? 'var(--teal)' : 'var(--text)' }}>{t.name}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{t.desc}</div>
+              {isActive && <div style={{ position: 'absolute', top: 5, left: 5, width: 7, height: 7, borderRadius: '50%', background: 'var(--teal)', boxShadow: '0 0 8px var(--teal)' }} />}
+              {isGlobalTheme && <div style={{ position: 'absolute', top: 5, right: 5, fontSize: 9, padding: '1px 5px', borderRadius: 999, background: 'rgba(0,228,184,0.15)', border: '1px solid rgba(0,228,184,0.3)', color: 'var(--teal)', fontWeight: 700 }}>عام</div>}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Themes ── */}
+      {/* Global default — admin only */}
+      {isAdmin && (
+        <Card style={{ borderColor: 'rgba(0,228,184,0.25)' }}>
+          <SectionTitle icon="🌍">الثيم الافتراضي العام</SectionTitle>
+          <div style={{ fontSize: 13, color: 'var(--text-sec)', marginBottom: 14, lineHeight: 1.6 }}>
+            الثيم الذي ستراه جميع المستخدمين الجدد أو من لم يختاروا ثيماً بعد.
+            {globalPrefs && <span style={{ color: 'var(--teal)', fontWeight: 700, marginRight: 6 }}>الحالي: {THEMES.find(t => t.id === globalPrefs.theme)?.name}</span>}
+          </div>
+          <ControlRow label="تعيين الثيم الحالي كافتراضي عام" desc="يطبق على كل المستخدمين الذين لم يختاروا ثيماً" last>
+            <Toggle checked={isGlobal} onChange={handleSetGlobal} disabled={savingGlobal} />
+          </ControlRow>
+          {savingGlobal && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>جاري الحفظ...</div>}
+        </Card>
+      )}
+
+      {/* Dark themes */}
       <Card>
-        <SectionTitle icon="🎨">الثيمات</SectionTitle>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 10 }}>
-          {THEMES.map(t => {
-            const isActive = prefs.theme === t.id
-            return (
-              <button key={t.id} onClick={() => update({ theme: t.id })} style={{
-                padding: '14px 10px', borderRadius: 'var(--radius)',
-                border: `2px solid ${isActive ? 'var(--teal)' : 'var(--glass-border)'}`,
-                background: isActive ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-glass)',
-                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s ease',
-                boxShadow: isActive ? '0 0 20px rgba(0,228,184,0.20)' : 'none',
-                position: 'relative', overflow: 'hidden',
+        <SectionTitle icon="🌙">الثيمات الداكنة</SectionTitle>
+        <ThemeGrid themes={DARK_THEMES} />
+      </Card>
+
+      {/* Light themes */}
+      <Card>
+        <SectionTitle icon="☀️">الثيمات الفاتحة</SectionTitle>
+        <ThemeGrid themes={LIGHT_THEMES} />
+        <InfoBox style={{ marginTop: 12 }}>اختيار ثيم فاتح يطبق الوضع الفاتح تلقائياً</InfoBox>
+      </Card>
+
+      {/* Action color — only relevant for dark themes */}
+      {DARK_THEMES.find(t => t.id === prefs.theme) && (
+        <Card>
+          <SectionTitle icon="🎯">لون الإجراء</SectionTitle>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+            {ACCENT_PRESETS.map(p => (
+              <button key={p.color} onClick={() => update({ accent: p.color })} title={p.name} style={{
+                width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: p.color,
+                border: `3px solid ${prefs.accent === p.color ? 'var(--text)' : 'transparent'}`,
+                cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, position: 'relative',
+                boxShadow: prefs.accent === p.color ? `0 0 16px ${p.color}aa` : `0 2px 8px ${p.color}44`,
               }}>
-                <div style={{ display: 'flex', gap: 3, justifyContent: 'center', marginBottom: 8 }}>
-                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--bg'], border: '1px solid rgba(255,255,255,0.15)' }} />
-                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--teal'], boxShadow: `0 0 6px ${t.vars['--teal']}88` }} />
-                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--violet-light'] }} />
-                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--pink'] || t.vars['--violet-light'] }} />
-                </div>
-                <div style={{ fontSize: 20, marginBottom: 4 }}>{t.emoji}</div>
-                <div style={{ fontSize: 13, fontWeight: isActive ? 800 : 600, color: isActive ? 'var(--teal)' : 'var(--text)' }}>{t.name}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{t.desc}</div>
-                {isActive && <div style={{ position: 'absolute', top: 6, left: 6, width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)', boxShadow: '0 0 8px var(--teal)' }} />}
+                {prefs.accent === p.color && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', fontWeight: 900, textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>✓</div>}
               </button>
-            )
-          })}
-        </div>
-
-        {/* Light themes */}
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--glass-border)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>🌞 ثيمات فاتحة</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 8 }}>
-            {LIGHT_THEMES.map(t => {
-              const isActive = prefs.theme === t.id
-              return (
-                <button key={t.id} onClick={() => update({ theme: t.id, mode: 'light' })} style={{
-                  padding: '12px 8px', borderRadius: 'var(--radius)',
-                  border: `2px solid ${isActive ? 'var(--teal)' : 'var(--glass-border)'}`,
-                  background: t.vars['--bg'],
-                  cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s ease',
-                  boxShadow: isActive ? '0 0 16px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.08)',
-                  position: 'relative',
-                }}>
-                  <div style={{ display: 'flex', gap: 3, justifyContent: 'center', marginBottom: 6 }}>
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.vars['--teal'], boxShadow: `0 0 5px ${t.vars['--teal']}88` }} />
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.vars['--violet-light'] }} />
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.vars['--pink'] }} />
-                  </div>
-                  <div style={{ fontSize: 18, marginBottom: 3 }}>{t.emoji}</div>
-                  <div style={{ fontSize: 12, fontWeight: isActive ? 800 : 600, color: t.vars['--violet'] }}>{t.name}</div>
-                  <div style={{ fontSize: 10, color: t.vars['--violet-light'], marginTop: 1, opacity: 0.7 }}>{t.desc}</div>
-                  {isActive && <div style={{ position: 'absolute', top: 5, left: 5, width: 7, height: 7, borderRadius: '50%', background: t.vars['--teal'] }} />}
-                </button>
-              )
-            })}
+            ))}
+            <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)', border: '2px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--text)', cursor: 'pointer' }}>＋</div>
+              <input type="color" value={prefs.accent} onChange={e => update({ accent: e.target.value })} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+            </div>
           </div>
-        </div>
-      </Card>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>اللون الحالي: <span style={{ color: prefs.accent, fontWeight: 700 }}>■ {prefs.accent}</span></div>
+        </Card>
+      )}
 
-      {/* ── Global Default ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 18px',
-        background: globalDefault ? 'rgba(0,228,184,0.08)' : 'var(--bg-glass)',
-        border: `1.5px solid ${globalDefault ? 'var(--glass-border-teal)' : 'var(--glass-border)'}`,
-        borderRadius: 'var(--radius)',
-        transition: 'all 0.2s ease',
-      }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>🌐 تعيين كافتراضي لجميع المستخدمين</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>سيرى جميع المستخدمين الجدد هذا الثيم</div>
-        </div>
-        <Btn
-          variant={globalDefault ? 'secondary' : 'primary'}
-          loading={savingGlobal}
-          onClick={setAsGlobalDefault}
-          style={{ flexShrink: 0 }}
-        >
-          {globalDefault ? '✓ الافتراضي الحالي' : 'تعيين كافتراضي'}
-        </Btn>
-      </div>
-
-      {/* ── Dark/Light ── */}
-      <Card>
-        <SectionTitle icon="🌗">وضع العرض</SectionTitle>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {[{ id: 'dark', emoji: '🌙', label: 'داكن', desc: 'مريح للعيون' }, { id: 'light', emoji: '☀️', label: 'فاتح', desc: 'إضاءة كاملة' }].map(t => (
-            <button key={t.id} onClick={() => { update({ mode: t.id }); if (theme !== t.id) toggleTheme() }} style={{
-              flex: 1, padding: '16px 12px', borderRadius: 'var(--radius)',
-              border: `2px solid ${prefs.mode === t.id ? 'var(--teal)' : 'var(--glass-border)'}`,
-              background: prefs.mode === t.id ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-glass)',
-              color: prefs.mode === t.id ? 'var(--teal)' : 'var(--text-sec)',
-              cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, transition: 'all 0.2s ease',
-            }}>
-              <div style={{ fontSize: 24, marginBottom: 6 }}>{t.emoji}</div>
-              <div>{t.label}</div>
-              <div style={{ fontSize: 11, opacity: 0.55, marginTop: 3, fontWeight: 400 }}>{t.desc}</div>
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      {/* ── Action color ── */}
-      <Card>
-        <SectionTitle icon="🎯">لون الإجراء</SectionTitle>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-          {ACCENT_PRESETS.map(p => (
-            <button key={p.color} onClick={() => update({ accent: p.color })} title={p.name} style={{
-              width: 44, height: 44, borderRadius: 'var(--radius-sm)', background: p.color,
-              border: `3px solid ${prefs.accent === p.color ? 'var(--text)' : 'transparent'}`,
-              cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, position: 'relative',
-              boxShadow: prefs.accent === p.color ? `0 0 18px ${p.color}aa` : `0 2px 8px ${p.color}44`,
-            }}>
-              {prefs.accent === p.color && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 900, textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>✓</div>}
-            </button>
-          ))}
-          <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', background: 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)', border: '2px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--text)', cursor: 'pointer' }}>＋</div>
-            <input type="color" value={prefs.accent} onChange={e => update({ accent: e.target.value })} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
-          </div>
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>اللون الحالي: <span style={{ color: prefs.accent, fontWeight: 700 }}>■ {prefs.accent}</span></div>
-      </Card>
-
-      {/* ── Font ── */}
+      {/* Font */}
       <Card>
         <SectionTitle icon="🔤">الخط</SectionTitle>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -827,47 +790,47 @@ function AppearanceTab({ theme, toggleTheme }) {
             const active = prefs.font === family
             return (
               <button key={name} onClick={() => update({ font: family })} style={{
-                padding: '12px 18px', borderRadius: 999,
+                padding: '10px 16px', borderRadius: 999,
                 border: `2px solid ${active ? 'var(--teal)' : 'var(--glass-border)'}`,
                 background: active ? 'linear-gradient(135deg,rgba(0,228,184,0.10),rgba(37,99,235,0.06))' : 'var(--bg-glass)',
                 color: active ? 'var(--teal)' : 'var(--text-sec)',
-                cursor: 'pointer', fontFamily: family, fontSize: 15, fontWeight: 700, transition: 'all 0.2s ease',
+                cursor: 'pointer', fontFamily: family, fontSize: 14, fontWeight: 700, transition: 'all 0.2s ease',
               }}>
                 {name}
-                <div style={{ fontSize: 11, marginTop: 3, fontWeight: 400, opacity: 0.65 }}>أبجد هوز ١٢٣</div>
+                <div style={{ fontSize: 11, marginTop: 2, fontWeight: 400, opacity: 0.65 }}>أبجد هوز ١٢٣</div>
               </button>
             )
           })}
         </div>
       </Card>
 
-      {/* ── Size Shape Density ── */}
+      {/* Size, Shape, Density */}
       <Card>
         <SectionTitle icon="📐">الحجم والشكل</SectionTitle>
-        <ControlRow label="حجم الخط" desc="يؤثر على كل النصوص في التطبيق">
+        <ControlRow label="حجم الخط" desc="يؤثر على كل النصوص">
           <div style={{ display: 'flex', gap: 6 }}>
-            {[{ id: 'small', label: 'صغير' }, { id: 'medium', label: 'متوسط' }, { id: 'large', label: 'كبير' }].map(s => (
-              <ControlBtn key={s.id} active={prefs.fontSize === s.id} onClick={() => update({ fontSize: s.id })}>{s.label}</ControlBtn>
+            {[{ id: 'small', l: 'صغير' }, { id: 'medium', l: 'متوسط' }, { id: 'large', l: 'كبير' }].map(s => (
+              <ControlBtn key={s.id} active={prefs.fontSize === s.id} onClick={() => update({ fontSize: s.id })}>{s.l}</ControlBtn>
             ))}
           </div>
         </ControlRow>
         <ControlRow label="شكل الزوايا" desc="حواف البطاقات والأزرار">
           <div style={{ display: 'flex', gap: 6 }}>
-            {[{ id: 'sharp', label: 'حاد' }, { id: 'rounded', label: 'مدوّر' }, { id: 'pill', label: 'بيضوي' }].map(r => (
-              <ControlBtn key={r.id} active={prefs.radius === r.id} onClick={() => update({ radius: r.id })}>{r.label}</ControlBtn>
+            {[{ id: 'sharp', l: 'حاد' }, { id: 'rounded', l: 'مدوّر' }, { id: 'pill', l: 'بيضوي' }].map(r => (
+              <ControlBtn key={r.id} active={prefs.radius === r.id} onClick={() => update({ radius: r.id })}>{r.l}</ControlBtn>
             ))}
           </div>
         </ControlRow>
         <ControlRow label="كثافة العرض" desc="المسافات بين العناصر" last>
           <div style={{ display: 'flex', gap: 6 }}>
-            {[{ id: 'compact', label: 'ضيق' }, { id: 'normal', label: 'عادي' }, { id: 'comfortable', label: 'مريح' }].map(d => (
-              <ControlBtn key={d.id} active={prefs.density === d.id} onClick={() => update({ density: d.id })}>{d.label}</ControlBtn>
+            {[{ id: 'compact', l: 'ضيق' }, { id: 'normal', l: 'عادي' }, { id: 'comfortable', l: 'مريح' }].map(d => (
+              <ControlBtn key={d.id} active={prefs.density === d.id} onClick={() => update({ density: d.id })}>{d.l}</ControlBtn>
             ))}
           </div>
         </ControlRow>
       </Card>
 
-      {/* ── Toggles ── */}
+      {/* Toggles */}
       <Card>
         <SectionTitle icon="⚙️">تفضيلات العرض</SectionTitle>
         {[
@@ -885,9 +848,6 @@ function AppearanceTab({ theme, toggleTheme }) {
 }
 
 
-/* ══════════════════════════════════════════════════
-   DELIVERY TAB
-══════════════════════════════════════════════════ */
 function DeliveryTab({ business, updateData }) {
   const [zones, setZones] = useState(business.delivery_zones || [])
   const [city, setCity] = useState('')

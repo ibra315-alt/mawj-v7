@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase, Auth } from './data/db'
-import { loadAndApplyAppearance, applyAppearance, DEFAULT_PREFS } from './data/appearance'
+import { loadAndApplyAppearance, applyAppearance, saveAppearance, DEFAULT_PREFS } from './data/appearance'
 import { ToastContainer } from './components/ui'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -53,20 +53,16 @@ export default function App() {
   const [showAI, setShowAI] = useState(false)
   const [pageKey, setPageKey] = useState(0)
 
-  // ── Apply theme mode change (dark/light) ──
+  // ── Sync data-theme attribute whenever theme state changes ──
   useEffect(() => {
-    // Re-apply full appearance so theme mode change is reflected
-    // We read from Supabase cache via a stored ref set on mount
-    if (window.__mawjPrefs) {
-      applyAppearance({ ...window.__mawjPrefs, mode: theme })
-    }
+    document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
   // ── Load appearance from Supabase on mount ──
   useEffect(() => {
     loadAndApplyAppearance().then(prefs => {
-      window.__mawjPrefs = prefs
-      setTheme(prefs.mode || 'dark')
+      window.__mawjPrefs = prefs || DEFAULT_PREFS
+      setTheme(window.__mawjPrefs.mode || 'dark')
     })
   }, [])
 
@@ -95,13 +91,11 @@ export default function App() {
   }
 
   function toggleTheme() {
-    setTheme(t => {
-      const next = t === 'dark' ? 'light' : 'dark'
-      const prefs = { ...(window.__mawjPrefs || DEFAULT_PREFS), mode: next }
-      window.__mawjPrefs = prefs
-      import('./data/appearance').then(({ saveAppearance }) => saveAppearance(prefs))
-      return next
-    })
+    const next = theme === 'dark' ? 'light' : 'dark'
+    const prefs = { ...(window.__mawjPrefs || DEFAULT_PREFS), mode: next }
+    window.__mawjPrefs = prefs
+    setTheme(next)
+    saveAppearance(prefs)
   }
 
   if (session === undefined) return (
