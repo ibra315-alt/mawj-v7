@@ -34,11 +34,13 @@ export default function Reports() {
   const monthOrders   = orders.filter(o => { const d=new Date(o.created_at); return d>=start && d<=end })
   const monthExpenses = expenses.filter(e => { const d=new Date(e.date); return d>=start && d<=end })
 
-  const revenue     = monthOrders.reduce((s,o) => s+(o.total||0), 0)
-  const grossProfit = monthOrders.reduce((s,o) => s+(o.profit||0), 0)
-  const totalExp    = monthExpenses.reduce((s,e) => s+e.amount, 0)
-  const netProfit   = grossProfit - totalExp
-  const profitMargin = revenue > 0 ? ((netProfit/revenue)*100).toFixed(1) : 0
+  const revenue        = monthOrders.reduce((s,o) => s+(o.total||0), 0)
+  const grossProfit    = monthOrders.reduce((s,o) => s+(o.profit||0), 0)
+  const totalExp       = monthExpenses.reduce((s,e) => s+e.amount, 0)
+  const totalShipping  = monthOrders.reduce((s,o) => s+(o.delivery_cost||0), 0)
+  const productRevenue = monthOrders.reduce((s,o) => s+(o.subtotal||(o.total||0)-(o.delivery_cost||0)), 0)
+  const netProfit      = grossProfit - totalExp
+  const profitMargin   = revenue > 0 ? ((netProfit/revenue)*100).toFixed(1) : 0
 
   // Daily bars
   const daysInMonth = new Date(selYear, selMonth+1, 0).getDate()
@@ -71,10 +73,11 @@ export default function Reports() {
       const { start, end } = monthRange(y, m)
       const mOrds = orders.filter(o => { const d=new Date(o.created_at); return d>=start&&d<=end })
       const mExps = expenses.filter(e => { const d=new Date(e.date); return d>=start&&d<=end })
-      const rev  = mOrds.reduce((s,o)=>s+(o.total||0),0)
-      const gp   = mOrds.reduce((s,o)=>s+(o.profit||0),0)
-      const exp  = mExps.reduce((s,e)=>s+e.amount,0)
-      result.push({ label: MONTHS[m].slice(0,3), month:m, year:y, revenue:rev, grossProfit:gp, expenses:exp, netProfit:gp-exp, orderCount:mOrds.length })
+      const rev      = mOrds.reduce((s,o)=>s+(o.total||0),0)
+      const gp       = mOrds.reduce((s,o)=>s+(o.profit||0),0)
+      const exp      = mExps.reduce((s,e)=>s+e.amount,0)
+      const shipping = mOrds.reduce((s,o)=>s+(o.delivery_cost||0),0)
+      result.push({ label: MONTHS[m].slice(0,3), month:m, year:y, revenue:rev, grossProfit:gp, expenses:exp, netProfit:gp-exp, orderCount:mOrds.length, shipping })
     }
     return result
   }, [orders, expenses, selMonth, selYear])
@@ -180,12 +183,12 @@ export default function Reports() {
 
           {/* KPIs */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(155px, 1fr))', gap:10, marginBottom:20 }}>
-            <StatCard label="إجمالي المبيعات"  value={formatCurrency(revenue)}    color="var(--teal)"/>
-            <StatCard label="عدد الطلبات"      value={monthOrders.length}          color="var(--violet)"/>
-            <StatCard label="إجمالي المصاريف"  value={formatCurrency(totalExp)}    color="var(--red)"/>
-            <StatCard label="صافي الربح"       value={formatCurrency(netProfit)}   color={netProfit>=0?'var(--green,#34d399)':'var(--red)'}/>
-            <StatCard label="هامش الربح"       value={`${profitMargin}%`}          color="var(--gold,#f59e0b)"/>
-            <StatCard label="متوسط الطلب"      value={formatCurrency(monthOrders.length?revenue/monthOrders.length:0)} color="var(--blue)"/>
+            <StatCard label="إجمالي المبيعات"  value={formatCurrency(revenue)}         color="var(--teal)"/>
+            <StatCard label="مبيعات المنتجات"  value={formatCurrency(productRevenue)}   color="var(--violet)"/>
+            <StatCard label="إيرادات الشحن"    value={formatCurrency(totalShipping)}    color="var(--blue)"/>
+            <StatCard label="إجمالي المصاريف"  value={formatCurrency(totalExp)}         color="var(--red)"/>
+            <StatCard label="صافي الربح"       value={formatCurrency(netProfit)}        color={netProfit>=0?'var(--green,#34d399)':'var(--red)'}/>
+            <StatCard label="هامش الربح"       value={`${profitMargin}%`}               color="var(--gold,#f59e0b)"/>
           </div>
 
           {/* Daily bar chart */}
@@ -311,7 +314,7 @@ export default function Reports() {
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
                 <thead>
                   <tr style={{ color:'var(--text-muted)', borderBottom:'1px solid var(--glass-border)' }}>
-                    {['الشهر','الطلبات','المبيعات','المصاريف','الربح الصافي','الهامش'].map(h => (
+                    {['الشهر','الطلبات','المبيعات','الشحن','المصاريف','الربح الصافي','الهامش'].map(h => (
                       <th key={h} style={{ padding:'6px 8px', textAlign:'right', fontWeight:700, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -322,6 +325,7 @@ export default function Reports() {
                       <td style={{ padding:'8px', fontWeight:700 }}>{m.label} {m.year}</td>
                       <td style={{ padding:'8px', color:'var(--text-sec)' }}>{m.orderCount}</td>
                       <td style={{ padding:'8px', color:'var(--teal)', fontWeight:700 }}>{formatCurrency(m.revenue)}</td>
+                      <td style={{ padding:'8px', color:'var(--blue)' }}>{formatCurrency(m.shipping||0)}</td>
                       <td style={{ padding:'8px', color:'var(--red)' }}>{formatCurrency(m.expenses)}</td>
                       <td style={{ padding:'8px', fontWeight:800, color: m.netProfit>=0?'var(--green,#34d399)':'var(--red)' }}>
                         {m.netProfit>=0?'+':''}{formatCurrency(m.netProfit)}
@@ -335,6 +339,31 @@ export default function Reports() {
               </table>
             </div>
           </Card>
+
+          {/* Shipping breakdown */}
+          {pnlMonths.some(m=>m.shipping>0) && (
+            <Card style={{ marginBottom:16 }}>
+              <div style={{ fontWeight:700, fontSize:14, marginBottom:12 }}>إيرادات الشحن الشهرية</div>
+              {pnlMonths.map((m,i) => (
+                <div key={i} style={{ marginBottom:10, opacity: m.shipping===0?0.4:1 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4, fontSize:13 }}>
+                    <span style={{ fontWeight:600 }}>{m.label} {m.year}</span>
+                    <div style={{ display:'flex', gap:16 }}>
+                      <span style={{ color:'var(--text-muted)', fontSize:12 }}>{m.orderCount} طلب</span>
+                      <span style={{ fontWeight:800, color:'var(--blue)' }}>{formatCurrency(m.shipping||0)}</span>
+                    </div>
+                  </div>
+                  <div style={{ height:4, background:'var(--glass-border)', borderRadius:99 }}>
+                    <div style={{ width:`${maxPnl>0?((m.shipping||0)/maxPnl)*100:0}%`, height:'100%', background:'var(--blue,#3b82f6)', borderRadius:99, transition:'width 0.4s ease' }}/>
+                  </div>
+                </div>
+              ))}
+              <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--glass-border)', display:'flex', justifyContent:'space-between', fontSize:13 }}>
+                <span style={{ fontWeight:700 }}>الإجمالي</span>
+                <span style={{ fontWeight:900, color:'var(--blue)' }}>{formatCurrency(pnlMonths.reduce((s,m)=>s+(m.shipping||0),0))}</span>
+              </div>
+            </Card>
+          )}
 
           {/* Expense categories */}
           {expCategories.length > 0 && (
