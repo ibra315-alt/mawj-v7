@@ -321,7 +321,7 @@ function StatCardWithSpark({ label, value, color, icon, spark = [], sparkColor }
       backdropFilter: 'var(--blur-md)', WebkitBackdropFilter: 'var(--blur-md)',
       border: '1.5px solid var(--glass-border)',
       borderRadius: 'var(--radius)',
-      padding: hasSpark ? '18px 20px 44px' : '18px 20px',
+      padding: hasSpark ? '18px 20px 56px' : '18px 20px',
       position: 'relative', overflow: 'hidden',
       boxShadow: 'var(--shadow-card)',
       minHeight: hasSpark ? 110 : 'auto',
@@ -351,8 +351,8 @@ function StatCardWithSpark({ label, value, color, icon, spark = [], sparkColor }
       </div>
 
       {hasSpark && (
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, opacity: 0.85, pointerEvents: 'none' }}>
-          <Sparkline data={spark} color={sparkColor || color} width={200} height={40} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, opacity: 0.7, pointerEvents: 'none' }}>
+          <Sparkline data={spark} color={sparkColor || color} width={200} height={48} />
         </div>
       )}
     </div>
