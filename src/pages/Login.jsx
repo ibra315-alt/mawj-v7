@@ -35,15 +35,15 @@ export default function Login({ theme, toggleTheme }) {
       padding: '20px',
       direction: 'rtl',
       position: 'relative',
+      zIndex: 0,
     }}>
 
-      {/* Subtle atmospheric bg glow — dark only */}
-      {isDark && (
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37,99,235,0.08) 0%, transparent 70%)',
-        }}/>
-      )}
+      {/* Premium background orbs */}
+      <div className="bg-orbs" aria-hidden="true">
+        <div className="bg-orb bg-orb-1"/>
+        <div className="bg-orb bg-orb-2"/>
+        <div className="bg-orb bg-orb-3"/>
+      </div>
 
       {/* Theme toggle — top left in RTL = top right visually */}
       {toggleTheme && (
@@ -85,6 +85,7 @@ export default function Login({ theme, toggleTheme }) {
         borderRadius: 'var(--r-xl)',
         overflow: 'hidden',
         animation: 'cardEntrance var(--dur-base) var(--ease-out) both',
+        position: 'relative', zIndex: 1,
       }}>
 
         {/* Teal top accent bar */}

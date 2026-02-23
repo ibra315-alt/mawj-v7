@@ -70,6 +70,13 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
   return (
     <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)', width:'100%', overflowX:'hidden' }}>
 
+      {/* ── PREMIUM BACKGROUND ───────────────────────── */}
+      <div className="bg-orbs" aria-hidden="true">
+        <div className="bg-orb bg-orb-1"/>
+        <div className="bg-orb bg-orb-2"/>
+        <div className="bg-orb bg-orb-3"/>
+      </div>
+
       {/* ── DESKTOP SIDEBAR ──────────────────────────── */}
       <aside
         className="desktop-only"
@@ -100,6 +107,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
         key={page}
         style={{
           position: 'relative',
+          zIndex: 1,
           marginRight: expanded ? 224 : 64,
           width: expanded ? 'calc(100vw - 224px)' : 'calc(100vw - 64px)',
           minWidth: 0,
