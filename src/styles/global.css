@@ -356,6 +356,8 @@ option { background: var(--option-bg); color: var(--option-color); }
 .page {
   padding: var(--sp-6);
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
   animation: pageSlideIn var(--dur-page) var(--ease-out) both;
 }
 @media (max-width: 768px) {
@@ -1069,14 +1071,7 @@ option { background: var(--option-bg); color: var(--option-color); }
 /* ══════════════════════════════════════════════════════════════
    PAGE
 ══════════════════════════════════════════════════════════════ */
-.page {
-  padding: var(--sp-6);
-  min-height: 100vh;
-  animation: pageSlideIn var(--dur-page) var(--ease-out) both;
-}
-@media (max-width: 768px) {
-  .page { padding: 16px 12px; }
-}
+
 
 /* ══════════════════════════════════════════════════════════════
    ELEVATION SYSTEM

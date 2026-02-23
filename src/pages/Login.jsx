@@ -36,7 +36,7 @@ export default function Login({ theme, toggleTheme }) {
       padding: '20px',
       direction: 'rtl',
       position: 'relative',
-      zIndex: 0,
+      zIndex: 1,
     }}>
 
       {/* Premium background */}
@@ -82,7 +82,7 @@ export default function Login({ theme, toggleTheme }) {
         borderRadius: 'var(--r-xl)',
         overflow: 'hidden',
         animation: 'cardEntrance var(--dur-base) var(--ease-out) both',
-        position: 'relative', zIndex: 1,
+        position: 'relative', zIndex: 2,
       }}>
 
         {/* Teal top accent bar */}
