@@ -144,7 +144,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
         @media (max-width: 768px) {
           .desktop-only { display: none !important; }
           .mobile-only, .mobile-flex { display: flex !important; }
-          main { margin-right: 0 !important; width: 100vw !important; padding-bottom: calc(64px + env(safe-area-inset-bottom, 12px)) !important; }
+          main { margin-right: 0 !important; width: 100vw !important; padding-bottom: calc(64px + env(safe-area-inset-bottom, 12px)) !important; padding-right: 0 !important; padding-top: 0 !important; padding-left: 0 !important; }
         }
       `}</style>
     </div>

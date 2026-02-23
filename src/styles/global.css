@@ -358,6 +358,9 @@ option { background: var(--option-bg); color: var(--option-color); }
   min-height: 100vh;
   animation: pageSlideIn var(--dur-page) var(--ease-out) both;
 }
+@media (max-width: 768px) {
+  .page { padding: 16px 12px; }
+}
 
 /* ══════════════════════════════════════════════════════════════
    ELEVATION SYSTEM

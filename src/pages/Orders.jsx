@@ -272,69 +272,71 @@ export default function Orders({ user }) {
                 <div
                   key={order.id}
                   style={{
-                    padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12,
+                    cursor:'pointer',
                     background:'var(--bg-surface)', boxShadow:'var(--card-shadow)', borderRadius:'var(--r-md)',
                     border:'none', transition:'box-shadow 120ms ease, transform 120ms ease',
+                    overflow:'hidden',
+                    borderRight: `3px solid ${statusObj.color}`,
                   }}
                   onMouseEnter={e => { e.currentTarget.style.boxShadow='var(--card-shadow-hover)'; e.currentTarget.style.transform='translateY(-1px)' }}
                   onMouseLeave={e => { e.currentTarget.style.boxShadow='var(--card-shadow)'; e.currentTarget.style.transform='translateY(0)' }}
                   onClick={() => { setViewOrder(order); setShowView(true) }}
                 >
-                  {/* Status bar */}
-                  <div style={{ width:3, alignSelf:'stretch', borderRadius:99, background:statusObj.color, flexShrink:0 }}/>
+                  <div style={{ padding:'12px 14px' }}>
 
-                  {/* Content */}
-                  <div style={{ flex:1, minWidth:0 }}>
-                    {/* Top row */}
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'Inter,monospace', fontWeight:600 }}>
-                          {order.order_number}
-                        </span>
-                        <span
-                          onClick={e => { e.stopPropagation(); setQuickStatusId(order.id) }}
-                          style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:`${statusObj.color}18`, color:statusObj.color, cursor:'pointer', userSelect:'none' }}
-                        >
-                          {statusObj.label}
-                        </span>
-                      </div>
-                      <span style={{ fontWeight:800, fontSize:15, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>
+                    {/* Row 1: customer name (right) + amount (left) */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                      <span style={{ fontWeight:800, fontSize:15, color:'var(--action)', fontFamily:'Inter,sans-serif', flexShrink:0 }}>
                         {formatCurrency(order.total)}
+                      </span>
+                      <span style={{ fontSize:14, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'60%', textAlign:'right' }}>
+                        {order.customer_name}
                       </span>
                     </div>
 
-                    {/* Middle row */}
-                    <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-                      {order.customer_name && (
-                        <span style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{order.customer_name}</span>
-                      )}
-                      {order.customer_phone && (
-                        <span style={{ fontSize:12, color:'var(--text-muted)', fontFamily:'Inter,sans-serif', direction:'ltr' }}>{order.customer_phone}</span>
-                      )}
-                      {order.customer_city && (
-                        <span style={{ fontSize:12, color:'var(--text-muted)' }}>{order.customer_city}</span>
-                      )}
-                      {order.profit !== undefined && (
-                        <span style={{ fontSize:12, fontWeight:700, color: order.profit >= 0 ? 'var(--green)' : 'var(--danger)', marginRight:'auto', fontFamily:'Inter,sans-serif' }}>
-                          {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
-                        </span>
-                      )}
+                    {/* Row 2: order number (right) + status badge (left) */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                      <span
+                        onClick={e => { e.stopPropagation(); setQuickStatusId(order.id) }}
+                        style={{ padding:'2px 8px', borderRadius:999, fontSize:11, fontWeight:700, background:`${statusObj.color}18`, color:statusObj.color, cursor:'pointer', flexShrink:0 }}
+                      >
+                        {statusObj.label}
+                      </span>
+                      <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'Inter,monospace', fontWeight:600, direction:'ltr' }}>
+                        {order.order_number}
+                      </span>
                     </div>
 
-                    {/* Products row */}
+                    {/* Row 3: phone + city (right) + profit (left) */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: order.items?.length > 0 ? 4 : 0 }}>
+                      {order.profit !== undefined && order.profit !== 0 ? (
+                        <span style={{ fontSize:12, color: order.profit >= 0 ? 'var(--green)' : 'var(--danger)', fontWeight:700, fontFamily:'Inter,sans-serif', flexShrink:0 }}>
+                          {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
+                        </span>
+                      ) : <span/>}
+                      <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                        {order.customer_phone && <span style={{ fontSize:12, color:'var(--text-muted)', fontFamily:'Inter,sans-serif', direction:'ltr' }}>{order.customer_phone}</span>}
+                        {order.customer_city && <span style={{ fontSize:12, color:'var(--text-muted)' }}>{order.customer_city}</span>}
+                      </div>
+                    </div>
+
+                    {/* Row 4: items */}
                     {order.items?.length > 0 && (
-                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'right', marginBottom:8 }}>
                         {order.items.slice(0,3).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
                         {order.items.length > 3 && ` +${order.items.length-3}`}
                       </div>
                     )}
-                  </div>
 
-                  {/* Actions */}
-                  <div style={{ display:'flex', flexDirection:'column', gap:4, flexShrink:0 }} onClick={e => e.stopPropagation()}>
-                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={14}/></Btn>
-                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14}/></Btn>
-                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14}/></Btn>
+                    {/* Row 5: action buttons */}
+                    <div
+                      style={{ display:'flex', gap:6, paddingTop:8, borderTop:'1px solid var(--border)', justifyContent:'flex-start' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={13}/></Btn>
+                      <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={13}/></Btn>
+                      <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={13}/></Btn>
+                    </div>
                   </div>
                 </div>
               )
