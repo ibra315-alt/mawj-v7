@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Settings as SettingsDB, DB } from '../data/db'
-import { THEMES, DEFAULT_PREFS, saveAppearance } from '../data/appearance'
+import { Settings as SettingsDB, DB, supabase } from '../data/db'
+import { THEMES, LIGHT_THEMES, DEFAULT_PREFS, saveAppearance, saveGlobalDefault } from '../data/appearance'
 import { UAE_CITIES, FONTS } from '../data/constants'
 import { Btn, Card, Input, Select, Textarea, Spinner, Toggle, Badge, toast } from '../components/ui'
 import { IcPlus, IcSave, IcDownload } from '../components/Icons'
@@ -28,20 +28,19 @@ export default function Settings({ theme, toggleTheme }) {
   const [section, setSection] = useState('business')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState({ business: {}, statuses: [], products: [], templates: {}, partners: [] })
+  const [data, setData] = useState({ business: {}, statuses: [], products: [], templates: {} })
 
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
     try {
-      const [business, statuses, products, templates, partners] = await Promise.all([
+      const [business, statuses, products, templates] = await Promise.all([
         SettingsDB.get('business'),
         SettingsDB.get('statuses'),
         SettingsDB.get('products'),
         SettingsDB.get('whatsapp_templates'),
-        SettingsDB.get('partners'),
       ])
-      setData({ business: business || {}, statuses: statuses || [], products: products || [], templates: templates || {}, partners: partners || [] })
+      setData({ business: business || {}, statuses: statuses || [], products: products || [], templates: templates || {} })
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
@@ -68,7 +67,6 @@ export default function Settings({ theme, toggleTheme }) {
     data, updateData, theme, toggleTheme,
     statuses: data.statuses,
     products: data.products,
-    partners: data.partners,
     templates: data.templates,
     business: data.business,
   }
@@ -238,9 +236,9 @@ export default function Settings({ theme, toggleTheme }) {
 /* ══════════════════════════════════════════════════
    SHARED PRIMITIVES
 ══════════════════════════════════════════════════ */
-function SectionTitle({ children, icon }) {
+function SectionTitle({ children, icon, style }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 15, marginBottom: 18, color: 'var(--text)', paddingBottom: 10, borderBottom: '1px solid var(--glass-border)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 15, marginBottom: 18, color: 'var(--text)', paddingBottom: 10, borderBottom: '1px solid var(--glass-border)', ...(style || {}) }}>
       {icon && <span style={{ fontSize: 18 }}>{icon}</span>}
       {children}
     </div>
@@ -376,22 +374,6 @@ function BusinessTab({ data, products, partners, updateData }) {
         </div>
       </Card>
 
-      <Card>
-        <SectionTitle icon="🤝">الشركاء</SectionTitle>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-          {(partners || []).length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا يوجد شركاء بعد</div>}
-          {(partners || []).map((p, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(37,99,235,0.08)', border: '1px solid var(--glass-border)', borderRadius: 999 }}>
-              <span style={{ fontSize: 13, color: 'var(--text)' }}>{p}</span>
-              <button onClick={() => updateData('partners', partners.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}>✕</button>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Input value={partnerName} onChange={e => setPartnerName(e.target.value)} placeholder="اسم الشريك" containerStyle={{ flex: 1 }} />
-          <Btn variant="secondary" onClick={addPartner}>إضافة</Btn>
-        </div>
-      </Card>
     </div>
   )
 }
@@ -474,36 +456,156 @@ function StatusesTab({ statuses, updateData }) {
 function TeamTab() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  useEffect(() => { DB.list('users').then(u => { setUsers(u); setLoading(false) }) }, [])
-  if (loading) return <Spinner />
+  const [saving, setSaving] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [editUser, setEditUser] = useState(null)
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'sales' })
+  const [formError, setFormError] = useState('')
+
+  useEffect(() => { loadUsers() }, [])
+
+  async function loadUsers() {
+    try {
+      const u = await DB.list('users')
+      setUsers(u)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  async function addUser() {
+    if (!form.name || !form.email || !form.password) {
+      setFormError('يرجى ملء جميع الحقول المطلوبة')
+      return
+    }
+    if (form.password.length < 6) {
+      setFormError('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+      return
+    }
+    setSaving(true)
+    setFormError('')
+    try {
+      // 1. Create auth user via Supabase signUp
+      const { data: authData, error: authError } = await supabase.auth.admin
+        ? await supabase.auth.admin.createUser({ email: form.email, password: form.password, email_confirm: true })
+        : await (async () => {
+          // Fallback: use regular signUp (user will need to confirm email)
+          const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password })
+          return { data, error }
+        })()
+      if (authError) throw authError
+
+      // 2. Insert into users table
+      const newUser = await DB.insert('users', {
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        auth_id: authData?.user?.id || null,
+      })
+      setUsers(p => [...p, newUser])
+      setForm({ name: '', email: '', password: '', role: 'sales' })
+      setShowForm(false)
+      toast('تم إضافة المستخدم ✓')
+    } catch (e) {
+      setFormError(e.message || 'فشل إنشاء المستخدم')
+    }
+    finally { setSaving(false) }
+  }
+
+  async function updateRole(id, role) {
+    try {
+      await DB.update('users', id, { role })
+      setUsers(p => p.map(u => u.id === id ? { ...u, role } : u))
+      toast('تم تحديث الصلاحية ✓')
+    } catch { toast('فشل التحديث', 'error') }
+  }
+
+  async function removeUser(id) {
+    if (!confirm('هل تريد حذف هذا المستخدم؟')) return
+    try {
+      await DB.delete('users', id)
+      setUsers(p => p.filter(u => u.id !== id))
+      toast('تم حذف المستخدم')
+    } catch { toast('فشل الحذف', 'error') }
+  }
 
   const ROLES = { admin: 'مدير النظام', accountant: 'محاسب', sales: 'مبيعات', viewer: 'مشاهد' }
   const ROLE_C = { admin: 'var(--teal)', accountant: 'var(--gold)', sales: 'var(--violet-light)', viewer: 'var(--text-muted)' }
 
+  if (loading) return <Spinner />
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <Card>
-        <SectionTitle icon="👥">أعضاء الفريق</SectionTitle>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <SectionTitle icon="👥" style={{ marginBottom: 0 }}>أعضاء الفريق</SectionTitle>
+          <Btn onClick={() => { setShowForm(!showForm); setFormError('') }} variant={showForm ? 'secondary' : 'primary'}>
+            {showForm ? '✕ إلغاء' : '＋ مستخدم جديد'}
+          </Btn>
+        </div>
+
+        {/* Add user form */}
+        {showForm && (
+          <div style={{
+            marginBottom: 20, padding: '16px',
+            background: 'var(--bg-glass)', border: '1.5px solid var(--glass-border-teal)',
+            borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', gap: 12,
+          }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--teal)', marginBottom: 4 }}>إضافة مستخدم جديد</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <Input label="الاسم *" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="مثال: أحمد محمد" />
+              <Input label="البريد الإلكتروني *" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="user@example.com" dir="ltr" />
+              <Input label="كلمة المرور *" type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="٦ أحرف على الأقل" />
+              <Select label="الصلاحية" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
+                {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </Select>
+            </div>
+            {formError && (
+              <div style={{ color: 'var(--red)', fontSize: 12, padding: '8px 12px', background: 'rgba(239,68,68,0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)' }}>{formError}</div>
+            )}
+            <Btn loading={saving} onClick={addUser} style={{ alignSelf: 'flex-start' }}>
+              <IcPlus size={14} /> إضافة المستخدم
+            </Btn>
+          </div>
+        )}
+
+        {/* Users list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {users.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>لا يوجد أعضاء</div>}
           {users.map(u => (
             <GlassRow key={u.id}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg,var(--teal),var(--violet-light),var(--pink))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#050c1a', fontSize: 16 }}>
-                {u.name?.[0] || '؟'}
-              </div>
+              <div style={{
+                width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg,var(--teal),var(--violet-light),var(--pink))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 900, color: '#050c1a', fontSize: 16,
+              }}>{u.name?.[0] || '؟'}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{u.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', direction: 'ltr', textAlign: 'right' }}>{u.email}</div>
               </div>
-              <Badge color={ROLE_C[u.role] || 'var(--text-muted)'}>{ROLES[u.role] || u.role}</Badge>
+              <Select value={u.role} onChange={e => updateRole(u.id, e.target.value)}
+                style={{ fontSize: 12, padding: '4px 10px', height: 32, minWidth: 110 }}>
+                {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </Select>
+              <button onClick={() => removeUser(u.id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 18, padding: 4, flexShrink: 0 }}>✕</button>
             </GlassRow>
           ))}
         </div>
       </Card>
-      <InfoBox>لإضافة مستخدمين جدد، أضفهم في Supabase → Authentication → Users</InfoBox>
+
+      <div style={{
+        padding: '12px 16px',
+        background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.14)',
+        borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--text-sec)',
+        display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.6,
+      }}>
+        <span>💡</span>
+        <span>المستخدمون المضافون هنا سيتلقون بريد تأكيل من Supabase. كلمة المرور مؤقتة ويمكن تغييرها لاحقاً.</span>
+      </div>
     </div>
   )
 }
+
 
 /* ══════════════════════════════════════════════════
    WHATSAPP TAB
@@ -550,6 +652,27 @@ function WhatsAppTab({ templates, updateData }) {
 
 function AppearanceTab({ theme, toggleTheme }) {
   const [prefs, setPrefs] = useState(() => window.__mawjPrefs || DEFAULT_PREFS)
+  const [globalDefault, setGlobalDefault] = useState(false)
+  const [savingGlobal, setSavingGlobal] = useState(false)
+
+  useEffect(() => {
+    // Check if current prefs match global default
+    import('../data/appearance').then(({ loadGlobalDefault }) => {
+      loadGlobalDefault().then(gd => {
+        if (gd && gd.theme === prefs.theme && gd.mode === prefs.mode) setGlobalDefault(true)
+      })
+    })
+  }, [])
+
+  async function setAsGlobalDefault() {
+    setSavingGlobal(true)
+    try {
+      await saveGlobalDefault(prefs)
+      setGlobalDefault(true)
+      toast('تم تعيين الثيم الافتراضي لجميع المستخدمين ✓')
+    } catch { toast('فشل الحفظ', 'error') }
+    finally { setSavingGlobal(false) }
+  }
 
   // Save and apply a partial prefs update
   function update(patch) {
@@ -599,7 +722,60 @@ function AppearanceTab({ theme, toggleTheme }) {
             )
           })}
         </div>
+
+        {/* Light themes */}
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--glass-border)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>🌞 ثيمات فاتحة</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 8 }}>
+            {LIGHT_THEMES.map(t => {
+              const isActive = prefs.theme === t.id
+              return (
+                <button key={t.id} onClick={() => update({ theme: t.id, mode: 'light' })} style={{
+                  padding: '12px 8px', borderRadius: 'var(--radius)',
+                  border: `2px solid ${isActive ? 'var(--teal)' : 'var(--glass-border)'}`,
+                  background: t.vars['--bg'],
+                  cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s ease',
+                  boxShadow: isActive ? '0 0 16px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.08)',
+                  position: 'relative',
+                }}>
+                  <div style={{ display: 'flex', gap: 3, justifyContent: 'center', marginBottom: 6 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.vars['--teal'], boxShadow: `0 0 5px ${t.vars['--teal']}88` }} />
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.vars['--violet-light'] }} />
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.vars['--pink'] }} />
+                  </div>
+                  <div style={{ fontSize: 18, marginBottom: 3 }}>{t.emoji}</div>
+                  <div style={{ fontSize: 12, fontWeight: isActive ? 800 : 600, color: t.vars['--violet'] }}>{t.name}</div>
+                  <div style={{ fontSize: 10, color: t.vars['--violet-light'], marginTop: 1, opacity: 0.7 }}>{t.desc}</div>
+                  {isActive && <div style={{ position: 'absolute', top: 5, left: 5, width: 7, height: 7, borderRadius: '50%', background: t.vars['--teal'] }} />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </Card>
+
+      {/* ── Global Default ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 18px',
+        background: globalDefault ? 'rgba(0,228,184,0.08)' : 'var(--bg-glass)',
+        border: `1.5px solid ${globalDefault ? 'var(--glass-border-teal)' : 'var(--glass-border)'}`,
+        borderRadius: 'var(--radius)',
+        transition: 'all 0.2s ease',
+      }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>🌐 تعيين كافتراضي لجميع المستخدمين</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>سيرى جميع المستخدمين الجدد هذا الثيم</div>
+        </div>
+        <Btn
+          variant={globalDefault ? 'secondary' : 'primary'}
+          loading={savingGlobal}
+          onClick={setAsGlobalDefault}
+          style={{ flexShrink: 0 }}
+        >
+          {globalDefault ? '✓ الافتراضي الحالي' : 'تعيين كافتراضي'}
+        </Btn>
+      </div>
 
       {/* ── Dark/Light ── */}
       <Card>
