@@ -225,15 +225,7 @@ export default function Orders({ user }) {
             filtered.map(order => {
               const statusObj = statuses.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
               return (
-                <SwipeableRow
-                  key={order.id}
-                  actions={[
-                    { label:'حذف',    color:'#ef4444',  icon:'🗑',  onClick:() => setDeleteId(order.id) },
-                    { label:'تعديل',  color:'#7c3aed',  icon:'✏️', onClick:() => { setEditOrder(order); setShowForm(true) } },
-                    { label:'واتساب', color:'#25d166',  icon:'💬',  onClick:() => { const p=order.customer_phone?.replace(/\D/g,''); if(p) window.open(`https://wa.me/${p}`,'_blank') } },
-                  ]}
-                >
-                <div onClick={() => { setViewOrder(order); setShowView(true) }}
+                <div key={order.id} onClick={() => { setViewOrder(order); setShowView(true) }}
                   style={{ background:'var(--bg-glass)', border:`1.5px solid var(--glass-border)`, borderRadius:'var(--radius)', padding:'14px 16px', cursor:'pointer', borderRight:`3px solid ${statusObj.color}` }}
                 >
                   {/* Row 1: order number + status + total */}
@@ -245,21 +237,29 @@ export default function Orders({ user }) {
                     <span style={{ fontWeight:900, fontSize:15, color:'var(--teal)' }}>{formatCurrency(order.total)}</span>
                   </div>
                   {/* Row 2: phone + city */}
-                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:order.items?.length ? 8 : 0 }}>
                     {order.customer_phone && <span style={{ fontSize:13, fontWeight:700, direction:'ltr' }}>{order.customer_phone}</span>}
                     {order.customer_city && <span style={{ fontSize:12, color:'var(--text-muted)' }}>📍 {order.customer_city}</span>}
+                    {order.profit !== undefined && (
+                      <span style={{ fontSize:12, fontWeight:700, color: order.profit >= 0 ? 'var(--green)' : 'var(--red)', marginRight:'auto' }}>
+                        ربح: {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
+                      </span>
+                    )}
                   </div>
                   {/* Row 3: products */}
                   {order.items?.length > 0 && (
-                    <div style={{ fontSize:11, color:'var(--text-sec)', marginTop:6 }}>
+                    <div style={{ fontSize:11, color:'var(--text-sec)', marginBottom:8 }}>
                       {order.items.slice(0,3).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
                       {order.items.length > 3 && ` +${order.items.length-3}`}
                     </div>
                   )}
-                  {/* Swipe hint — only shown on first render */}
-                  <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6, opacity:0.5 }}>← اسحب للإجراءات السريعة</div>
+                  {/* Row 4: actions */}
+                  <div style={{ display:'flex', gap:6, marginTop:4 }} onClick={e => e.stopPropagation()}>
+                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={13}/> عرض</Btn>
+                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={13}/> تعديل</Btn>
+                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={13}/></Btn>
+                  </div>
                 </div>
-                </SwipeableRow>
               )
             })
           )}
@@ -847,81 +847,6 @@ function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
           </div>
         )
       })}
-    </div>
-  )
-}
-
-/* ══════════════════════════════════════════════
-   SWIPEABLE ROW — touch swipe to reveal actions
-   Swipe left: edit | Swipe right: whatsapp
-══════════════════════════════════════════════ */
-function SwipeableRow({ children, actions = [], onSwipeLeft, onSwipeRight }) {
-  const [offset, setOffset]     = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const startX  = React.useRef(0)
-  const startY  = React.useRef(0)
-  const isSwipe = React.useRef(false)
-  const ACTION_W = 72
-
-  function onTouchStart(e) {
-    startX.current  = e.touches[0].clientX
-    startY.current  = e.touches[0].clientY
-    isSwipe.current = false
-    setDragging(true)
-  }
-
-  function onTouchMove(e) {
-    const dx = e.touches[0].clientX - startX.current
-    const dy = e.touches[0].clientY - startY.current
-    if (!isSwipe.current && Math.abs(dy) > Math.abs(dx)) { setDragging(false); return }
-    isSwipe.current = true
-    e.preventDefault()
-    // RTL: swipe right (positive dx) reveals actions on the right side
-    const maxRight = actions.length * ACTION_W
-    const clamped = Math.max(-40, Math.min(maxRight, dx))
-    setOffset(clamped)
-  }
-
-  function onTouchEnd() {
-    setDragging(false)
-    const maxRight = actions.length * ACTION_W
-    if (offset > maxRight / 2) {
-      setOffset(maxRight) // snap open
-    } else {
-      setOffset(0) // snap closed
-    }
-  }
-
-  return (
-    <div style={{ position:'relative', overflow:'hidden', borderRadius:'var(--radius)', userSelect:'none' }}>
-      {/* Action buttons on the RIGHT side (RTL — revealed by swiping right) */}
-      <div style={{ position:'absolute', top:0, bottom:0, right:0, display:'flex', alignItems:'stretch' }}>
-        {actions.map((a, i) => (
-          <button key={i} onClick={() => { a.onClick(); setOffset(0) }} style={{
-            width:ACTION_W, border:'none', cursor:'pointer', fontFamily:'inherit',
-            background:a.color, color:'#fff',
-            display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
-            fontSize:10, fontWeight:800,
-          }}>
-            <span style={{fontSize:20}}>{a.icon}</span>
-            {a.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Sliding content — moves right to reveal actions */}
-      <div
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        style={{
-          transform:`translateX(${offset}px)`,
-          transition: dragging ? 'none' : 'transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)',
-          willChange:'transform',
-        }}
-      >
-        {children}
-      </div>
     </div>
   )
 }
