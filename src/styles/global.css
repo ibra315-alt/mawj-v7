@@ -948,6 +948,14 @@ option {
   .t-title {
     font-size: var(--t-lg);
   }
+
+  /* Hide bottom nav + floating AI when any modal/form is open */
+  body.modal-open .mobile-bottom-nav,
+  body.modal-open [class*="mobile-bottom"],
+  body.modal-open nav[style*="fixed"][style*="bottom"],
+  body.modal-open .ai-float-btn {
+    display: none !important;
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {

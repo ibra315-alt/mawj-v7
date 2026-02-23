@@ -316,7 +316,7 @@ export default function App() {
       {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
 
       {/* Floating AI button */}
-      <button onClick={() => setShowAI(p => !p)} title="موج AI" style={{
+      <button onClick={() => setShowAI(p => !p)} title="موج AI" className="ai-float-btn logo-btn" style={{
         position: 'fixed', bottom: 148, left: 16, zIndex: 700,
         width: 50, height: 50, borderRadius: '50%',
         background: showAI ? 'rgba(255,71,87,0.9)' : 'linear-gradient(135deg,var(--teal),var(--violet))',
@@ -325,9 +325,7 @@ export default function App() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.25s ease',
         animation: showAI ? 'none' : 'pulseGlow 3s ease infinite',
-      }}
-        className="logo-btn"
-      >
+      }}>
         {showAI ? '✕' : '🤖'}
       </button>
 

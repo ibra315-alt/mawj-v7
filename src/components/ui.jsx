@@ -501,10 +501,15 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
+      document.body.classList.add('modal-open')
     } else {
       document.body.style.overflow = ''
+      document.body.classList.remove('modal-open')
     }
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.classList.remove('modal-open')
+    }
   }, [open])
 
   if (!open) return null
