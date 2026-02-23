@@ -54,7 +54,24 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('mawj_theme', theme)
+    localStorage.setItem('mawj_theme_mode', theme)
+
+    if (theme === 'light') {
+      // Clear ALL inline variable overrides so [data-theme="light"] CSS rules take effect
+      const varsToReset = [
+        '--bg', '--bg-alt', '--bg-card', '--bg-glass', '--bg-glass-hover', '--bg-hover',
+        '--bg-border', '--bg-surface',
+        '--violet', '--violet-light', '--violet-bright', '--violet-glow', '--violet-soft', '--violet-faint',
+        '--teal', '--teal-deep', '--teal-glow', '--teal-soft', '--teal-faint',
+        '--pink', '--pink-glow', '--pink-soft',
+        '--sidebar-bg', '--header-bg', '--modal-bg',
+        '--input-bg', '--input-border', '--input-focus',
+        '--glass-border', '--glass-border-strong', '--glass-border-teal',
+        '--shadow-card', '--shadow-float', '--shadow-violet', '--shadow-teal',
+        '--text', '--text-sec', '--text-muted',
+      ]
+      varsToReset.forEach(v => document.documentElement.style.removeProperty(v))
+    }
   }, [theme])
 
   // Restore ALL saved appearance settings on mount
