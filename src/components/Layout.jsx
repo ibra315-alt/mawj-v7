@@ -68,7 +68,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
   }, [moreOpen])
 
   return (
-    <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)' }}>
+    <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)', width:'100%', overflowX:'hidden' }}>
 
       {/* ── DESKTOP SIDEBAR ──────────────────────────── */}
       <aside
@@ -99,9 +99,11 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
       <main
         key={page}
         style={{
-          flex: 1,
+          position: 'relative',
           marginRight: 64,
+          width: 'calc(100vw - 64px)',
           minWidth: 0,
+          minHeight: '100vh',
           animation: 'pageSlideIn var(--dur-page) var(--ease-out) both',
         }}
       >
@@ -134,12 +136,12 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
         @media (min-width: 769px) {
           .mobile-only, .mobile-flex { display: none !important; }
           .desktop-only { display: flex !important; }
-          main { margin-right: 64px !important; padding-bottom: 0 !important; }
+          main { margin-right: 64px !important; width: calc(100vw - 64px) !important; padding-bottom: 0 !important; }
         }
         @media (max-width: 768px) {
           .desktop-only { display: none !important; }
           .mobile-only, .mobile-flex { display: flex !important; }
-          main { margin-right: 0 !important; padding-bottom: calc(64px + env(safe-area-inset-bottom, 12px)) !important; }
+          main { margin-right: 0 !important; width: 100vw !important; padding-bottom: calc(64px + env(safe-area-inset-bottom, 12px)) !important; }
         }
       `}</style>
     </div>

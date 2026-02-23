@@ -331,7 +331,7 @@ export default function Orders({ user }) {
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display:'flex', gap:4, flexShrink:0 }} onClick={e => e.stopPropagation()}>
+                  <div style={{ display:'flex', flexDirection:'column', gap:4, flexShrink:0 }} onClick={e => e.stopPropagation()}>
                     <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={14}/></Btn>
                     <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14}/></Btn>
                     <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14}/></Btn>
