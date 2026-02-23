@@ -572,12 +572,11 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
               {React.Children.map(footer, child =>
                 child ? React.cloneElement(child, {
                   style: {
-                    (child.props && child.props.style) || {},
-                  width: '100%',
-                  justifyContent: 'center',
-                  padding: '14px 20px',
-                  fontSize: 15,
-                }
+                    width: '100%',
+                    justifyContent: 'center',
+                    padding: '14px 20px',
+                    fontSize: 15,
+                  }
                 }) : null
               )}
             </div>
@@ -702,14 +701,13 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
       {React.Children.map(footer, child =>
         child ? React.cloneElement(child, {
           style: {
-                    (child.props && child.props.style) || {},
-          width: '100%',
-          justifyContent: 'center',
-          padding: '14px 20px',
-          fontSize: 15,
-        }
-                }) : null
-              )}
+            width: '100%',
+            justifyContent: 'center',
+            padding: '14px 20px',
+            fontSize: 15,
+          }
+        }) : null
+      )}
     </div>
   )}
 </div>
