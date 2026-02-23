@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Settings as SettingsDB, DB } from '../data/db'
+import { THEMES, DEFAULT_PREFS, saveAppearance } from '../data/appearance'
 import { UAE_CITIES, FONTS } from '../data/constants'
 import { Btn, Card, Input, Select, Textarea, Spinner, Toggle, Badge, toast } from '../components/ui'
 import { IcPlus, IcSave, IcDownload } from '../components/Icons'
@@ -546,173 +547,17 @@ function WhatsAppTab({ templates, updateData }) {
    APPEARANCE TAB — Themes + controls
 ══════════════════════════════════════════════════ */
 
-const THEMES = [
-  {
-    id: 'mawj', name: 'مَوج', emoji: '🌊', desc: 'النيلي العميق',
-    vars: { '--bg': '#050c1a', '--bg-alt': '#070f22', '--violet': '#2563eb', '--violet-light': '#60a5fa', '--teal': '#00e4b8', '--pink': '#ec4899' }
-  },
-  {
-    id: 'galaxy', name: 'مجرة', emoji: '🌌', desc: 'البنفسجي الكوني',
-    vars: { '--bg': '#0a0618', '--bg-alt': '#0d0820', '--violet': '#7c3aed', '--violet-light': '#a78bfa', '--teal': '#c084fc', '--pink': '#f472b6' }
-  },
-  {
-    id: 'obsidian', name: 'أوبسيديان', emoji: '🖤', desc: 'الأسود والذهب',
-    vars: { '--bg': '#0a0a0a', '--bg-alt': '#111111', '--violet': '#525252', '--violet-light': '#a3a3a3', '--teal': '#e6b94a', '--pink': '#f5f5f5' }
-  },
-  {
-    id: 'emerald', name: 'زمرد', emoji: '🌿', desc: 'الغابة الداكنة',
-    vars: { '--bg': '#051510', '--bg-alt': '#071a13', '--violet': '#065f46', '--violet-light': '#34d399', '--teal': '#10b981', '--pink': '#86efac' }
-  },
-  {
-    id: 'ember', name: 'جمر', emoji: '🔥', desc: 'الدفء والطاقة',
-    vars: { '--bg': '#0f0a08', '--bg-alt': '#150d09', '--violet': '#9a3412', '--violet-light': '#fb923c', '--teal': '#f97316', '--pink': '#fbbf24' }
-  },
-  {
-    id: 'sakura', name: 'سكورا', emoji: '🌸', desc: 'الوردي الأنيق',
-    vars: { '--bg': '#0f080e', '--bg-alt': '#140a12', '--violet': '#9d174d', '--violet-light': '#f9a8d4', '--teal': '#ec4899', '--pink': '#fda4af' }
-  },
-  {
-    id: 'arctic', name: 'قطبي', emoji: '🧊', desc: 'النظيف المتجمد',
-    vars: { '--bg': '#050d14', '--bg-alt': '#07111b', '--violet': '#164e63', '--violet-light': '#67e8f9', '--teal': '#22d3ee', '--pink': '#a5f3fc' }
-  },
-  {
-    id: 'golden', name: 'ذهبي', emoji: '✨', desc: 'الفخامة الملكية',
-    vars: { '--bg': '#080600', '--bg-alt': '#0f0c00', '--violet': '#78350f', '--violet-light': '#fbbf24', '--teal': '#f59e0b', '--pink': '#fde68a' }
-  },
-]
 
 function AppearanceTab({ theme, toggleTheme }) {
-  const [activeTheme, setActiveTheme] = useState(() => localStorage.getItem('mawj_theme') || 'mawj')
-  const [accentColor, setAccentColor] = useState(() => localStorage.getItem('mawj_accent') || '#00e4b8')
-  const [fontSize, setFontSize] = useState(() => localStorage.getItem('mawj_fontsize') || 'medium')
-  const [radius, setRadius] = useState(() => localStorage.getItem('mawj_radius') || 'rounded')
-  const [density, setDensity] = useState(() => localStorage.getItem('mawj_density') || 'normal')
-  const [animations, setAnimations] = useState(() => localStorage.getItem('mawj_animations') !== 'false')
-  const [noise, setNoise] = useState(() => localStorage.getItem('mawj_noise') !== 'false')
-  const [spotlight, setSpotlight] = useState(() => localStorage.getItem('mawj_spotlight') !== 'false')
-  const currentFont = localStorage.getItem('mawj_font') || "'Noto Kufi Arabic', sans-serif"
+  const [prefs, setPrefs] = useState(() => window.__mawjPrefs || DEFAULT_PREFS)
 
-  function applyTheme(t) {
-    setActiveTheme(t.id)
-    localStorage.setItem('mawj_theme', t.id)
-    const root = document.documentElement
-    function hexRgb(hex) {
-      const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-      return r ? `${parseInt(r[1], 16)},${parseInt(r[2], 16)},${parseInt(r[3], 16)}` : null
-    }
-    const bg = t.vars['--bg'], violet = t.vars['--violet'], vLight = t.vars['--violet-light']
-    const teal = t.vars['--teal'], pink = t.vars['--pink'] || vLight
-    const bgRgb = hexRgb(bg), vRgb = hexRgb(violet), tRgb = hexRgb(teal), pRgb = hexRgb(pink)
-    const all = {
-      '--bg': bg, '--bg-alt': t.vars['--bg-alt'] || bg,
-      '--violet': violet, '--violet-light': vLight, '--violet-bright': vLight,
-      '--violet-glow': vRgb ? `rgba(${vRgb},0.28)` : '',
-      '--violet-soft': vRgb ? `rgba(${vRgb},0.14)` : '',
-      '--violet-faint': vRgb ? `rgba(${vRgb},0.06)` : '',
-      '--teal': teal, '--teal-deep': teal,
-      '--teal-glow': tRgb ? `rgba(${tRgb},0.22)` : '',
-      '--teal-soft': tRgb ? `rgba(${tRgb},0.10)` : '',
-      '--teal-faint': tRgb ? `rgba(${tRgb},0.05)` : '',
-      '--pink': pink,
-      '--pink-glow': pRgb ? `rgba(${pRgb},0.22)` : '',
-      '--pink-soft': pRgb ? `rgba(${pRgb},0.10)` : '',
-      '--bg-card': bgRgb ? `rgba(${bgRgb},0.88)` : '',
-      '--bg-glass': vRgb ? `rgba(${vRgb},0.07)` : '',
-      '--bg-glass-hover': vRgb ? `rgba(${vRgb},0.14)` : '',
-      '--bg-hover': vRgb ? `rgba(${vRgb},0.08)` : '',
-      '--bg-border': vRgb ? `rgba(${vRgb},0.16)` : '',
-      '--bg-surface': vRgb ? `rgba(${vRgb},0.05)` : '',
-      '--sidebar-bg': bgRgb ? `rgba(${bgRgb},0.97)` : '',
-      '--header-bg': bgRgb ? `rgba(${bgRgb},0.93)` : '',
-      '--modal-bg': bgRgb ? `rgba(${bgRgb},0.99)` : '',
-      '--input-bg': vRgb ? `rgba(${vRgb},0.08)` : '',
-      '--input-border': vRgb ? `rgba(${vRgb},0.18)` : '',
-      '--input-focus': vRgb ? `rgba(${vRgb},0.35)` : '',
-      '--glass-border': vRgb ? `rgba(${vRgb},0.18)` : '',
-      '--glass-border-strong': vRgb ? `rgba(${vRgb},0.30)` : '',
-      '--glass-border-teal': tRgb ? `rgba(${tRgb},0.22)` : '',
-      '--shadow-card': bgRgb && vRgb ? `0 4px 32px rgba(${bgRgb},0.6), 0 1px 0 rgba(${vRgb},0.08) inset` : '',
-      '--shadow-float': bgRgb && vRgb ? `0 24px 64px rgba(${bgRgb},0.75), 0 0 0 1px rgba(${vRgb},0.10)` : '',
-      '--shadow-violet': vRgb ? `0 8px 32px rgba(${vRgb},0.35)` : '',
-      '--shadow-teal': tRgb ? `0 8px 32px rgba(${tRgb},0.28)` : '',
-    }
-    Object.entries(all).forEach(([k, v]) => { if (v) root.style.setProperty(k, v) })
-    toast(`تم تطبيق ثيم ${t.name} ${t.emoji}`)
-  }
-  function applyFont(fontFamily) {
-    document.documentElement.style.setProperty('--font', fontFamily)
-    document.body.style.fontFamily = fontFamily
-    const s = document.getElementById('mawj-font-style') || document.createElement('style')
-    s.id = 'mawj-font-style'
-    s.textContent = `*, input, button, select, textarea { font-family: ${fontFamily} !important; }`
-    document.head.appendChild(s)
-    localStorage.setItem('mawj_font', fontFamily)
-    toast('تم تطبيق الخط ✓')
-  }
-
-  function applyAccent(hex) {
-    setAccentColor(hex)
-    localStorage.setItem('mawj_accent', hex)
-    const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-    if (r) {
-      const rgb = `${parseInt(r[1], 16)},${parseInt(r[2], 16)},${parseInt(r[3], 16)}`
-      document.documentElement.style.setProperty('--teal', hex)
-      document.documentElement.style.setProperty('--teal-glow', `rgba(${rgb},0.22)`)
-      document.documentElement.style.setProperty('--teal-soft', `rgba(${rgb},0.10)`)
-    }
-    toast('تم تطبيق لون الإجراء ✓')
-  }
-
-  function applyFontSize(size) {
-    setFontSize(size)
-    localStorage.setItem('mawj_fontsize', size)
-    const map = { small: 13, medium: 15, large: 17 }
-    document.documentElement.style.fontSize = map[size] + 'px'
-    toast('تم تطبيق الحجم ✓')
-  }
-
-  function applyRadius(r) {
-    setRadius(r)
-    localStorage.setItem('mawj_radius', r)
-    const map = { sharp: '4px', rounded: '16px', pill: '28px' }
-    const sm = { sharp: '4px', rounded: '10px', pill: '18px' }
-    document.documentElement.style.setProperty('--radius', map[r])
-    document.documentElement.style.setProperty('--radius-sm', sm[r])
-    toast('تم تطبيق الشكل ✓')
-  }
-
-  function applyDensity(d) {
-    setDensity(d)
-    localStorage.setItem('mawj_density', d)
-    const map = { compact: '8px', normal: '20px', comfortable: '32px' }
-    document.documentElement.style.setProperty('--s5', map[d])
-    const s = document.getElementById('mawj-density-style') || document.createElement('style')
-    s.id = 'mawj-density-style'
-    s.textContent = d === 'compact' ? '.page{padding:10px 10px 80px!important}' : d === 'comfortable' ? '.page{padding:28px 28px 96px!important}' : ''
-    document.head.appendChild(s)
-    toast('تم تطبيق الكثافة ✓')
-  }
-
-  function toggleAnim(v) {
-    setAnimations(v)
-    localStorage.setItem('mawj_animations', v)
-    const s = document.getElementById('mawj-anim-style') || document.createElement('style')
-    s.id = 'mawj-anim-style'
-    s.textContent = v ? '' : `
-      .page{animation:none!important} .stagger>*{animation:none!important}
-      @keyframes pageIn{from{}to{}} @keyframes cardEntrance{from{}to{}}
-      @keyframes fadeInUp{from{}to{}} @keyframes toastIn{from{}to{}}
-      @keyframes modalIn{from{}to{}} @keyframes sheetUp{from{}to{}}
-    `
-    document.head.appendChild(s)
-    toast(v ? 'تم تفعيل الحركات' : 'تم إيقاف الحركات')
-  }
-
-  function toggleNoise(v) {
-    setNoise(v)
-    localStorage.setItem('mawj_noise', v)
-    document.documentElement.style.setProperty('--noise-opacity', v ? '0.28' : '0')
-    toast(v ? 'تم تفعيل الملمس' : 'تم إيقاف الملمس')
+  // Save and apply a partial prefs update
+  function update(patch) {
+    const next = { ...prefs, ...patch }
+    setPrefs(next)
+    window.__mawjPrefs = next
+    saveAppearance(next)
+    toast('تم الحفظ ✓')
   }
 
   const ACCENT_PRESETS = [
@@ -730,25 +575,21 @@ function AppearanceTab({ theme, toggleTheme }) {
         <SectionTitle icon="🎨">الثيمات</SectionTitle>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 10 }}>
           {THEMES.map(t => {
-            const isActive = activeTheme === t.id
+            const isActive = prefs.theme === t.id
             return (
-              <button key={t.id} onClick={() => applyTheme(t)} style={{
+              <button key={t.id} onClick={() => update({ theme: t.id })} style={{
                 padding: '14px 10px', borderRadius: 'var(--radius)',
                 border: `2px solid ${isActive ? 'var(--teal)' : 'var(--glass-border)'}`,
-                background: isActive
-                  ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))'
-                  : 'var(--bg-glass)',
-                cursor: 'pointer', fontFamily: 'inherit',
-                transition: 'all 0.2s ease',
+                background: isActive ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-glass)',
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s ease',
                 boxShadow: isActive ? '0 0 20px rgba(0,228,184,0.20)' : 'none',
                 position: 'relative', overflow: 'hidden',
               }}>
-                {/* Mini color preview */}
                 <div style={{ display: 'flex', gap: 3, justifyContent: 'center', marginBottom: 8 }}>
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', background: t.vars['--bg'], border: '1px solid rgba(255,255,255,0.1)' }} />
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', background: t.vars['--teal'], boxShadow: `0 0 8px ${t.vars['--teal']}88` }} />
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', background: t.vars['--violet-light'] }} />
-                  {t.vars['--pink'] && <div style={{ width: 16, height: 16, borderRadius: '50%', background: t.vars['--pink'] }} />}
+                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--bg'], border: '1px solid rgba(255,255,255,0.15)' }} />
+                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--teal'], boxShadow: `0 0 6px ${t.vars['--teal']}88` }} />
+                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--violet-light'] }} />
+                  <div style={{ width: 14, height: 14, borderRadius: '50%', background: t.vars['--pink'] || t.vars['--violet-light'] }} />
                 </div>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>{t.emoji}</div>
                 <div style={{ fontSize: 13, fontWeight: isActive ? 800 : 600, color: isActive ? 'var(--teal)' : 'var(--text)' }}>{t.name}</div>
@@ -765,13 +606,12 @@ function AppearanceTab({ theme, toggleTheme }) {
         <SectionTitle icon="🌗">وضع العرض</SectionTitle>
         <div style={{ display: 'flex', gap: 10 }}>
           {[{ id: 'dark', emoji: '🌙', label: 'داكن', desc: 'مريح للعيون' }, { id: 'light', emoji: '☀️', label: 'فاتح', desc: 'إضاءة كاملة' }].map(t => (
-            <button key={t.id} onClick={() => { if (theme !== t.id) toggleTheme() }} style={{
+            <button key={t.id} onClick={() => { update({ mode: t.id }); if (theme !== t.id) toggleTheme() }} style={{
               flex: 1, padding: '16px 12px', borderRadius: 'var(--radius)',
-              border: `2px solid ${theme === t.id ? 'var(--teal)' : 'var(--glass-border)'}`,
-              background: theme === t.id ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-glass)',
-              color: theme === t.id ? 'var(--teal)' : 'var(--text-sec)',
-              cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 13,
-              transition: 'all 0.2s ease',
+              border: `2px solid ${prefs.mode === t.id ? 'var(--teal)' : 'var(--glass-border)'}`,
+              background: prefs.mode === t.id ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-glass)',
+              color: prefs.mode === t.id ? 'var(--teal)' : 'var(--text-sec)',
+              cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, transition: 'all 0.2s ease',
             }}>
               <div style={{ fontSize: 24, marginBottom: 6 }}>{t.emoji}</div>
               <div>{t.label}</div>
@@ -786,22 +626,21 @@ function AppearanceTab({ theme, toggleTheme }) {
         <SectionTitle icon="🎯">لون الإجراء</SectionTitle>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
           {ACCENT_PRESETS.map(p => (
-            <button key={p.color} onClick={() => applyAccent(p.color)} title={p.name} style={{
+            <button key={p.color} onClick={() => update({ accent: p.color })} title={p.name} style={{
               width: 44, height: 44, borderRadius: 'var(--radius-sm)', background: p.color,
-              border: `3px solid ${accentColor === p.color ? 'var(--text)' : 'transparent'}`,
+              border: `3px solid ${prefs.accent === p.color ? 'var(--text)' : 'transparent'}`,
               cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, position: 'relative',
-              boxShadow: accentColor === p.color ? `0 0 18px ${p.color}aa` : `0 2px 8px ${p.color}44`,
+              boxShadow: prefs.accent === p.color ? `0 0 18px ${p.color}aa` : `0 2px 8px ${p.color}44`,
             }}>
-              {accentColor === p.color && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 900, textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>✓</div>}
+              {prefs.accent === p.color && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 900, textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>✓</div>}
             </button>
           ))}
-          {/* Custom picker */}
           <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
             <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', background: 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)', border: '2px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--text)', cursor: 'pointer' }}>＋</div>
-            <input type="color" value={accentColor} onChange={e => applyAccent(e.target.value)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+            <input type="color" value={prefs.accent} onChange={e => update({ accent: e.target.value })} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
           </div>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>اللون الحالي: <span style={{ color: accentColor, fontWeight: 700 }}>■ {accentColor}</span></div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>اللون الحالي: <span style={{ color: prefs.accent, fontWeight: 700 }}>■ {prefs.accent}</span></div>
       </Card>
 
       {/* ── Font ── */}
@@ -809,15 +648,14 @@ function AppearanceTab({ theme, toggleTheme }) {
         <SectionTitle icon="🔤">الخط</SectionTitle>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {Object.entries(FONTS).map(([name, family]) => {
-            const active = currentFont === family
+            const active = prefs.font === family
             return (
-              <button key={name} onClick={() => applyFont(family)} style={{
+              <button key={name} onClick={() => update({ font: family })} style={{
                 padding: '12px 18px', borderRadius: 999,
                 border: `2px solid ${active ? 'var(--teal)' : 'var(--glass-border)'}`,
                 background: active ? 'linear-gradient(135deg,rgba(0,228,184,0.10),rgba(37,99,235,0.06))' : 'var(--bg-glass)',
                 color: active ? 'var(--teal)' : 'var(--text-sec)',
-                cursor: 'pointer', fontFamily: family, fontSize: 15, fontWeight: 700,
-                transition: 'all 0.2s ease',
+                cursor: 'pointer', fontFamily: family, fontSize: 15, fontWeight: 700, transition: 'all 0.2s ease',
               }}>
                 {name}
                 <div style={{ fontSize: 11, marginTop: 3, fontWeight: 400, opacity: 0.65 }}>أبجد هوز ١٢٣</div>
@@ -833,21 +671,21 @@ function AppearanceTab({ theme, toggleTheme }) {
         <ControlRow label="حجم الخط" desc="يؤثر على كل النصوص في التطبيق">
           <div style={{ display: 'flex', gap: 6 }}>
             {[{ id: 'small', label: 'صغير' }, { id: 'medium', label: 'متوسط' }, { id: 'large', label: 'كبير' }].map(s => (
-              <ControlBtn key={s.id} active={fontSize === s.id} onClick={() => applyFontSize(s.id)}>{s.label}</ControlBtn>
+              <ControlBtn key={s.id} active={prefs.fontSize === s.id} onClick={() => update({ fontSize: s.id })}>{s.label}</ControlBtn>
             ))}
           </div>
         </ControlRow>
         <ControlRow label="شكل الزوايا" desc="حواف البطاقات والأزرار">
           <div style={{ display: 'flex', gap: 6 }}>
-            {[{ id: 'sharp', label: 'حاد ■' }, { id: 'rounded', label: 'مدوّر ▢' }, { id: 'pill', label: 'بيضوي ⬭' }].map(r => (
-              <ControlBtn key={r.id} active={radius === r.id} onClick={() => applyRadius(r.id)}>{r.label}</ControlBtn>
+            {[{ id: 'sharp', label: 'حاد' }, { id: 'rounded', label: 'مدوّر' }, { id: 'pill', label: 'بيضوي' }].map(r => (
+              <ControlBtn key={r.id} active={prefs.radius === r.id} onClick={() => update({ radius: r.id })}>{r.label}</ControlBtn>
             ))}
           </div>
         </ControlRow>
         <ControlRow label="كثافة العرض" desc="المسافات بين العناصر" last>
           <div style={{ display: 'flex', gap: 6 }}>
             {[{ id: 'compact', label: 'ضيق' }, { id: 'normal', label: 'عادي' }, { id: 'comfortable', label: 'مريح' }].map(d => (
-              <ControlBtn key={d.id} active={density === d.id} onClick={() => applyDensity(d.id)}>{d.label}</ControlBtn>
+              <ControlBtn key={d.id} active={prefs.density === d.id} onClick={() => update({ density: d.id })}>{d.label}</ControlBtn>
             ))}
           </div>
         </ControlRow>
@@ -857,18 +695,19 @@ function AppearanceTab({ theme, toggleTheme }) {
       <Card>
         <SectionTitle icon="⚙️">تفضيلات العرض</SectionTitle>
         {[
-          { label: 'حركات وانتقالات', desc: 'تأثيرات الحركة بين الصفحات', val: animations, set: toggleAnim },
-          { label: 'ملمس الخلفية', desc: 'نسيج خفيف على الخلفية', val: noise, set: toggleNoise },
-          { label: 'تأثير المؤشر', desc: 'هالة ضوئية تتبع مؤشر الماوس', val: spotlight, set: v => { setSpotlight(v); localStorage.setItem('mawj_spotlight', v); toast(v ? 'مفعّل' : 'موقوف') } },
+          { key: 'animations', label: 'حركات وانتقالات', desc: 'تأثيرات الحركة بين الصفحات' },
+          { key: 'noise', label: 'ملمس الخلفية', desc: 'نسيج خفيف على الخلفية' },
+          { key: 'spotlight', label: 'تأثير المؤشر', desc: 'هالة ضوئية تتبع مؤشر الماوس' },
         ].map((item, i, arr) => (
-          <ControlRow key={item.label} label={item.label} desc={item.desc} last={i === arr.length - 1}>
-            <Toggle checked={item.val} onChange={item.set} />
+          <ControlRow key={item.key} label={item.label} desc={item.desc} last={i === arr.length - 1}>
+            <Toggle checked={!!prefs[item.key]} onChange={v => update({ [item.key]: v })} />
           </ControlRow>
         ))}
       </Card>
     </div>
   )
 }
+
 
 /* ══════════════════════════════════════════════════
    DELIVERY TAB

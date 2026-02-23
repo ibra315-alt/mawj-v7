@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase, Auth } from './data/db'
+import { loadAndApplyAppearance, applyAppearance, DEFAULT_PREFS } from './data/appearance'
 import { ToastContainer } from './components/ui'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -48,153 +49,25 @@ export default function App() {
   const [page, setPage] = useState('dashboard')
   const [prevPage, setPrevPage] = useState(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [theme, setTheme] = useState(() => localStorage.getItem('mawj_theme') || 'dark')
+  const [theme, setTheme] = useState('dark') // overwritten on mount from Supabase
   const [showAI, setShowAI] = useState(false)
   const [pageKey, setPageKey] = useState(0)
 
+  // ── Apply theme mode change (dark/light) ──
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('mawj_theme_mode', theme)
-
-    if (theme === 'light') {
-      // Clear ALL inline variable overrides so [data-theme="light"] CSS rules take effect
-      const varsToReset = [
-        '--bg', '--bg-alt', '--bg-card', '--bg-glass', '--bg-glass-hover', '--bg-hover',
-        '--bg-border', '--bg-surface',
-        '--violet', '--violet-light', '--violet-bright', '--violet-glow', '--violet-soft', '--violet-faint',
-        '--teal', '--teal-deep', '--teal-glow', '--teal-soft', '--teal-faint',
-        '--pink', '--pink-glow', '--pink-soft',
-        '--sidebar-bg', '--header-bg', '--modal-bg',
-        '--input-bg', '--input-border', '--input-focus',
-        '--glass-border', '--glass-border-strong', '--glass-border-teal',
-        '--shadow-card', '--shadow-float', '--shadow-violet', '--shadow-teal',
-        '--text', '--text-sec', '--text-muted',
-      ]
-      varsToReset.forEach(v => document.documentElement.style.removeProperty(v))
+    // Re-apply full appearance so theme mode change is reflected
+    // We read from Supabase cache via a stored ref set on mount
+    if (window.__mawjPrefs) {
+      applyAppearance({ ...window.__mawjPrefs, mode: theme })
     }
   }, [theme])
 
-  // Restore ALL saved appearance settings on mount
+  // ── Load appearance from Supabase on mount ──
   useEffect(() => {
-    // ── Restore color theme ──
-    const THEMES = [
-      { id: 'mawj', vars: { '--bg': '#050c1a', '--bg-alt': '#070f22', '--violet': '#2563eb', '--violet-light': '#60a5fa', '--teal': '#00e4b8', '--pink': '#ec4899' } },
-      { id: 'galaxy', vars: { '--bg': '#0a0618', '--bg-alt': '#0d0820', '--violet': '#7c3aed', '--violet-light': '#a78bfa', '--teal': '#c084fc', '--pink': '#f472b6' } },
-      { id: 'obsidian', vars: { '--bg': '#0a0a0a', '--bg-alt': '#111111', '--violet': '#525252', '--violet-light': '#a3a3a3', '--teal': '#e6b94a', '--pink': '#f5f5f5' } },
-      { id: 'emerald', vars: { '--bg': '#051510', '--bg-alt': '#071a13', '--violet': '#065f46', '--violet-light': '#34d399', '--teal': '#10b981', '--pink': '#86efac' } },
-      { id: 'ember', vars: { '--bg': '#0f0a08', '--bg-alt': '#150d09', '--violet': '#9a3412', '--violet-light': '#fb923c', '--teal': '#f97316', '--pink': '#fbbf24' } },
-      { id: 'sakura', vars: { '--bg': '#0f080e', '--bg-alt': '#140a12', '--violet': '#9d174d', '--violet-light': '#f9a8d4', '--teal': '#ec4899', '--pink': '#fda4af' } },
-      { id: 'arctic', vars: { '--bg': '#050d14', '--bg-alt': '#07111b', '--violet': '#164e63', '--violet-light': '#67e8f9', '--teal': '#22d3ee', '--pink': '#a5f3fc' } },
-      { id: 'golden', vars: { '--bg': '#080600', '--bg-alt': '#0f0c00', '--violet': '#78350f', '--violet-light': '#fbbf24', '--teal': '#f59e0b', '--pink': '#fde68a' } },
-    ]
-    const savedTheme = localStorage.getItem('mawj_theme')
-    const savedMode = localStorage.getItem('mawj_theme_mode') || 'dark'
-    // Only apply color theme in dark mode — light mode uses its own CSS vars
-    if (savedMode === 'dark' && savedTheme) {
-      const t = THEMES.find(t => t.id === savedTheme)
-      if (t) {
-        const root = document.documentElement
-        function hexRgb(hex) {
-          const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-          return r ? `${parseInt(r[1], 16)},${parseInt(r[2], 16)},${parseInt(r[3], 16)}` : null
-        }
-        const bg = t.vars['--bg'], violet = t.vars['--violet'], vLight = t.vars['--violet-light']
-        const teal = t.vars['--teal'], pink = t.vars['--pink'] || vLight
-        const bgRgb = hexRgb(bg), vRgb = hexRgb(violet), tRgb = hexRgb(teal), pRgb = hexRgb(pink)
-        const all = {
-          '--bg': bg, '--bg-alt': t.vars['--bg-alt'] || bg,
-          '--violet': violet, '--violet-light': vLight, '--violet-bright': vLight,
-          '--violet-glow': vRgb ? `rgba(${vRgb},0.28)` : '',
-          '--violet-soft': vRgb ? `rgba(${vRgb},0.14)` : '',
-          '--violet-faint': vRgb ? `rgba(${vRgb},0.06)` : '',
-          '--teal': teal, '--teal-deep': teal,
-          '--teal-glow': tRgb ? `rgba(${tRgb},0.22)` : '',
-          '--teal-soft': tRgb ? `rgba(${tRgb},0.10)` : '',
-          '--teal-faint': tRgb ? `rgba(${tRgb},0.05)` : '',
-          '--pink': pink,
-          '--pink-glow': pRgb ? `rgba(${pRgb},0.22)` : '',
-          '--pink-soft': pRgb ? `rgba(${pRgb},0.10)` : '',
-          '--bg-card': bgRgb ? `rgba(${bgRgb},0.88)` : '',
-          '--bg-glass': vRgb ? `rgba(${vRgb},0.07)` : '',
-          '--bg-glass-hover': vRgb ? `rgba(${vRgb},0.14)` : '',
-          '--bg-hover': vRgb ? `rgba(${vRgb},0.08)` : '',
-          '--bg-border': vRgb ? `rgba(${vRgb},0.16)` : '',
-          '--bg-surface': vRgb ? `rgba(${vRgb},0.05)` : '',
-          '--sidebar-bg': bgRgb ? `rgba(${bgRgb},0.97)` : '',
-          '--header-bg': bgRgb ? `rgba(${bgRgb},0.93)` : '',
-          '--modal-bg': bgRgb ? `rgba(${bgRgb},0.99)` : '',
-          '--input-bg': vRgb ? `rgba(${vRgb},0.08)` : '',
-          '--input-border': vRgb ? `rgba(${vRgb},0.18)` : '',
-          '--input-focus': vRgb ? `rgba(${vRgb},0.35)` : '',
-          '--glass-border': vRgb ? `rgba(${vRgb},0.18)` : '',
-          '--glass-border-strong': vRgb ? `rgba(${vRgb},0.30)` : '',
-          '--glass-border-teal': tRgb ? `rgba(${tRgb},0.22)` : '',
-          '--shadow-card': bgRgb && vRgb ? `0 4px 32px rgba(${bgRgb},0.6), 0 1px 0 rgba(${vRgb},0.08) inset` : '',
-          '--shadow-float': bgRgb && vRgb ? `0 24px 64px rgba(${bgRgb},0.75), 0 0 0 1px rgba(${vRgb},0.10)` : '',
-          '--shadow-violet': vRgb ? `0 8px 32px rgba(${vRgb},0.35)` : '',
-          '--shadow-teal': tRgb ? `0 8px 32px rgba(${tRgb},0.28)` : '',
-        }
-        Object.entries(all).forEach(([k, v]) => { if (v) root.style.setProperty(k, v) })
-      }
-    }
-    // Font
-    const font = localStorage.getItem('mawj_font')
-    if (font) {
-      const s = document.getElementById('mawj-font-style') || document.createElement('style')
-      s.id = 'mawj-font-style'
-      s.textContent = `*, input, button, select, textarea { font-family: ${font} !important; }`
-      document.head.appendChild(s)
-    }
-    // Accent color
-    const accent = localStorage.getItem('mawj_accent')
-    if (accent) {
-      const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(accent)
-      if (r) {
-        const rgb = `${parseInt(r[1], 16)},${parseInt(r[2], 16)},${parseInt(r[3], 16)}`
-        document.documentElement.style.setProperty('--teal', accent)
-        document.documentElement.style.setProperty('--teal-glow', `rgba(${rgb},0.18)`)
-        document.documentElement.style.setProperty('--teal-soft', `rgba(${rgb},0.07)`)
-      }
-    }
-    // Font size
-    const fs = localStorage.getItem('mawj_fontsize')
-    if (fs) { const map = { small: 13, medium: 14, large: 15 }; document.documentElement.style.fontSize = (map[fs] || 14) + 'px' }
-    // Border radius
-    const rad = localStorage.getItem('mawj_radius')
-    if (rad) {
-      const map = { sharp: '6px', rounded: '18px', pill: '28px' }
-      const sm = { sharp: '4px', rounded: '12px', pill: '18px' }
-      document.documentElement.style.setProperty('--radius', map[rad] || '18px')
-      document.documentElement.style.setProperty('--radius-sm', sm[rad] || '12px')
-    }
-    // Animations off
-    if (localStorage.getItem('mawj_animations') === 'false') {
-      const s = document.getElementById('mawj-anim-style') || document.createElement('style')
-      s.id = 'mawj-anim-style'
-      s.textContent = `
-        .page { animation: none !important; }
-        .stagger > * { animation: none !important; }
-        @keyframes pageIn { from{} to{} }
-        @keyframes cardEntrance { from{} to{} }
-        @keyframes fadeInUp { from{} to{} }
-        @keyframes shimmerSlide { from{} to{} }
-        @keyframes toastIn { from{} to{} }
-        @keyframes sheetUp { from{} to{} }
-        @keyframes modalIn { from{} to{} }
-      `
-      document.head.appendChild(s)
-    }
-    // Noise off
-    if (localStorage.getItem('mawj_noise') === 'false') {
-      document.documentElement.style.setProperty('--noise-opacity', '0')
-    }
-    // Compact mode
-    if (localStorage.getItem('mawj_compact') === 'true') {
-      const s = document.getElementById('mawj-compact-style') || document.createElement('style')
-      s.id = 'mawj-compact-style'
-      s.textContent = '.page { padding: 14px !important; }'
-      document.head.appendChild(s)
-    }
+    loadAndApplyAppearance().then(prefs => {
+      window.__mawjPrefs = prefs
+      setTheme(prefs.mode || 'dark')
+    })
   }, [])
 
   useEffect(() => {
@@ -221,7 +94,15 @@ export default function App() {
     setDrawerOpen(false)
   }
 
-  function toggleTheme() { setTheme(t => t === 'dark' ? 'light' : 'dark') }
+  function toggleTheme() {
+    setTheme(t => {
+      const next = t === 'dark' ? 'light' : 'dark'
+      const prefs = { ...(window.__mawjPrefs || DEFAULT_PREFS), mode: next }
+      window.__mawjPrefs = prefs
+      import('./data/appearance').then(({ saveAppearance }) => saveAppearance(prefs))
+      return next
+    })
+  }
 
   if (session === undefined) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050810', flexDirection: 'column', gap: 20, position: 'relative', overflow: 'hidden' }}>
