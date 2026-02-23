@@ -49,6 +49,14 @@ export default function Dashboard({ onNavigate }) {
       const profit       = monthOrders.reduce((s,o) => s+(o.profit||0), 0)
       const totalExpenses = monthExpenses.reduce((s,e) => s+(e.amount||0), 0)
 
+      // Yesterday comparison
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate()-1)
+      const todayOrders = orders.filter(o => new Date(o.created_at) >= todayStart)
+      const yestOrders  = orders.filter(o => { const d=new Date(o.created_at); return d>=yestStart && d<todayStart })
+      const todayRev = todayOrders.reduce((s,o)=>s+(o.total||0),0)
+      const yestRev  = yestOrders.reduce((s,o)=>s+(o.total||0),0)
+
       setStats({
         totalOrders: monthOrders.length,
         revenue,
@@ -57,6 +65,10 @@ export default function Dashboard({ onNavigate }) {
         delivered: monthOrders.filter(o => o.status === 'delivered').length,
         returned:  monthOrders.filter(o => o.status === 'returned').length,
         pending:   monthOrders.filter(o => !['delivered','returned','cancelled'].includes(o.status)).length,
+        todayOrders: todayOrders.length,
+        todayRevenue: todayRev,
+        yestRevenue: yestRev,
+        revChange: yestRev > 0 ? ((todayRev - yestRev) / yestRev * 100).toFixed(0) : null,
       })
 
       const days = 14
@@ -100,6 +112,44 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
       <div className="page-wave-accent" />
+
+      {/* ── Quick actions ── */}
+      <div style={{ display:'flex', gap:8, marginBottom:20, overflowX:'auto', paddingBottom:2 }}>
+        {[
+          { icon:'➕', label:'طلب جديد',    color:'var(--teal)',   action:() => onNavigate('orders') },
+          { icon:'💰', label:'مصروف جديد',  color:'var(--pink)',   action:() => onNavigate('expenses') },
+          { icon:'📦', label:'المخزون',     color:'var(--violet)', action:() => onNavigate('inventory') },
+          { icon:'👥', label:'العملاء',     color:'#f59e0b',       action:() => onNavigate('customers') },
+          { icon:'📊', label:'التقارير',    color:'var(--blue)',   action:() => onNavigate('reports') },
+        ].map(a => (
+          <button key={a.label} onClick={a.action} style={{
+            display:'flex', flexDirection:'column', alignItems:'center', gap:5,
+            padding:'10px 16px', background:'var(--bg-glass)',
+            border:`1.5px solid var(--glass-border)`,
+            borderRadius:'var(--radius)', cursor:'pointer', fontFamily:'inherit',
+            flexShrink:0, transition:'all 0.18s ease', minWidth:72,
+          }} className="list-row">
+            <span style={{ fontSize:20 }}>{a.icon}</span>
+            <span style={{ fontSize:10, fontWeight:700, color:a.color, whiteSpace:'nowrap' }}>{a.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Today strip ── */}
+      <div style={{ display:'flex', gap:8, marginBottom:16, padding:'10px 14px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', flexWrap:'wrap', alignItems:'center' }}>
+        <span style={{ fontSize:12, color:'var(--text-muted)', fontWeight:700 }}>اليوم:</span>
+        <span style={{ fontSize:13, fontWeight:900, color:'var(--teal)' }}>{formatCurrency(stats?.todayRevenue||0)}</span>
+        <span style={{ fontSize:12, color:'var(--text-muted)' }}>•</span>
+        <span style={{ fontSize:12, color:'var(--text-sec)' }}>{stats?.todayOrders||0} طلب</span>
+        {stats?.revChange !== null && stats?.revChange !== undefined && (
+          <span style={{ fontSize:11, fontWeight:800, padding:'2px 8px', borderRadius:999, marginRight:'auto',
+            background: stats.revChange >= 0 ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)',
+            color: stats.revChange >= 0 ? 'var(--green,#34d399)' : 'var(--red)',
+          }}>
+            {stats.revChange >= 0 ? '▲' : '▼'} {Math.abs(stats.revChange)}% مقارنة بالأمس
+          </span>
+        )}
+      </div>
 
       {/* ── Target + Donut row ── */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:16,marginBottom:20,alignItems:'stretch'}}>

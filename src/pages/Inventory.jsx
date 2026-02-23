@@ -13,7 +13,10 @@ export default function Inventory() {
   const [deleteId, setDeleteId] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [search, setSearch] = useState('')
-  const [filterLow, setFilterLow] = useState(false)
+  const [filterLow, setFilterLow]       = useState(false)
+  const [movements, setMovements]       = useState([]) // { itemId, itemName, delta, qty, note, time }
+  const [showMoves, setShowMoves]       = useState(false)
+  const [movesItem, setMovesItem]       = useState(null) // filter movements by item
 
   useEffect(() => { loadData() }, [])
 
@@ -40,14 +43,29 @@ export default function Inventory() {
     finally { setDeleting(false) }
   }
 
-  async function adjustStock(id, delta) {
+  async function adjustStock(id, delta, note='') {
     const item = items.find(i => i.id === id)
     if (!item) return
     const newQty = Math.max(0, item.stock_qty + delta)
     try {
       await DB.update('inventory', id, { stock_qty: newQty })
       setItems(prev => prev.map(i => i.id === id ? { ...i, stock_qty: newQty } : i))
+      const move = { id: Date.now().toString(), itemId:id, itemName:item.name, delta, qty:newQty, note, time: new Date().toISOString() }
+      setMovements(prev => [move, ...prev].slice(0, 200))
     } catch { toast('فشل التحديث', 'error') }
+  }
+
+  async function adjustStockWithNote(id) {
+    const item = items.find(i => i.id === id)
+    if (!item) return
+    const raw = prompt(`تعديل مخزون: ${item.name}
+أدخل الكمية (+ للإضافة، - للخصم):`)
+    if (!raw) return
+    const delta = parseInt(raw)
+    if (isNaN(delta) || delta === 0) { toast('كمية غير صحيحة', 'error'); return }
+    const note = prompt('ملاحظة (اختياري):') || (delta > 0 ? 'إضافة مخزون' : 'خصم مخزون')
+    await adjustStock(id, delta, note)
+    toast(`تم تعديل المخزون: ${delta > 0 ? '+' : ''}${delta}`)
   }
 
   const filtered = items.filter(i => {
@@ -66,7 +84,16 @@ export default function Inventory() {
       <PageHeader
         title="المخزون"
         subtitle={`${items.filter(i => i.active).length} منتج`}
-        actions={<Btn onClick={() => { setEditItem(null); setShowForm(true) }}><IcPlus size={15} /> منتج جديد</Btn>}
+        actions={
+          <>
+            {movements.length > 0 && (
+              <Btn variant="secondary" onClick={() => { setMovesItem(null); setShowMoves(true) }}>
+                📋 سجل الحركات {movements.length > 0 && <span style={{ marginRight:4, padding:'1px 6px', background:'var(--violet)', color:'#fff', borderRadius:99, fontSize:10 }}>{movements.length}</span>}
+              </Btn>
+            )}
+            <Btn onClick={() => { setEditItem(null); setShowForm(true) }}><IcPlus size={15} /> منتج جديد</Btn>
+          </>
+        }
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -74,6 +101,26 @@ export default function Inventory() {
         <StatCard label="قيمة المخزون" value={formatCurrency(totalValue)} color="var(--gold)" />
         <StatCard label="مخزون منخفض" value={lowStockCount} color={lowStockCount > 0 ? 'var(--amber)' : 'var(--green)'} />
       </div>
+
+      {/* Reorder suggestions */}
+      {items.filter(i=>i.active && i.stock_qty <= i.low_stock_threshold).length > 0 && (
+        <div style={{ marginBottom:16, padding:'12px 14px', background:'rgba(245,158,11,0.06)', border:'1.5px solid rgba(245,158,11,0.25)', borderRadius:'var(--radius)' }}>
+          <div style={{ fontWeight:800, fontSize:13, color:'var(--amber,#f59e0b)', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+            <IcAlert size={15} color="var(--amber,#f59e0b)"/> مقترح إعادة الطلب
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {items.filter(i=>i.active && i.stock_qty <= i.low_stock_threshold).map(item => (
+              <div key={item.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 12px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'var(--radius-pill,999px)' }}>
+                <span style={{ fontSize:12, fontWeight:700, color:'var(--text)' }}>{item.name}</span>
+                <span style={{ fontSize:11, color:'var(--amber,#f59e0b)', fontWeight:800 }}>{item.stock_qty} / {item.low_stock_threshold}</span>
+                <button onClick={() => adjustStockWithNote(item.id)} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, border:'1px solid rgba(245,158,11,0.4)', background:'rgba(245,158,11,0.12)', color:'var(--amber,#f59e0b)', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
+                  + إضافة
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
@@ -137,7 +184,8 @@ export default function Inventory() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                  <Btn variant="ghost" size="sm" style={{ flex: 1 }} onClick={() => { setEditItem(item); setShowForm(true) }}><IcEdit size={13}/> تعديل</Btn>
+                  <Btn variant="ghost" size="sm" onClick={() => adjustStockWithNote(item.id)} style={{ flex:1 }}>± تعديل</Btn>
+                  <Btn variant="ghost" size="sm" onClick={() => { setEditItem(item); setShowForm(true) }}><IcEdit size={13}/></Btn>
                   <Btn variant="danger" size="sm" onClick={() => setDeleteId(item.id)}><IcDelete size={13}/></Btn>
                 </div>
               </Card>
@@ -145,6 +193,14 @@ export default function Inventory() {
           })}
         </div>
       )}
+
+      {/* Stock movements modal */}
+      <StockMovementsModal
+        open={showMoves}
+        onClose={() => setShowMoves(false)}
+        movements={movesItem ? movements.filter(m=>m.itemId===movesItem) : movements}
+        title={movesItem ? `حركات: ${items.find(i=>i.id===movesItem)?.name}` : 'سجل حركات المخزون'}
+      />
 
       <InventoryForm
         open={showForm}
@@ -208,6 +264,48 @@ function InventoryForm({ open, onClose, item, suppliers, onSaved }) {
           </Select>
         )}
         <Textarea label="ملاحظات" value={form.notes || ''} onChange={e => setField('notes', e.target.value)} containerStyle={{ gridColumn: '1 / -1' }} />
+      </div>
+    </Modal>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   STOCK MOVEMENTS MODAL
+══════════════════════════════════════════════ */
+function StockMovementsModal({ open, onClose, movements, title }) {
+  if (!open) return null
+  return (
+    <Modal open={open} onClose={onClose} title={title} maxWidth={480}>
+      <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:420, overflowY:'auto' }}>
+        {movements.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'32px 0', color:'var(--text-muted)' }}>
+            <div style={{ fontSize:36, marginBottom:8 }}>📋</div>
+            لا يوجد حركات مخزون بعد
+          </div>
+        ) : movements.map(m => {
+          const d = new Date(m.time)
+          const isAdd = m.delta > 0
+          return (
+            <div key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
+              <span style={{ fontSize:18, flexShrink:0 }}>{isAdd ? '📥' : '📤'}</span>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:700, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.itemName}</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)' }}>{m.note}</div>
+              </div>
+              <div style={{ textAlign:'left', flexShrink:0 }}>
+                <div style={{ fontWeight:900, fontSize:14, color: isAdd?'var(--green,#34d399)':'var(--red)' }}>
+                  {isAdd?'+':''}{m.delta}
+                </div>
+                <div style={{ fontSize:10, color:'var(--text-muted)' }}>
+                  {d.toLocaleDateString('ar-AE',{month:'short',day:'numeric'})} {d.toLocaleTimeString('ar-AE',{hour:'2-digit',minute:'2-digit'})}
+                </div>
+              </div>
+              <div style={{ padding:'3px 8px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:999, fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>
+                {m.qty} متبقي
+              </div>
+            </div>
+          )
+        })}
       </div>
     </Modal>
   )

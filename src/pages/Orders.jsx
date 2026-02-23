@@ -386,7 +386,10 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
   const [form, setForm] = useState({})
   const [items, setItems] = useState([])
   const [saving, setSaving] = useState(false)
-  const [dupWarning, setDupWarning] = useState(null)
+  const [dupWarning, setDupWarning]   = useState(null)
+  const [aiText, setAiText]           = useState('')
+  const [aiLoading, setAiLoading]     = useState(false)
+  const [showAi, setShowAi]           = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -472,6 +475,58 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
   const total = subtotal + (parseFloat(form.delivery_cost) || 0) - (parseFloat(form.discount_amount) || 0)
   const profit = total - cost - (parseFloat(form.delivery_cost) || 0)
 
+  async function handleAiFill() {
+    if (!aiText.trim()) return
+    setAiLoading(true)
+    try {
+      const { supabase } = await import('../data/db')
+      const PROXY = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`
+      const productList = products.map(p => `${p.name} (${p.price} د.إ)`).join(', ')
+      const zoneList = deliveryZones?.map(z => `${z.city} (${z.cost} د.إ)`).join(', ') || ''
+
+      const res = await fetch(PROXY, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          model: 'gemini-2.5-flash',
+          max_tokens: 500,
+          system: `أنت مساعد لإدخال الطلبات. استخرج من النص: اسم العميل، رقم الهاتف، المدينة، المنتجات مع الكمية، المصدر.
+المنتجات المتاحة: ${productList}
+مناطق التوصيل: ${zoneList}
+رد بـ JSON فقط هكذا بدون أي نص آخر:
+{"customer_name":"","customer_phone":"","customer_city":"","source":"instagram","items":[{"name":"","qty":1}]}`,
+          messages: [{ role:'user', content: aiText }]
+        })
+      })
+      const data = await res.json()
+      const text = data?.content?.[0]?.text || ''
+      const clean = text.replace(/\`\`\`json|\`\`\`/g,'').trim()
+      const parsed = JSON.parse(clean)
+
+      if (parsed.customer_name) setField('customer_name', parsed.customer_name)
+      if (parsed.customer_phone) setField('customer_phone', parsed.customer_phone)
+      if (parsed.source) setField('source', parsed.source)
+      if (parsed.customer_city) {
+        const zone = deliveryZones?.find(z => z.city === parsed.customer_city)
+        setField('customer_city', parsed.customer_city)
+        if (zone) setField('delivery_cost', zone.cost)
+      }
+      if (parsed.items?.length > 0) {
+        const newItems = parsed.items.flatMap(ai => {
+          const prod = products.find(p => p.name.includes(ai.name) || ai.name.includes(p.name))
+          if (!prod) return []
+          return [{ id:prod.id, name:prod.name, price:prod.price, cost:prod.cost, qty:ai.qty||1 }]
+        })
+        if (newItems.length > 0) setItems(newItems)
+      }
+      setShowAi(false)
+      setAiText('')
+      toast('✨ تم تعبئة النموذج')
+    } catch(e) {
+      toast('فشل AI: ' + (e.message||''), 'error')
+    } finally { setAiLoading(false) }
+  }
+
   async function handleSave() {
     // customer_name is optional
     setSaving(true)
@@ -526,6 +581,38 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         <Btn loading={saving} onClick={handleSave}><IcSave size={15} /> {isEdit ? 'حفظ التعديلات' : 'إضافة الطلب'}</Btn>
       </>}
     >
+      {/* ✨ AI fill panel */}
+      <div style={{ marginBottom:16 }}>
+        {!showAi ? (
+          <button onClick={() => setShowAi(true)} style={{
+            display:'flex', alignItems:'center', gap:8, padding:'9px 14px',
+            background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(0,228,184,0.1))',
+            border:'1.5px solid rgba(124,58,237,0.3)', borderRadius:'var(--radius-sm)',
+            color:'var(--violet-light,#a78bfa)', cursor:'pointer', fontFamily:'inherit', fontSize:13, fontWeight:700,
+          }}>
+            ✨ تعبئة بالذكاء الاصطناعي
+            <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:400 }}>— اكتب الطلب بلغة طبيعية</span>
+          </button>
+        ) : (
+          <div style={{ padding:'12px 14px', background:'rgba(124,58,237,0.08)', border:'1.5px solid rgba(124,58,237,0.25)', borderRadius:'var(--radius-sm)' }}>
+            <div style={{ fontSize:12, color:'var(--violet-light,#a78bfa)', fontWeight:700, marginBottom:8 }}>
+              ✨ مثال: "طلب من سارة 0501234567 دبي طقم كريستال ملكي × 2"
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <input
+                value={aiText} onChange={e=>setAiText(e.target.value)}
+                onKeyDown={e => e.key==='Enter' && handleAiFill()}
+                placeholder="اكتب تفاصيل الطلب..."
+                autoFocus
+                style={{ flex:1, padding:'9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', outline:'none' }}
+              />
+              <Btn onClick={handleAiFill} loading={aiLoading} style={{ background:'var(--violet)', border:'none', flexShrink:0 }}>تعبئة</Btn>
+              <Btn variant="ghost" onClick={() => { setShowAi(false); setAiText('') }} style={{ flexShrink:0 }}>✕</Btn>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
         <div>
           <Input label="رقم الهاتف" value={form.customer_phone || ''} onChange={e => { setField('customer_phone', e.target.value); checkDuplicate(e.target.value) }} placeholder="+971..." dir="ltr" />

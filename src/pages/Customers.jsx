@@ -26,7 +26,8 @@ export default function Customers() {
   const [search, setSearch]       = useState('')
   const [sortBy, setSortBy]       = useState('spent')
   const [segFilter, setSegFilter] = useState('all')
-  const [selected, setSelected]   = useState(null)
+  const [selected, setSelected]         = useState(null)
+  const [broadcastOpen, setBroadcastOpen] = useState(false)
 
   useEffect(() => { loadCustomers() }, [])
 
@@ -82,7 +83,17 @@ export default function Customers() {
 
   return (
     <div className="page">
-      <PageHeader title="العملاء" subtitle={`${customers.length} عميل • ${vipCount} VIP`} />
+      <PageHeader
+        title="العملاء"
+        subtitle={`${customers.length} عميل • ${vipCount} VIP`}
+        actions={
+          customers.length > 0 && (
+            <Btn variant="secondary" onClick={() => setBroadcastOpen(true)} style={{ gap:6 }}>
+              📢 رسالة جماعية
+            </Btn>
+          )
+        }
+      />
 
       {/* Summary */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:16 }}>
@@ -134,6 +145,11 @@ export default function Customers() {
         </div>
       )}
 
+      <WhatsAppBroadcast
+        open={broadcastOpen}
+        onClose={() => setBroadcastOpen(false)}
+        customers={customers}
+      />
       <CustomerModal customer={selected} onClose={() => setSelected(null)}/>
     </div>
   )
@@ -249,6 +265,124 @@ function CustomerModal({ customer: c, onClose }) {
             ))}
           </div>
         </div>
+      </div>
+    </Modal>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   WHATSAPP BROADCAST MODAL
+   Filter customers, compose message, open each
+══════════════════════════════════════════════ */
+function WhatsAppBroadcast({ open, onClose, customers }) {
+  const [segFilter, setSegFilter] = useState('all')
+  const [cityFilter, setCityFilter] = useState('all')
+  const [message, setMessage] = useState('مرحباً {الاسم}،\n\nلدينا عروض حصرية لعملائنا المميزين 🎁\nتواصلوا معنا للاستفادة من العروض.\n\nموج للهدايا الكريستالية 💎')
+  const [sending, setSending] = useState(false)
+  const [sentCount, setSentCount] = useState(0)
+
+  const cities = ['all', ...Array.from(new Set(customers.map(c=>c.city).filter(Boolean)))]
+  const segments = ['all', 'VIP', 'مخلص', 'نشط', 'جديد', 'خامل']
+
+  const targets = customers.filter(c => {
+    const hasSeg  = segFilter  === 'all' || c.segment.label === segFilter
+    const hasCity = cityFilter === 'all' || c.city === cityFilter
+    const hasPhone = !!c.phone
+    return hasSeg && hasCity && hasPhone
+  })
+
+  function buildMessage(customer) {
+    return message
+      .replace(/{الاسم}/g, customer.name || 'عزيزي العميل')
+      .replace(/{الهاتف}/g, customer.phone || '')
+      .replace(/{المدينة}/g, customer.city || '')
+  }
+
+  function sendToAll() {
+    if (targets.length === 0) return
+    setSending(true)
+    setSentCount(0)
+    let i = 0
+    function sendNext() {
+      if (i >= targets.length) { setSending(false); return }
+      const c = targets[i]
+      const phone = c.phone.replace(/\D/g,'')
+      const text  = encodeURIComponent(buildMessage(c))
+      window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+      setSentCount(++i)
+      setTimeout(sendNext, 1500) // 1.5s between each to avoid spam block
+    }
+    sendNext()
+  }
+
+  if (!open) return null
+
+  return (
+    <Modal open={open} onClose={onClose} title="رسالة واتساب جماعية" maxWidth={520}
+      footer={<>
+        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn onClick={sendToAll} loading={sending} disabled={targets.length===0}
+          style={{ background:'#25d166', color:'#fff', border:'none', gap:6 }}>
+          📢 إرسال لـ {targets.length} عميل
+        </Btn>
+      </>}
+    >
+      <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+
+        {/* Filters */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>الشريحة</div>
+            <select value={segFilter} onChange={e=>setSegFilter(e.target.value)}
+              style={{ width:'100%', padding:'9px 10px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+              {segments.map(s => <option key={s} value={s}>{s==='all'?'الكل':s}</option>)}
+            </select>
+          </div>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>المدينة</div>
+            <select value={cityFilter} onChange={e=>setCityFilter(e.target.value)}
+              style={{ width:'100%', padding:'9px 10px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+              {cities.map(c => <option key={c} value={c}>{c==='all'?'كل المدن':c}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Target count */}
+        <div style={{ padding:'10px 14px', background:'rgba(37,209,102,0.06)', border:'1px solid rgba(37,209,102,0.2)', borderRadius:'var(--radius-sm)', fontSize:13 }}>
+          <span style={{ fontWeight:800, color:'#25d166', fontSize:16 }}>{targets.length}</span>
+          <span style={{ color:'var(--text-sec)' }}> عميل سيصلهم الرسالة</span>
+          {targets.length === 0 && <span style={{ color:'var(--red)', marginRight:8 }}>— لا يوجد عملاء بأرقام هاتف</span>}
+        </div>
+
+        {/* Message composer */}
+        <div>
+          <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>
+            نص الرسالة — يمكن استخدام: {'{الاسم}'} {'{المدينة}'}
+          </div>
+          <textarea
+            value={message}
+            onChange={e=>setMessage(e.target.value)}
+            rows={6}
+            style={{ width:'100%', padding:'10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', resize:'vertical', outline:'none', boxSizing:'border-box' }}
+          />
+        </div>
+
+        {/* Preview */}
+        {targets.length > 0 && (
+          <div style={{ padding:'10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
+            <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:6 }}>معاينة (أول عميل):</div>
+            <div style={{ fontSize:12, color:'var(--text-sec)', whiteSpace:'pre-wrap', lineHeight:1.6 }}>
+              {buildMessage(targets[0])}
+            </div>
+          </div>
+        )}
+
+        {sending && (
+          <div style={{ padding:'10px 14px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--radius-sm)', textAlign:'center' }}>
+            <div style={{ fontSize:13, color:'var(--teal)', fontWeight:700 }}>جاري الإرسال... {sentCount}/{targets.length}</div>
+            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>سيتم فتح واتساب لكل عميل — يرجى عدم إغلاق النوافذ</div>
+          </div>
+        )}
       </div>
     </Modal>
   )
