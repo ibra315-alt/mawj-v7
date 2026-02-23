@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Auth } from '../data/db'
+import BgCanvas from '../components/BgCanvas'
 
 /* ══════════════════════════════════════════════════
    LOGIN v9.0
@@ -38,17 +39,8 @@ export default function Login({ theme, toggleTheme }) {
       zIndex: 0,
     }}>
 
-      {/* Premium background orbs */}
-      <div className="bg-orbs" aria-hidden="true">
-        <div className="bg-orb bg-orb-1"/>
-        <div className="bg-orb bg-orb-2"/>
-        <div className="bg-orb bg-orb-3"/>
-        <div className="bg-waves">
-          <div className="bg-wave bg-wave-1"/>
-          <div className="bg-wave bg-wave-2"/>
-          <div className="bg-wave bg-wave-3"/>
-        </div>
-      </div>
+      {/* Premium background */}
+      <BgCanvas/>
 
       {/* Theme toggle — top left in RTL = top right visually */}
       {toggleTheme && (

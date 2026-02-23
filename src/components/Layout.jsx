@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import BgCanvas from './BgCanvas'
 import {
   IcDashboard, IcOrders, IcCustomers, IcExpenses,
   IcReports, IcInventory, IcSettings, IcLogout,
@@ -71,16 +72,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
     <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)', width:'100%', overflowX:'hidden' }}>
 
       {/* ── PREMIUM BACKGROUND ───────────────────────── */}
-      <div className="bg-orbs" aria-hidden="true">
-        <div className="bg-orb bg-orb-1"/>
-        <div className="bg-orb bg-orb-2"/>
-        <div className="bg-orb bg-orb-3"/>
-        <div className="bg-waves">
-          <div className="bg-wave bg-wave-1"/>
-          <div className="bg-wave bg-wave-2"/>
-          <div className="bg-wave bg-wave-3"/>
-        </div>
-      </div>
+      <BgCanvas/>
 
       {/* ── DESKTOP SIDEBAR ──────────────────────────── */}
       <aside
