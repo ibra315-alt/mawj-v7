@@ -261,8 +261,8 @@ export default function Dashboard({ onNavigate }) {
                   <div key={order.id} style={{
                     display:'flex',alignItems:'center',justifyContent:'space-between',
                     padding:'10px 14px',
-                    background:'var(--bg-surface)', boxShadow:'var(--card-shadow)', borderRadius:'var(--r-sm)', border:'none',
-                    borderRadius:'var(--r-md)',gap:12,flexWrap:'wrap',
+                    background:'var(--bg-surface)', boxShadow:'var(--card-shadow)', borderRadius:'var(--r-md)', border:'none',
+                    gap:12, flexWrap:'wrap',
                   }}>
                     <div style={{flex:1,minWidth:120}}>
                       <div style={{fontWeight:700,fontSize:13,color:'var(--text)'}}>{order.customer_name}</div>
