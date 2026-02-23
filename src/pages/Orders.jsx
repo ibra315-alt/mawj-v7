@@ -122,33 +122,49 @@ export default function Orders({ user }) {
         }
       />
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
-          <IcSearch size={16} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+      {/* ── Stats bar ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 16 }}>
+        {[
+          { label: 'إجمالي', value: orders.length, color: 'var(--blue)' },
+          { label: 'إيرادات', value: formatCurrency(orders.reduce((s, o) => s + (o.total || 0), 0)), color: 'var(--teal)' },
+          { label: 'معلق', value: orders.filter(o => !['delivered', 'returned', 'cancelled'].includes(o.status)).length, color: 'var(--amber)' },
+          { label: 'مسلم', value: orders.filter(o => o.status === 'delivered').length, color: 'var(--green)' },
+        ].map(s => (
+          <div key={s.label} style={{ background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: s.color }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filters ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        {/* Row 1: search */}
+        <div style={{ position: 'relative' }}>
+          <IcSearch size={15} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="بحث بالاسم، رقم الطلب، الهاتف..."
-            style={{ width: '100%', padding: '9px 36px 9px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', outline: 'none' }}
+            style={{ width: '100%', padding: '10px 34px 10px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', outline: 'none' }}
           />
         </div>
-
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          style={{ padding: '9px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
-          <option value="all">كل الحالات</option>
-          {statuses.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
-
-        <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
-          style={{ padding: '9px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
-          <option value="all">كل المصادر</option>
-          {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', padding: 3 }}>
-          <button onClick={() => setViewMode('kanban')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'kanban' ? 'var(--teal)' : 'transparent', color: viewMode === 'kanban' ? '#07051c' : 'var(--text-muted)', cursor: 'pointer' }}><IcGrid size={16} /></button>
-          <button onClick={() => setViewMode('list')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'list' ? 'var(--teal)' : 'transparent', color: viewMode === 'list' ? '#07051c' : 'var(--text-muted)', cursor: 'pointer' }}><IcList size={16} /></button>
+        {/* Row 2: status · source · view toggle */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+            style={{ flex: 1, padding: '9px 10px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
+            <option value="all">كل الحالات</option>
+            {statuses.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
+            style={{ flex: 1, padding: '9px 10px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', cursor: 'pointer' }}>
+            <option value="all">كل المصادر</option>
+            {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+          <div style={{ display: 'flex', gap: 3, background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', padding: 3, flexShrink: 0 }}>
+            <button onClick={() => setViewMode('kanban')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'kanban' ? 'var(--teal)' : 'transparent', color: viewMode === 'kanban' ? '#050c1a' : 'var(--text-muted)', cursor: 'pointer' }}><IcGrid size={15} /></button>
+            <button onClick={() => setViewMode('list')} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: viewMode === 'list' ? 'var(--teal)' : 'transparent', color: viewMode === 'list' ? '#050c1a' : 'var(--text-muted)', cursor: 'pointer' }}><IcList size={15} /></button>
+          </div>
         </div>
       </div>
 
@@ -167,34 +183,44 @@ export default function Orders({ user }) {
       {viewMode === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.length === 0 ? (
-            <Empty title="لا يوجد طلبات" message="أضف طلباً جديداً للبدء" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14} /> طلب جديد</Btn>} />
+            <Empty title="لا يوجد طلبات" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14} /> طلب جديد</Btn>} />
           ) : (
             filtered.map(order => {
               const statusObj = statuses.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
               return (
-                <div
-                  key={order.id}
-                  style={{ background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', cursor: 'pointer' }}
-                  onClick={() => { setViewOrder(order); setShowView(true) }}
-                  className="list-row"
+                <div key={order.id} className="list-row" onClick={() => { setViewOrder(order); setShowView(true) }}
+                  style={{ background: 'var(--bg-glass)', border: `1.5px solid var(--glass-border)`, borderRadius: 'var(--radius)', padding: '14px 16px', cursor: 'pointer', borderRight: `3px solid ${statusObj.color}` }}
                 >
-                  <div style={{ flex: '0 0 120px' }}>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{order.customer_name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{order.order_number}</div>
+                  {/* Row 1: order number + status + total */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', fontWeight: 600 }}>{order.order_number}</span>
+                      <Badge color={statusObj.color} style={{ fontSize: 11 }}>{statusObj.label}</Badge>
+                    </div>
+                    <span style={{ fontWeight: 900, fontSize: 15, color: 'var(--teal)' }}>{formatCurrency(order.total)}</span>
                   </div>
-                  <Badge color={statusObj.color}>{statusObj.label}</Badge>
-                  <div style={{ flex: 1, fontSize: 12, color: 'var(--text-sec)', minWidth: 100 }}>
-                    {order.customer_city} • {SOURCE_LABELS[order.source] || ''}
+                  {/* Row 2: phone + city */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: order.items?.length ? 8 : 0 }}>
+                    {order.customer_phone && <span style={{ fontSize: 13, fontWeight: 700, direction: 'ltr' }}>{order.customer_phone}</span>}
+                    {order.customer_city && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>📍 {order.customer_city}</span>}
+                    {order.profit !== undefined && (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: order.profit >= 0 ? 'var(--green)' : 'var(--red)', marginRight: 'auto' }}>
+                        ربح: {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontWeight: 800, color: 'var(--teal)', fontSize: 14 }}>{formatCurrency(order.total)}</div>
-                  {order.profit !== undefined && (
-                    <div style={{ fontSize: 12, color: order.profit >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
-                      {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
+                  {/* Row 3: products */}
+                  {order.items?.length > 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--text-sec)', marginBottom: 8 }}>
+                      {order.items.slice(0, 3).map(i => `${i.name} ×${i.qty}`).join(' · ')}
+                      {order.items.length > 3 && ` +${order.items.length - 3}`}
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                    <Btn variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14} /></Btn>
-                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14} /></Btn>
+                  {/* Row 4: actions */}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }} onClick={e => e.stopPropagation()}>
+                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={13} /> عرض</Btn>
+                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={13} /> تعديل</Btn>
+                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={13} /></Btn>
                   </div>
                 </div>
               )
