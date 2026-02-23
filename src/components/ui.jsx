@@ -499,37 +499,112 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
   }, [])
   useEffect(() => {
     if (open) {
-      const top = window.scrollY
-      document.body.style.cssText = `overflow:hidden;position:fixed;top:-${top}px;width:100%`
+      document.body.style.overflow = 'hidden'
     } else {
-      const top = Math.abs(parseInt(document.body.style.top || '0'))
-      document.body.style.cssText = ''
-      if (top) window.scrollTo(0, top)
+      document.body.style.overflow = ''
     }
+    return () => { document.body.style.overflow = '' }
   }, [open])
 
   if (!open) return null
+
+  /* ── MOBILE: full-screen page takeover — navbar is behind zIndex:9000 ── */
+  if (mobile) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9000,
+        background: 'var(--bg)',
+        display: 'flex', flexDirection: 'column',
+        animation: 'pageIn 0.22s var(--ease-smooth) both',
+      }}>
+        {/* Top accent bar */}
+        <div style={{
+          height: 3, flexShrink: 0,
+          background: 'linear-gradient(90deg, var(--violet-light), var(--teal), var(--pink))',
+        }} />
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 16px',
+          borderBottom: '1px solid var(--glass-border)',
+          flexShrink: 0,
+          background: 'var(--header-bg)',
+          backdropFilter: 'var(--blur-md)', WebkitBackdropFilter: 'var(--blur-md)',
+        }}>
+          <button onClick={onClose} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none',
+            color: 'var(--teal)', fontSize: 14, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit',
+            WebkitTapHighlightColor: 'transparent', padding: '4px 0',
+          }}>
+            ← رجوع
+          </button>
+          <h2 style={{
+            fontSize: 16, fontWeight: 900, margin: 0,
+            color: 'var(--text)', letterSpacing: '-0.01em',
+          }}>{title}</h2>
+          {/* spacer to center title */}
+          <div style={{ width: 64 }} />
+        </div>
+        {/* Scrollable body */}
+        <div style={{
+          flex: 1, overflowY: 'auto', overflowX: 'hidden',
+          padding: '16px 16px 16px',
+          WebkitOverflowScrolling: 'touch',
+        }}>
+          {children}
+          {/* Footer buttons INSIDE scroll area on mobile — always visible */}
+          {footer && (
+            <div style={{
+              marginTop: 24,
+              paddingTop: 16,
+              borderTop: '1px solid var(--glass-border)',
+              display: 'flex', gap: 10,
+              flexDirection: 'column',
+              paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))',
+            }}>
+              {/* Render footer children as full-width buttons */}
+              {React.Children.map(footer, child =>
+                child ? React.cloneElement(child, {
+                  style: {
+                    ...child.props?.style,
+                    width: '100%',
+                    justifyContent: 'center',
+                    padding: '14px 20px',
+                    fontSize: 15,
+                  }
+                }) : null
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  /* ── DESKTOP: centered modal ── */
   return (
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 9000,
-        display: 'flex', alignItems: mobile ? 'flex-end' : 'center', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'rgba(7,5,28,0.82)',
         backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-        padding: mobile ? 0 : '20px',
+        padding: '20px',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        width: '100%', maxWidth: mobile ? '100%' : width,
-        maxHeight: mobile ? '94dvh' : '88dvh',
+        width: '100%', maxWidth: width,
+        maxHeight: '88dvh',
         display: 'flex', flexDirection: 'column',
         background: 'var(--modal-bg)',
         backdropFilter: 'var(--blur-lg)', WebkitBackdropFilter: 'var(--blur-lg)',
-        border: `1.5px solid var(--glass-border-strong)`,
-        borderRadius: mobile ? '20px 20px 0 0' : 'var(--radius-xl)',
-        boxShadow: mobile ? '0 -20px 60px rgba(7,5,28,0.7)' : 'var(--shadow-float)',
-        animation: mobile ? 'sheetUp 0.3s var(--ease-smooth) both' : 'modalIn 0.22s var(--ease-smooth) both',
+        border: '1.5px solid var(--glass-border-strong)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: 'var(--shadow-float)',
+        animation: 'modalIn 0.22s var(--ease-smooth) both',
         overflow: 'hidden',
       }}>
         {/* Violet-teal top accent line */}
@@ -538,10 +613,6 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
           background: 'linear-gradient(90deg,transparent,var(--violet-light),var(--teal),var(--pink),transparent)',
           opacity: 0.6,
         }} />
-        {/* Drag handle (mobile) */}
-        {mobile && (
-          <div style={{ width: 36, height: 4, borderRadius: 99, background: 'var(--glass-border-strong)', margin: '10px auto 2px', flexShrink: 0 }} />
-        )}
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -565,7 +636,7 @@ export function Modal({ open, onClose, title, children, width = 580, footer }) {
         {/* Sticky footer */}
         {footer && (
           <div style={{
-            padding: mobile ? '14px 20px calc(14px + env(safe-area-inset-bottom, 20px))' : '14px 20px',
+            padding: '14px 20px',
             borderTop: '1px solid var(--glass-border)',
             background: 'var(--modal-bg)', flexShrink: 0,
             display: 'flex', gap: 8, justifyContent: 'flex-end',
