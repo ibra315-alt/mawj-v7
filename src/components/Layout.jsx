@@ -100,10 +100,11 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
         key={page}
         style={{
           position: 'relative',
-          marginRight: 64,
-          width: 'calc(100vw - 64px)',
+          marginRight: expanded ? 224 : 64,
+          width: expanded ? 'calc(100vw - 224px)' : 'calc(100vw - 64px)',
           minWidth: 0,
           minHeight: '100vh',
+          transition: 'margin-right 220ms cubic-bezier(0.4,0,0.2,1), width 220ms cubic-bezier(0.4,0,0.2,1)',
           animation: 'pageSlideIn var(--dur-page) var(--ease-out) both',
         }}
       >
@@ -136,7 +137,6 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
         @media (min-width: 769px) {
           .mobile-only, .mobile-flex { display: none !important; }
           .desktop-only { display: flex !important; }
-          main { margin-right: 64px !important; width: calc(100vw - 64px) !important; padding-bottom: 0 !important; }
         }
         @media (max-width: 768px) {
           .desktop-only { display: none !important; }
