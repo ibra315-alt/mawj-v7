@@ -250,7 +250,7 @@ export default function App() {
           backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
           borderBottom: '1px solid var(--bg-border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 14px', position: 'sticky', top: 0, zIndex: 50, flexShrink: 0,
+          padding: '0 14px', top: 0, zIndex: 50, flexShrink: 0,
           position: 'relative',
         }}>
           {/* Wave bottom accent */}
