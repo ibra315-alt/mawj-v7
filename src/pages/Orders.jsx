@@ -3,8 +3,7 @@ import { DB, Settings, generateOrderNumber } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency, formatDate, SOURCE_LABELS, SOURCE_ICONS } from '../data/constants'
 import { Btn, Card, Badge, Modal, Input, Select, Textarea, Spinner, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
-import { IcPlus, IcSearch, IcFilter, IcGrid, IcList, IcEdit, IcDelete, IcEye, IcWhatsapp, IcClose, IcSave } from '../components/Icons'
-import OrderCard from '../components/OrderCard'
+import { IcPlus, IcSearch, IcFilter, IcEdit, IcDelete, IcEye, IcWhatsapp, IcClose, IcSave } from '../components/Icons'
 import PrintReceipt from '../components/PrintReceipt'
 import Confetti from '../components/Confetti'
 
@@ -16,7 +15,6 @@ export default function Orders({ user }) {
   const [deliveryZones, setDeliveryZones] = useState([])
   const [discounts, setDiscounts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState('kanban') // kanban | list
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterSource, setFilterSource] = useState('all')
@@ -80,11 +78,11 @@ export default function Orders({ user }) {
       }
       await DB.update('orders', id, updatePayload)
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus, ...(deliveryDate ? { delivery_date: deliveryDate } : {}) } : o))
-      // 🎉 Confetti when order marked delivered
+      //  Confetti when order marked delivered
       if (newStatus === 'delivered') {
         setConfetti(true)
         setTimeout(() => setConfetti(false), 4000)
-        toast('تم التسليم! 🎉')
+        toast('تم التسليم! ')
       }
     } catch (err) { toast('فشل تحديث الحالة', 'error') }
   }
@@ -117,7 +115,7 @@ export default function Orders({ user }) {
     await Settings.set('order_templates', updated)
     Settings.clearCache('order_templates')
     setTemplates(updated)
-    toast('تم حفظ القالب ✓')
+    toast('تم حفظ القالب ')
   }
 
   async function deleteTemplate(id) {
@@ -155,7 +153,7 @@ export default function Orders({ user }) {
           <>
             {templates.length > 0 && (
               <Btn variant="secondary" onClick={() => setShowTemplates(true)} style={{ gap:6 }}>
-                📋 قوالب
+                قوالب
               </Btn>
             )}
             <Btn onClick={() => { setEditOrder(null); setRepeatOrder(null); setShowForm(true) }} style={{ gap: 6 }}>
@@ -165,34 +163,51 @@ export default function Orders({ user }) {
         }
       />
 
-      {/* ── Stats bar ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:16 }}>
+      {/* ── Status filter strip ── */}
+      <div style={{ display:'flex', gap:6, marginBottom:14, overflowX:'auto', paddingBottom:4, scrollbarWidth:'none' }}>
         {[
-          { label:'إجمالي', value: orders.length, color:'var(--blue)' },
-          { label:'إيرادات', value: formatCurrency(orders.reduce((s,o)=>s+(o.total||0),0)), color:'var(--teal)' },
-          { label:'معلق', value: orders.filter(o=>!['delivered','returned','cancelled'].includes(o.status)).length, color:'var(--amber)' },
-          { label:'مسلم', value: orders.filter(o=>o.status==='delivered').length, color:'var(--green)' },
-        ].map(s => (
-          <div key={s.label} style={{ background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:'10px 12px', textAlign:'center' }}>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>{s.label}</div>
-            <div style={{ fontSize:15, fontWeight:900, color:s.color }}>{s.value}</div>
-          </div>
-        ))}
+          { id:'all',       label:'الكل',    count: orders.length },
+          ...statuses.map(s => ({ id:s.id, label:s.label, count: orders.filter(o=>o.status===s.id).length, color:s.color })),
+        ].map(chip => {
+          const active = filterStatus === chip.id
+          return (
+            <button
+              key={chip.id}
+              onClick={() => setFilterStatus(chip.id)}
+              style={{
+                display:'flex', alignItems:'center', gap:6,
+                padding:'7px 14px', flexShrink:0,
+                borderRadius:'var(--r-pill)', border:'none',
+                background: active ? 'var(--action-soft)' : 'var(--bg-surface)',
+                color: active ? 'var(--action)' : 'var(--text-muted)',
+                fontWeight: active ? 700 : 500, fontSize:12,
+                cursor:'pointer', fontFamily:'inherit',
+                boxShadow: active ? 'none' : 'var(--card-shadow)',
+                transition:'background 120ms ease, color 120ms ease',
+              }}
+            >
+              {chip.color && !active && <span style={{ width:6, height:6, borderRadius:'50%', background:chip.color, flexShrink:0 }}/>}
+              {chip.label}
+              <span style={{
+                padding:'1px 6px', borderRadius:999,
+                background: active ? 'rgba(0,228,184,0.15)' : 'var(--bg-hover)',
+                fontSize:11, fontWeight:700,
+                color: active ? 'var(--action)' : 'var(--text-muted)',
+              }}>{chip.count}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* ── Search + Filter + View toggle row ── */}
       <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center' }}>
-        {/* View mode toggle */}
-        <div style={{ display:'flex', gap:2, background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:3, flexShrink:0 }}>
-          <button onClick={() => setViewMode('list')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='list'?'var(--teal)':'transparent', color:viewMode==='list'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcList size={15}/></button>
-          <button onClick={() => setViewMode('kanban')} style={{ padding:'6px 10px', borderRadius:6, border:'none', background:viewMode==='kanban'?'var(--teal)':'transparent', color:viewMode==='kanban'?'#050c1a':'var(--text-muted)', cursor:'pointer' }}><IcGrid size={15}/></button>
-        </div>
         {/* Filter button */}
         <button onClick={() => setShowFilters(true)} style={{
-          position:'relative', padding:'10px 12px', background:'var(--bg-glass)',
-          border:`1.5px solid ${(filterStatus!=='all'||filterSource!=='all') ? 'var(--teal)' : 'var(--glass-border)'}`,
-          borderRadius:'var(--radius-sm)', color:(filterStatus!=='all'||filterSource!=='all') ? 'var(--teal)' : 'var(--text-sec)',
+          position:'relative', padding:'10px 12px', background:'var(--bg-surface)',
+          border:`1.5px solid ${(filterSource!=='all') ? 'var(--action)' : 'var(--input-border)'}`,
+          borderRadius:'var(--r-sm)', color:(filterSource!=='all') ? 'var(--action)' : 'var(--text-sec)',
           cursor:'pointer', display:'flex', alignItems:'center', flexShrink:0,
+          boxShadow:'var(--card-shadow)',
         }}>
           <IcFilter size={16}/>
           {(filterStatus!=='all'||filterSource!=='all') && (
@@ -208,7 +223,7 @@ export default function Orders({ user }) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="بحث..."
-            style={{ width:'100%', padding:'10px 34px 10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', outline:'none', boxSizing:'border-box' }}
+            style={{ width:'100%', padding:'10px 34px 10px 12px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', boxShadow:'var(--card-shadow)', transition:'border-color 120ms ease' }}
           />
         </div>
       </div>
@@ -217,18 +232,18 @@ export default function Orders({ user }) {
       {(filterStatus!=='all' || filterSource!=='all') && (
         <div style={{ display:'flex', gap:6, marginBottom:10, flexWrap:'wrap' }}>
           {filterStatus!=='all' && (
-            <span style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', background:'var(--teal-faint)', border:'1px solid var(--glass-border-teal)', borderRadius:999, fontSize:11, color:'var(--teal)', fontWeight:700 }}>
+            <span style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', background:'var(--teal-faint)', border:'1px solid var(--action-soft)', borderRadius:999, fontSize:11, color:'var(--teal)', fontWeight:700 }}>
               {statuses.find(s=>s.id===filterStatus)?.label}
-              <button onClick={()=>setFilterStatus('all')} style={{ background:'none', border:'none', color:'var(--teal)', cursor:'pointer', fontSize:13, lineHeight:1, padding:0 }}>✕</button>
+              <button onClick={()=>setFilterStatus('all')} style={{ background:'none', border:'none', color:'var(--teal)', cursor:'pointer', fontSize:13, lineHeight:1, padding:0 }}></button>
             </span>
           )}
           {filterSource!=='all' && (
-            <span style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', background:'var(--violet-faint)', border:'1px solid var(--glass-border)', borderRadius:999, fontSize:11, color:'var(--violet-light)', fontWeight:700 }}>
+            <span style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', background:'var(--violet-faint)', border:'none', borderRadius:999, fontSize:11, color:'var(--violet-light)', fontWeight:700 }}>
               {SOURCE_LABELS[filterSource]}
-              <button onClick={()=>setFilterSource('all')} style={{ background:'none', border:'none', color:'var(--violet-light)', cursor:'pointer', fontSize:13, lineHeight:1, padding:0 }}>✕</button>
+              <button onClick={()=>setFilterSource('all')} style={{ background:'none', border:'none', color:'var(--violet-light)', cursor:'pointer', fontSize:13, lineHeight:1, padding:0 }}></button>
             </span>
           )}
-          <button onClick={()=>{setFilterStatus('all');setFilterSource('all')}} style={{ padding:'4px 10px', background:'none', border:'1px solid var(--glass-border)', borderRadius:999, fontSize:11, color:'var(--text-muted)', cursor:'pointer', fontFamily:'inherit' }}>
+          <button onClick={()=>{setFilterStatus('all');setFilterSource('all')}} style={{ padding:'4px 10px', background:'none', border:'none', borderRadius:999, fontSize:11, color:'var(--text-muted)', cursor:'pointer', fontFamily:'inherit' }}>
             مسح الكل
           </button>
         </div>
@@ -245,19 +260,8 @@ export default function Orders({ user }) {
         statuses={statuses}
       />
 
-      {/* KANBAN VIEW */}
-      {viewMode === 'kanban' && (
-        <KanbanBoard
-          statuses={statuses}
-          orders={filtered}
-          onStatusChange={handleStatusChange}
-          onView={order => { setViewOrder(order); setShowView(true) }}
-          onEdit={order => { setEditOrder(order); setShowForm(true) }}
-        />
-      )}
-
-      {/* LIST VIEW */}
-      {viewMode === 'list' && (
+      {/* LIST */}
+      {(
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {filtered.length === 0 ? (
             <Empty title="لا يوجد طلبات" action={<Btn onClick={() => { setEditOrder(null); setShowForm(true) }}><IcPlus size={14}/> طلب جديد</Btn>} />
@@ -265,45 +269,72 @@ export default function Orders({ user }) {
             filtered.map(order => {
               const statusObj = statuses.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
               return (
-                <div key={order.id} onClick={() => { setViewOrder(order); setShowView(true) }}
-                  style={{ background:'var(--bg-glass)', border:`1.5px solid var(--glass-border)`, borderRadius:'var(--radius)', padding:'14px 16px', cursor:'pointer', borderRight:`3px solid ${statusObj.color}` }}
+                <div
+                  key={order.id}
+                  style={{
+                    padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12,
+                    background:'var(--bg-surface)', boxShadow:'var(--card-shadow)', borderRadius:'var(--r-md)',
+                    border:'none', transition:'box-shadow 120ms ease, transform 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow='var(--card-shadow-hover)'; e.currentTarget.style.transform='translateY(-1px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow='var(--card-shadow)'; e.currentTarget.style.transform='translateY(0)' }}
+                  onClick={() => { setViewOrder(order); setShowView(true) }}
                 >
-                  {/* Row 1: order number + status + total */}
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600 }}>{order.order_number}</span>
-                      {/* Tap status badge to quick-change */}
-                      <span
-                        onClick={e => { e.stopPropagation(); setQuickStatusId(order.id) }}
-                        style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:`${statusObj.color}22`, color:statusObj.color, border:`1px solid ${statusObj.color}44`, cursor:'pointer', userSelect:'none' }}
-                      >
-                        {statusObj.label} <span style={{fontSize:9,opacity:0.7}}>▼</span>
+                  {/* Status bar */}
+                  <div style={{ width:3, alignSelf:'stretch', borderRadius:99, background:statusObj.color, flexShrink:0 }}/>
+
+                  {/* Content */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    {/* Top row */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'Inter,monospace', fontWeight:600 }}>
+                          {order.order_number}
+                        </span>
+                        <span
+                          onClick={e => { e.stopPropagation(); setQuickStatusId(order.id) }}
+                          style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:`${statusObj.color}18`, color:statusObj.color, cursor:'pointer', userSelect:'none' }}
+                        >
+                          {statusObj.label}
+                        </span>
+                      </div>
+                      <span style={{ fontWeight:800, fontSize:15, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>
+                        {formatCurrency(order.total)}
                       </span>
                     </div>
-                    <span style={{ fontWeight:900, fontSize:15, color:'var(--teal)' }}>{formatCurrency(order.total)}</span>
-                  </div>
-                  {/* Row 2: phone + city */}
-                  <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:order.items?.length ? 8 : 0 }}>
-                    {order.customer_phone && <span style={{ fontSize:13, fontWeight:700, direction:'ltr' }}>{order.customer_phone}</span>}
-                    {order.customer_city && <span style={{ fontSize:12, color:'var(--text-muted)' }}>📍 {order.customer_city}</span>}
-                    {order.profit !== undefined && (
-                      <span style={{ fontSize:12, fontWeight:700, color: order.profit >= 0 ? 'var(--green)' : 'var(--red)', marginRight:'auto' }}>
-                        ربح: {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
-                      </span>
+
+                    {/* Middle row */}
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                      {order.customer_name && (
+                        <span style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{order.customer_name}</span>
+                      )}
+                      {order.customer_phone && (
+                        <span style={{ fontSize:12, color:'var(--text-muted)', fontFamily:'Inter,sans-serif', direction:'ltr' }}>{order.customer_phone}</span>
+                      )}
+                      {order.customer_city && (
+                        <span style={{ fontSize:12, color:'var(--text-muted)' }}>{order.customer_city}</span>
+                      )}
+                      {order.profit !== undefined && (
+                        <span style={{ fontSize:12, fontWeight:700, color: order.profit >= 0 ? 'var(--green)' : 'var(--danger)', marginRight:'auto', fontFamily:'Inter,sans-serif' }}>
+                          {order.profit > 0 ? '+' : ''}{formatCurrency(order.profit)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Products row */}
+                    {order.items?.length > 0 && (
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>
+                        {order.items.slice(0,3).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
+                        {order.items.length > 3 && ` +${order.items.length-3}`}
+                      </div>
                     )}
                   </div>
-                  {/* Row 3: products */}
-                  {order.items?.length > 0 && (
-                    <div style={{ fontSize:11, color:'var(--text-sec)', marginBottom:8 }}>
-                      {order.items.slice(0,3).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
-                      {order.items.length > 3 && ` +${order.items.length-3}`}
-                    </div>
-                  )}
-                  {/* Row 4: actions */}
-                  <div style={{ display:'flex', gap:6, marginTop:4 }} onClick={e => e.stopPropagation()}>
-                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={13}/> عرض</Btn>
-                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={13}/> تعديل</Btn>
-                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={13}/></Btn>
+
+                  {/* Actions */}
+                  <div style={{ display:'flex', gap:4, flexShrink:0 }} onClick={e => e.stopPropagation()}>
+                    <Btn variant="ghost" size="sm" onClick={() => { setViewOrder(order); setShowView(true) }}><IcEye size={14}/></Btn>
+                    <Btn variant="secondary" size="sm" onClick={() => { setEditOrder(order); setShowForm(true) }}><IcEdit size={14}/></Btn>
+                    <Btn variant="danger" size="sm" onClick={() => setDeleteId(order.id)}><IcDelete size={14}/></Btn>
                   </div>
                 </div>
               )
@@ -451,7 +482,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         (!order || o.id !== order.id)
       )
       if (recent.length > 0) {
-        setDupWarning(`⚠️ هذا الرقم لديه ${recent.length} طلب خلال آخر 24 ساعة`)
+        setDupWarning(`️ هذا الرقم لديه ${recent.length} طلب خلال آخر 24 ساعة`)
       } else {
         setDupWarning(null)
       }
@@ -525,7 +556,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
       }
       setShowAi(false)
       setAiText('')
-      toast('✨ تم تعبئة النموذج')
+      toast(' تم تعبئة النموذج')
     } catch(e) {
       toast('فشل AI: ' + (e.message||''), 'error')
     } finally { setAiLoading(false) }
@@ -599,22 +630,22 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         <Btn loading={saving} onClick={handleSave}><IcSave size={15} /> {isEdit ? 'حفظ التعديلات' : 'إضافة الطلب'}</Btn>
       </>}
     >
-      {/* ✨ AI fill panel */}
+      {/*  AI fill panel */}
       <div style={{ marginBottom:16 }}>
         {!showAi ? (
           <button onClick={() => setShowAi(true)} style={{
             display:'flex', alignItems:'center', gap:8, padding:'9px 14px',
             background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(0,228,184,0.1))',
-            border:'1.5px solid rgba(124,58,237,0.3)', borderRadius:'var(--radius-sm)',
+            border:'1.5px solid rgba(124,58,237,0.3)', borderRadius:'var(--r-md)',
             color:'var(--violet-light,#a78bfa)', cursor:'pointer', fontFamily:'inherit', fontSize:13, fontWeight:700,
           }}>
-            ✨ تعبئة بالذكاء الاصطناعي
+            ذكاء اصطناعي
             <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:400 }}>— اكتب الطلب بلغة طبيعية</span>
           </button>
         ) : (
-          <div style={{ padding:'12px 14px', background:'rgba(124,58,237,0.08)', border:'1.5px solid rgba(124,58,237,0.25)', borderRadius:'var(--radius-sm)' }}>
+          <div style={{ padding:'12px 14px', background:'rgba(124,58,237,0.08)', border:'1.5px solid rgba(124,58,237,0.25)', borderRadius:'var(--r-md)' }}>
             <div style={{ fontSize:12, color:'var(--violet-light,#a78bfa)', fontWeight:700, marginBottom:8 }}>
-              ✨ مثال: "طلب من سارة 0501234567 دبي طقم كريستال ملكي × 2"
+               مثال: "طلب من سارة 0501234567 دبي طقم كريستال ملكي × 2"
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <input
@@ -622,10 +653,10 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
                 onKeyDown={e => e.key==='Enter' && handleAiFill()}
                 placeholder="اكتب تفاصيل الطلب..."
                 autoFocus
-                style={{ flex:1, padding:'9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', outline:'none' }}
+                style={{ flex:1, padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none' }}
               />
               <Btn onClick={handleAiFill} loading={aiLoading} style={{ background:'var(--violet)', border:'none', flexShrink:0 }}>تعبئة</Btn>
-              <Btn variant="ghost" onClick={() => { setShowAi(false); setAiText('') }} style={{ flexShrink:0 }}>✕</Btn>
+              <Btn variant="ghost" onClick={() => { setShowAi(false); setAiText('') }} style={{ flexShrink:0 }}></Btn>
             </div>
           </div>
         )}
@@ -652,8 +683,8 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
 
         <div>
           <label style={{fontSize:11,fontWeight:600,color:'var(--text-sec)',letterSpacing:'0.03em',display:'block',marginBottom:5}}>الشركة الناقلة</label>
-          <div style={{padding:'9px 12px',background:'var(--bg-surface)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:8}}>
-            <span>🚚</span> <span style={{fontWeight:600,color:'var(--teal)'}}>Hayyak</span>
+          <div style={{padding:'9px 12px',background:'var(--bg-surface)',border:'none',borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:8}}>
+            <span></span> <span style={{fontWeight:600,color:'var(--teal)'}}>Hayyak</span>
           </div>
         </div>
 
@@ -661,9 +692,9 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
 
         <Input label="تاريخ الطلب" type="date" value={form.order_created_at || ''} onChange={e => setField('order_created_at', e.target.value)} />
         {isEdit && form.delivery_date && (
-          <div style={{ padding:'10px 12px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--radius-sm)' }}>
+          <div style={{ padding:'10px 12px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--r-md)' }}>
             <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>تاريخ التسليم</div>
-            <div style={{ fontWeight:800, color:'var(--teal)', fontSize:14 }}>✅ {form.delivery_date}</div>
+            <div style={{ fontWeight:800, color:'var(--teal)', fontSize:14 }}>{form.delivery_date}</div>
           </div>
         )}
       </div>
@@ -676,7 +707,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
             <button
               key={p.id}
               onClick={() => addItem(p)}
-              style={{ padding: '6px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-sec)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)' }}
+              style={{ padding: '6px 12px', background: 'var(--bg-hover)', border: 'none', borderRadius: 'var(--r-md)', color: 'var(--text-sec)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)' }}
             >
               + {p.name} ({formatCurrency(p.price)})
             </button>
@@ -685,7 +716,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
         {items.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {items.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }}>
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-hover)', borderRadius: 'var(--r-md)' }}>
                 <span style={{ flex: 1, fontSize: 13 }}>{item.name}</span>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatCurrency(item.price)} × </span>
                 <input
@@ -693,10 +724,10 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
                   min="1"
                   value={item.qty}
                   onChange={e => updateItemQty(item.id, parseInt(e.target.value))}
-                  style={{ width: 48, padding: '4px 6px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 6, color: 'var(--text)', fontSize: 13, textAlign: 'center', fontFamily: 'var(--font)' }}
+                  style={{ width: 48, padding: '4px 6px', background: 'var(--bg-hover)', border: 'none', borderRadius: 6, color: 'var(--text)', fontSize: 13, textAlign: 'center', fontFamily: 'var(--font)' }}
                 />
                 <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: 13, minWidth: 70, textAlign: 'left' }}>{formatCurrency(item.price * item.qty)}</span>
-                <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>✕</button>
+                <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}></button>
               </div>
             ))}
           </div>
@@ -719,7 +750,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
               onChange={e => setField('discount_code', e.target.value)}
               placeholder="PROMO2024"
               dir="ltr"
-              style={{ flex: 1, padding: '10px 12px', background: 'var(--bg-glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)' }}
+              style={{ flex: 1, padding: '10px 12px', background: 'var(--bg-hover)', border: 'none', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)' }}
             />
             <Btn variant="secondary" size="sm" onClick={() => applyDiscount(form.discount_code)}>تطبيق</Btn>
           </div>
@@ -727,7 +758,7 @@ function OrderForm({ open, onClose, order, statuses, products, couriers, deliver
       </div>
 
       {/* Totals */}
-      <div style={{ marginTop: 16, padding: 14, background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)', display: 'flex', flexWrap: 'wrap', gap: '8px 24px' }}>
+      <div style={{ marginTop: 16, padding: 14, background: 'var(--bg-hover)', borderRadius: 'var(--r-md)', display: 'flex', flexWrap: 'wrap', gap: '8px 24px' }}>
         <span style={{ fontSize: 13, color: 'var(--text-sec)' }}>المجموع: <b style={{ color: 'var(--text)' }}>{formatCurrency(subtotal)}</b></span>
         <span style={{ fontSize: 13, color: 'var(--text-sec)' }}>التوصيل: <b style={{ color: 'var(--text)' }}>{formatCurrency(form.delivery_cost || 0)}</b></span>
         {form.discount_amount > 0 && <span style={{ fontSize: 13, color: 'var(--red)' }}>خصم: -{formatCurrency(form.discount_amount)}</span>}
@@ -790,7 +821,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: 'var(--text-sec)' }}>المنتجات</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {order.items.map((item, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-glass)', borderRadius: 8 }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-hover)', borderRadius: 8 }}>
                   <span style={{ fontSize: 13 }}>{item.name} × {item.qty}</span>
                   <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: 13 }}>{formatCurrency(item.price * item.qty)}</span>
                 </div>
@@ -799,7 +830,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: 14, background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: 14, background: 'var(--bg-hover)', borderRadius: 'var(--r-md)' }}>
           <span style={{ fontSize: 13 }}>المجموع: <b>{formatCurrency(order.subtotal)}</b></span>
           <span style={{ fontSize: 13 }}>التوصيل: <b>{formatCurrency(order.delivery_cost)}</b></span>
           {order.discount_amount > 0 && <span style={{ fontSize: 13, color: 'var(--red)' }}>خصم: -{formatCurrency(order.discount_amount)}</span>}
@@ -812,7 +843,7 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
         </div>
 
         {order.notes && (
-          <div style={{ padding: 12, background: 'var(--bg-glass)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ padding: 12, background: 'var(--bg-hover)', borderRadius: 'var(--r-md)' }}>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>ملاحظات</div>
             <div style={{ fontSize: 13 }}>{order.notes}</div>
           </div>
@@ -851,12 +882,12 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
           <Btn variant="secondary" onClick={onEdit}><IcEdit size={15} /> تعديل</Btn>
           {onRepeat && (
             <Btn variant="ghost" onClick={() => onRepeat(order)} style={{ borderColor:'var(--violet-soft)', color:'var(--violet-light)' }}>
-              🔁 تكرار
+              تكرار
             </Btn>
           )}
           {onSaveTemplate && (
             <Btn variant="ghost" onClick={() => onSaveTemplate(order)} style={{ borderColor:'rgba(245,158,11,0.3)', color:'#f59e0b' }}>
-              📋 حفظ كقالب
+              حفظ كقالب
             </Btn>
           )}
         </div>
@@ -867,173 +898,6 @@ function OrderViewModal({ open, onClose, order, statuses, onEdit, onStatusChange
 
 /* ══════════════════════════════════════════════
    KANBAN BOARD — native HTML5 drag & drop
-══════════════════════════════════════════════ */
-function KanbanBoard({ statuses, orders, onStatusChange, onView, onEdit }) {
-  const [dragId, setDragId] = useState(null)
-  const [dragOver, setDragOver] = useState(null)
-  const [dropping, setDropping] = useState(null)
-
-  function onDragStart(e, orderId) {
-    setDragId(orderId)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', orderId)
-    // ghost image
-    e.currentTarget.style.opacity = '0.5'
-  }
-
-  function onDragEnd(e) {
-    e.currentTarget.style.opacity = '1'
-    setDragId(null)
-    setDragOver(null)
-  }
-
-  function onDragOver(e, statusId) {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDragOver(statusId)
-  }
-
-  async function onDrop(e, statusId) {
-    e.preventDefault()
-    const id = dragId || e.dataTransfer.getData('text/plain')
-    if (!id) return
-    const order = orders.find(o => o.id === id)
-    if (!order || order.status === statusId) { setDragOver(null); setDragId(null); return }
-    setDropping(id)
-    await onStatusChange(id, statusId)
-    setDropping(null)
-    setDragOver(null)
-    setDragId(null)
-  }
-
-  return (
-    <div style={{ display:'flex', gap:14, overflowX:'auto', paddingBottom:20, alignItems:'flex-start', minHeight:300 }}>
-      {statuses.map(status => {
-        const col = orders.filter(o => o.status === status.id)
-        const total = col.reduce((s,o) => s+(o.total||0), 0)
-        const isOver = dragOver === status.id
-
-        return (
-          <div
-            key={status.id}
-            style={{ minWidth:270, flex:'0 0 270px', transition:'all 0.2s ease' }}
-            onDragOver={e => onDragOver(e, status.id)}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={e => onDrop(e, status.id)}
-          >
-            {/* Column header */}
-            <div style={{
-              display:'flex', alignItems:'center', justifyContent:'space-between',
-              padding:'10px 14px', marginBottom:10,
-              background: isOver ? `${status.color}20` : `${status.color}10`,
-              border:`1.5px solid ${isOver ? status.color : status.color+'30'}`,
-              borderRadius:'var(--radius)',
-              transition:'all 0.2s ease',
-              boxShadow: isOver ? `0 0 16px ${status.color}30` : 'none',
-            }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ width:9, height:9, borderRadius:'50%', background:status.color, boxShadow:`0 0 6px ${status.color}`, flexShrink:0 }} />
-                <span style={{ fontWeight:800, fontSize:13, color:status.color }}>{status.label}</span>
-                <span style={{ fontSize:11, fontWeight:800, padding:'2px 8px', background:`${status.color}22`, borderRadius:'var(--radius-pill)', color:status.color }}>{col.length}</span>
-              </div>
-              <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>{total.toLocaleString()} د.إ</span>
-            </div>
-
-            {/* Drop zone */}
-            <div style={{
-              display:'flex', flexDirection:'column', gap:9,
-              minHeight:80, padding: isOver ? '6px' : '0',
-              background: isOver ? `${status.color}06` : 'transparent',
-              borderRadius:'var(--radius)',
-              border: isOver ? `2px dashed ${status.color}50` : '2px dashed transparent',
-              transition:'all 0.2s ease',
-            }}>
-              {col.length === 0 && !isOver && (
-                <div style={{ padding:'24px 10px', textAlign:'center', color:'var(--text-muted)', fontSize:12, background:'var(--bg-glass)', borderRadius:'var(--radius)', border:'1.5px dashed var(--glass-border)' }}>
-                  اسحب طلباً هنا
-                </div>
-              )}
-
-              {col.map(order => (
-                <div
-                  key={order.id}
-                  draggable
-                  onDragStart={e => onDragStart(e, order.id)}
-                  onDragEnd={onDragEnd}
-                  style={{
-                    background:'var(--bg-glass)',
-                    backdropFilter:'var(--blur-md)',
-                    border:`1.5px solid ${dragId===order.id ? status.color+'60' : 'var(--glass-border)'}`,
-                    borderRadius:'var(--radius)',
-                    padding:'12px 14px',
-                    cursor:'grab',
-                    transition:'all 0.2s ease',
-                    opacity: dropping===order.id ? 0.5 : 1,
-                    boxShadow: dragId===order.id ? `0 8px 24px rgba(0,0,0,0.4)` : 'var(--shadow-card)',
-                    userSelect:'none',
-                    position:'relative', overflow:'hidden',
-                  }}
-                  className="list-row"
-                >
-                  {/* Color top strip */}
-                  <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${status.color},${status.color}80)` }} />
-
-                  {/* Order number */}
-                  <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600, marginBottom:7, letterSpacing:'0.05em' }}>
-                    {order.order_number}
-                  </div>
-
-                  {/* Customer */}
-                  <div style={{ fontWeight:700, fontSize:13, marginBottom:4, lineHeight:1.3 }}>
-                    {order.customer_name || order.customer_phone || 'طلب'}
-                  </div>
-
-                  {order.customer_city && (
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8 }}>📍 {order.customer_city}</div>
-                  )}
-
-                  {/* Items preview */}
-                  {order.items?.length > 0 && (
-                    <div style={{ fontSize:11, color:'var(--text-sec)', marginBottom:8, lineHeight:1.4 }}>
-                      {order.items.slice(0,2).map(i=>`${i.name} ×${i.qty}`).join(' · ')}
-                      {order.items.length > 2 && ` +${order.items.length-2}`}
-                    </div>
-                  )}
-
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <span style={{ fontWeight:900, fontSize:14, color:'var(--teal)' }}>{(order.total||0).toLocaleString()} د.إ</span>
-                    <div style={{ display:'flex', gap:4 }}>
-                      <button
-                        onClick={e => { e.stopPropagation(); onView(order) }}
-                        style={{ background:'rgba(0,228,184,0.12)', border:'1px solid rgba(0,228,184,0.22)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--teal)', cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'inherit' }}
-                      >عرض</button>
-                      <button
-                        onClick={e => { e.stopPropagation(); onEdit(order) }}
-                        style={{ background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)', borderRadius:'var(--radius-pill)', padding:'4px 10px', color:'var(--text-sec)', cursor:'pointer', fontSize:11, fontFamily:'inherit' }}
-                      >تعديل</button>
-                    </div>
-                  </div>
-
-                  {/* Drag handle hint */}
-                  <div style={{ position:'absolute', top:'50%', left:8, transform:'translateY(-50%)', color:'var(--text-muted)', fontSize:10, opacity:0.4, pointerEvents:'none' }}>⠿</div>
-                </div>
-              ))}
-
-              {isOver && (
-                <div style={{ height:60, border:`2px dashed ${status.color}60`, borderRadius:'var(--radius)', display:'flex', alignItems:'center', justifyContent:'center', color:status.color, fontSize:12, fontWeight:700, background:`${status.color}08` }}>
-                  ⬇ أفلت هنا
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ══════════════════════════════════════════════
-   ORDER TIMELINE — shows internal_notes history
 ══════════════════════════════════════════════ */
 function OrderTimeline({ notes, statuses }) {
   if (!notes?.length) return null
@@ -1097,8 +961,7 @@ function BottomSheetFilters({ open, onClose, filterStatus, setFilterStatus, filt
       <div style={{
         position:'fixed', bottom:0, left:0, right:0, zIndex:999,
         background:'var(--modal-bg)',
-        backdropFilter:'blur(32px)', WebkitBackdropFilter:'blur(32px)',
-        border:'1.5px solid var(--glass-border-strong)',
+        border:'1.5px solid var(--border-strong)',
         borderRadius:'24px 24px 0 0',
         padding:'0 0 env(safe-area-inset-bottom,16px)',
         animation:'slideUp 0.28s cubic-bezier(0.25,0.46,0.45,0.94) both',
@@ -1106,7 +969,7 @@ function BottomSheetFilters({ open, onClose, filterStatus, setFilterStatus, filt
       }}>
         {/* Handle */}
         <div style={{ display:'flex', justifyContent:'center', paddingTop:12, paddingBottom:8 }}>
-          <div style={{ width:36, height:4, borderRadius:2, background:'var(--glass-border-strong)' }} />
+          <div style={{ width:36, height:4, borderRadius:2, background:'var(--border-strong)' }} />
         </div>
 
         {/* Header */}
@@ -1125,8 +988,8 @@ function BottomSheetFilters({ open, onClose, filterStatus, setFilterStatus, filt
           <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
             {[{ id:'all', label:'الكل', color:'var(--text-sec)' }, ...statuses].map(s => (
               <button key={s.id} onClick={() => setFilterStatus(s.id)} style={{
-                padding:'8px 16px', borderRadius:999, border:`1.5px solid ${filterStatus===s.id ? (s.color||'var(--teal)') : 'var(--glass-border)'}`,
-                background: filterStatus===s.id ? `${s.color||'var(--teal)'}22` : 'var(--bg-glass)',
+                padding:'8px 16px', borderRadius:999, border:`1.5px solid ${filterStatus===s.id ? (s.color||'var(--teal)') : 'var(--border)'}`,
+                background: filterStatus===s.id ? `${s.color||'var(--teal)'}22` : 'var(--bg-hover)',
                 color: filterStatus===s.id ? (s.color||'var(--teal)') : 'var(--text-sec)',
                 cursor:'pointer', fontSize:13, fontWeight: filterStatus===s.id ? 800 : 500,
                 fontFamily:'inherit', transition:'all 0.15s ease',
@@ -1142,8 +1005,8 @@ function BottomSheetFilters({ open, onClose, filterStatus, setFilterStatus, filt
             {[['all','الكل'], ...Object.entries(SOURCE_LABELS)].map(([k,v]) => (
               <button key={k} onClick={() => setFilterSource(k)} style={{
                 padding:'8px 16px', borderRadius:999,
-                border:`1.5px solid ${filterSource===k ? 'var(--violet-light)' : 'var(--glass-border)'}`,
-                background: filterSource===k ? 'var(--violet-soft)' : 'var(--bg-glass)',
+                border:`1.5px solid ${filterSource===k ? 'var(--violet-light)' : 'var(--border)'}`,
+                background: filterSource===k ? 'var(--violet-soft)' : 'var(--bg-hover)',
                 color: filterSource===k ? 'var(--violet-light)' : 'var(--text-sec)',
                 cursor:'pointer', fontSize:13, fontWeight: filterSource===k ? 800 : 500,
                 fontFamily:'inherit', transition:'all 0.15s ease',
@@ -1155,12 +1018,12 @@ function BottomSheetFilters({ open, onClose, filterStatus, setFilterStatus, filt
         {/* Apply button */}
         <div style={{ padding:'8px 20px 20px' }}>
           <button onClick={onClose} style={{
-            width:'100%', padding:'14px', borderRadius:'var(--radius)',
+            width:'100%', padding:'14px', borderRadius:'var(--r-lg)',
             background:'linear-gradient(135deg,var(--teal),var(--violet))',
             border:'none', color:'#050c1a', fontSize:15, fontWeight:900,
             cursor:'pointer', fontFamily:'inherit',
           }}>
-            تطبيق الفلتر {hasFilters ? '✓' : ''}
+            تطبيق الفلتر {hasFilters ? '' : ''}
           </button>
         </div>
       </div>
@@ -1184,15 +1047,15 @@ function OrderTemplatesModal({ open, onClose, templates, onUse, onDelete }) {
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
         {templates.length === 0 ? (
           <div style={{ textAlign:'center', padding:'32px 0', color:'var(--text-muted)' }}>
-            <div style={{ fontSize:40, marginBottom:10 }}>📋</div>
+            <div style={{ fontSize:40, marginBottom:10 }}></div>
             <div style={{ fontWeight:700, marginBottom:6 }}>لا يوجد قوالب بعد</div>
             <div style={{ fontSize:12 }}>افتح أي طلب واضغط "حفظ كقالب" لإنشاء قالب</div>
           </div>
         ) : templates.map(t => (
           <div key={t.id} style={{
             display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
-            background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)',
-            borderRadius:'var(--radius)', 
+            background:'var(--bg-hover)', border:'none',
+            borderRadius:'var(--r-lg)', 
           }}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontWeight:800, fontSize:14, color:'var(--text)', marginBottom:3 }}>{t.name}</div>
@@ -1205,7 +1068,7 @@ function OrderTemplatesModal({ open, onClose, templates, onUse, onDelete }) {
             </div>
             <div style={{ display:'flex', gap:6, flexShrink:0 }}>
               <Btn size="sm" onClick={() => onUse(t)}>استخدام</Btn>
-              <Btn variant="danger" size="sm" onClick={() => onDelete(t.id)}>✕</Btn>
+              <Btn variant="danger" size="sm" onClick={() => onDelete(t.id)}></Btn>
             </div>
           </div>
         ))}
@@ -1228,15 +1091,14 @@ function QuickStatusPicker({ orderId, statuses, currentStatus, onSelect, onClose
       <div style={{
         position:'fixed', bottom:0, left:0, right:0, zIndex:998,
         background:'var(--modal-bg)',
-        backdropFilter:'blur(32px)', WebkitBackdropFilter:'blur(32px)',
-        border:'1.5px solid var(--glass-border-strong)',
+        border:'1.5px solid var(--border-strong)',
         borderRadius:'24px 24px 0 0',
         padding:'16px 20px env(safe-area-inset-bottom,20px)',
         animation:'slideUp 0.22s ease both',
       }}>
         {/* Handle */}
         <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}>
-          <div style={{ width:36, height:4, borderRadius:2, background:'var(--glass-border-strong)' }} />
+          <div style={{ width:36, height:4, borderRadius:2, background:'var(--border-strong)' }} />
         </div>
         <div style={{ fontWeight:800, fontSize:15, color:'var(--text)', marginBottom:14, textAlign:'center' }}>
           تغيير حالة الطلب
@@ -1247,9 +1109,9 @@ function QuickStatusPicker({ orderId, statuses, currentStatus, onSelect, onClose
               key={s.id}
               onClick={() => onSelect(orderId, s.id)}
               style={{
-                padding:'13px 16px', borderRadius:'var(--radius)',
-                border:`1.5px solid ${currentStatus===s.id ? s.color : 'var(--glass-border)'}`,
-                background: currentStatus===s.id ? `${s.color}18` : 'var(--bg-glass)',
+                padding:'13px 16px', borderRadius:'var(--r-lg)',
+                border:`1.5px solid ${currentStatus===s.id ? s.color : 'var(--border)'}`,
+                background: currentStatus===s.id ? `${s.color}18` : 'var(--bg-hover)',
                 color: currentStatus===s.id ? s.color : 'var(--text)',
                 cursor:'pointer', fontFamily:'inherit', fontSize:14,
                 fontWeight: currentStatus===s.id ? 800 : 500,
@@ -1259,7 +1121,7 @@ function QuickStatusPicker({ orderId, statuses, currentStatus, onSelect, onClose
             >
               <span style={{ width:10, height:10, borderRadius:'50%', background:s.color, flexShrink:0, boxShadow: currentStatus===s.id ? `0 0 8px ${s.color}` : 'none' }} />
               {s.label}
-              {currentStatus===s.id && <span style={{ marginRight:'auto', fontSize:16 }}>✓</span>}
+              {currentStatus===s.id && <span style={{ marginRight:'auto', fontSize:16 }}></span>}
             </button>
           ))}
         </div>

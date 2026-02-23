@@ -128,11 +128,11 @@ export default function Reports() {
 
   function generateWhatsAppSummary() {
     const text =
-      `📊 تقرير ${MONTHS[selMonth]} ${selYear}\n\n` +
-      `💰 المبيعات: ${formatCurrency(revenue)}\n` +
-      `📦 الطلبات: ${monthOrders.length}\n` +
-      `💵 صافي الربح: ${formatCurrency(netProfit)}\n` +
-      `📈 هامش الربح: ${profitMargin}%`
+      `تقرير ${MONTHS[selMonth]} ${selYear}\n\n` +
+      `المبيعات: ${formatCurrency(revenue)}\n` +
+      `الطلبات: ${monthOrders.length}\n` +
+      `صافي الربح: ${formatCurrency(netProfit)}\n` +
+      `هامش الربح: ${profitMargin}%`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -150,7 +150,7 @@ export default function Reports() {
       />
 
       {/* ── Tabs ── */}
-      <div style={{ display:'flex', gap:4, marginBottom:20, background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:4 }}>
+      <div style={{ display:'flex', gap:4, marginBottom:20, background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', padding:4 }}>
         {[
           { id:'overview', label:'نظرة عامة' },
           { id:'pnl',      label:'الأرباح والخسائر' },
@@ -172,11 +172,11 @@ export default function Reports() {
           {/* Month selector */}
           <div style={{ display:'flex', gap:8, marginBottom:20, flexWrap:'wrap' }}>
             <select value={selMonth} onChange={e=>setSelMonth(parseInt(e.target.value))}
-              style={{ padding:'8px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+              style={{ padding:'8px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
               {MONTHS.map((m,i) => <option key={i} value={i}>{m}</option>)}
             </select>
             <select value={selYear} onChange={e=>setSelYear(parseInt(e.target.value))}
-              style={{ padding:'8px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+              style={{ padding:'8px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
               {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
@@ -198,7 +198,7 @@ export default function Reports() {
               {dailyData.map(d => (
                 <div key={d.day} title={`${d.day}: ${formatCurrency(d.revenue)} — ${d.count} طلب`}
                   style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1, minWidth:10, cursor:'pointer' }}>
-                  <div style={{ width:'80%', height: d.revenue>0 ? `${Math.max(4,(d.revenue/maxDay)*80)}px` : '2px', background: d.revenue>0?'linear-gradient(180deg,var(--teal),var(--violet))':'var(--glass-border)', borderRadius:'3px 3px 0 0', transition:'height 0.3s ease' }}/>
+                  <div style={{ width:'80%', height: d.revenue>0 ? `${Math.max(4,(d.revenue/maxDay)*80)}px` : '2px', background: d.revenue>0?'linear-gradient(180deg,var(--teal),var(--violet))':'var(--border)', borderRadius:'3px 3px 0 0', transition:'height 0.3s ease' }}/>
                 </div>
               ))}
             </div>
@@ -222,7 +222,7 @@ export default function Reports() {
                       </span>
                       <span style={{ color:'var(--text-muted)' }}>{s.count}</span>
                     </div>
-                    <div style={{ height:4, background:'var(--glass-border)', borderRadius:99 }}>
+                    <div style={{ height:4, background:'var(--border)', borderRadius:99 }}>
                       <div style={{ width:`${(s.count/monthOrders.length)*100}%`, height:'100%', background:s.color, borderRadius:99 }}/>
                     </div>
                   </div>
@@ -240,7 +240,7 @@ export default function Reports() {
                       <span>{SOURCE_LABELS[src]||src}</span>
                       <span style={{ color:'var(--text-muted)' }}>{data.count}</span>
                     </div>
-                    <div style={{ height:4, background:'var(--glass-border)', borderRadius:99 }}>
+                    <div style={{ height:4, background:'var(--border)', borderRadius:99 }}>
                       <div style={{ width:`${(data.count/monthOrders.length)*100}%`, height:'100%', background:'var(--violet)', borderRadius:99 }}/>
                     </div>
                   </div>
@@ -257,7 +257,7 @@ export default function Reports() {
           {/* Year selector */}
           <div style={{ display:'flex', gap:8, marginBottom:20, alignItems:'center' }}>
             <select value={selYear} onChange={e=>setSelYear(parseInt(e.target.value))}
-              style={{ padding:'8px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+              style={{ padding:'8px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
               {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
             <span style={{ fontSize:12, color:'var(--text-muted)' }}>آخر 6 أشهر</span>
@@ -265,17 +265,17 @@ export default function Reports() {
 
           {/* YTD summary */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:20 }}>
-            <div style={{ gridColumn:'1/-1', padding:'16px', background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)', borderRadius:'var(--radius)', display:'flex', gap:20, flexWrap:'wrap', alignItems:'center' }}>
+            <div style={{ gridColumn:'1/-1', padding:'16px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-lg)', display:'flex', gap:20, flexWrap:'wrap', alignItems:'center' }}>
               <div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>إجمالي المبيعات {selYear}</div>
                 <div style={{ fontSize:24, fontWeight:900, color:'var(--teal)' }}>{formatCurrency(ytdRevenue)}</div>
               </div>
-              <div style={{ width:1, height:40, background:'var(--glass-border)' }}/>
+              <div style={{ width:1, height:40, background:'var(--border)' }}/>
               <div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>صافي الربح {selYear}</div>
                 <div style={{ fontSize:24, fontWeight:900, color: ytdProfit>=0?'var(--green,#34d399)':'var(--red)' }}>{ytdProfit>0?'+':''}{formatCurrency(ytdProfit)}</div>
               </div>
-              <div style={{ width:1, height:40, background:'var(--glass-border)' }}/>
+              <div style={{ width:1, height:40, background:'var(--border)' }}/>
               <div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>هامش الربح</div>
                 <div style={{ fontSize:24, fontWeight:900, color:'var(--gold,#f59e0b)' }}>
@@ -313,7 +313,7 @@ export default function Reports() {
             <div style={{ overflowX:'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
                 <thead>
-                  <tr style={{ color:'var(--text-muted)', borderBottom:'1px solid var(--glass-border)' }}>
+                  <tr style={{ color:'var(--text-muted)', borderBottom:'none' }}>
                     {['الشهر','الطلبات','المبيعات','الشحن','المصاريف','الربح الصافي','الهامش'].map(h => (
                       <th key={h} style={{ padding:'6px 8px', textAlign:'right', fontWeight:700, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
@@ -321,7 +321,7 @@ export default function Reports() {
                 </thead>
                 <tbody>
                   {pnlMonths.map((m,i) => (
-                    <tr key={i} style={{ borderBottom:'1px solid var(--glass-border)', opacity: m.revenue===0?0.5:1 }}>
+                    <tr key={i} style={{ borderBottom:'none', opacity: m.revenue===0?0.5:1 }}>
                       <td style={{ padding:'8px', fontWeight:700 }}>{m.label} {m.year}</td>
                       <td style={{ padding:'8px', color:'var(--text-sec)' }}>{m.orderCount}</td>
                       <td style={{ padding:'8px', color:'var(--teal)', fontWeight:700 }}>{formatCurrency(m.revenue)}</td>
@@ -353,12 +353,12 @@ export default function Reports() {
                       <span style={{ fontWeight:800, color:'var(--blue)' }}>{formatCurrency(m.shipping||0)}</span>
                     </div>
                   </div>
-                  <div style={{ height:4, background:'var(--glass-border)', borderRadius:99 }}>
+                  <div style={{ height:4, background:'var(--border)', borderRadius:99 }}>
                     <div style={{ width:`${maxPnl>0?((m.shipping||0)/maxPnl)*100:0}%`, height:'100%', background:'var(--blue,#3b82f6)', borderRadius:99, transition:'width 0.4s ease' }}/>
                   </div>
                 </div>
               ))}
-              <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--glass-border)', display:'flex', justifyContent:'space-between', fontSize:13 }}>
+              <div style={{ marginTop:12, paddingTop:12, borderTop:'none', display:'flex', justifyContent:'space-between', fontSize:13 }}>
                 <span style={{ fontWeight:700 }}>الإجمالي</span>
                 <span style={{ fontWeight:900, color:'var(--blue)' }}>{formatCurrency(pnlMonths.reduce((s,m)=>s+(m.shipping||0),0))}</span>
               </div>
@@ -375,7 +375,7 @@ export default function Reports() {
                     <span>{cat}</span>
                     <span style={{ fontWeight:700, color:'var(--red)' }}>{formatCurrency(amt)}</span>
                   </div>
-                  <div style={{ height:5, background:'var(--glass-border)', borderRadius:99 }}>
+                  <div style={{ height:5, background:'var(--border)', borderRadius:99 }}>
                     <div style={{ width:`${(amt/totalYtdExp)*100}%`, height:'100%', background:'linear-gradient(90deg,var(--red),#f97316)', borderRadius:99 }}/>
                   </div>
                 </div>
@@ -397,8 +397,8 @@ export default function Reports() {
               { value:'margin',  label:'أعلى هامش' },
             ].map(s => (
               <button key={s.value} onClick={() => setProdSort(s.value)} style={{
-                padding:'7px 14px', borderRadius:999, border:`1.5px solid ${prodSort===s.value?'var(--teal)':'var(--glass-border)'}`,
-                background: prodSort===s.value?'rgba(0,228,184,0.12)':'var(--bg-glass)',
+                padding:'7px 14px', borderRadius:999, border:`1.5px solid ${prodSort===s.value?'var(--teal)':'var(--border)'}`,
+                background: prodSort===s.value?'rgba(0,228,184,0.12)':'var(--bg-hover)',
                 color: prodSort===s.value?'var(--teal)':'var(--text-muted)',
                 fontSize:12, fontWeight: prodSort===s.value?800:500, cursor:'pointer', fontFamily:'inherit',
               }}>{s.label}</button>
@@ -407,7 +407,7 @@ export default function Reports() {
 
           {sortedProducts.length === 0 ? (
             <Card style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>
-              <div style={{ fontSize:40, marginBottom:10 }}>📦</div>
+              <div style={{ fontSize:40, marginBottom:10 }}></div>
               <div>لا يوجد بيانات منتجات بعد</div>
             </Card>
           ) : (
@@ -417,20 +417,20 @@ export default function Reports() {
                 const isTop = i === 0
                 return (
                   <div key={p.name} style={{
-                    background:'var(--bg-glass)', border:`1.5px solid ${isTop?'var(--teal)':'var(--glass-border)'}`,
-                    borderRadius:'var(--radius)', padding:'14px 16px',
+                    background:'var(--bg-hover)', border:`1.5px solid ${isTop?'var(--teal)':'var(--border)'}`,
+                    borderRadius:'var(--r-lg)', padding:'14px 16px',
                     boxShadow: isTop ? '0 0 16px rgba(0,228,184,0.1)' : 'none',
                   }}>
                     {/* Top row */}
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
                       <div style={{
                         width:32, height:32, borderRadius:10, flexShrink:0,
-                        background: i===0?'linear-gradient(135deg,#f59e0b,#fbbf24)' : i===1?'linear-gradient(135deg,#94a3b8,#cbd5e1)' : i===2?'linear-gradient(135deg,#cd7c3a,#d4a35a)' : 'var(--bg-glass)',
-                        border:'1px solid var(--glass-border)',
+                        background: i===0?'linear-gradient(135deg,#f59e0b,#fbbf24)' : i===1?'linear-gradient(135deg,#94a3b8,#cbd5e1)' : i===2?'linear-gradient(135deg,#cd7c3a,#d4a35a)' : 'var(--bg-hover)',
+                        border:'none',
                         display:'flex', alignItems:'center', justifyContent:'center',
                         fontWeight:900, fontSize:13, color: i<3?'#050c1a':'var(--text-muted)',
                       }}>
-                        {i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
+                        {i===0?'#1':i===1?'#2':i===2?'#3':i+1}
                       </div>
                       <div style={{ flex:1, fontWeight:800, fontSize:14 }}>{p.name}</div>
                       <div style={{ fontWeight:900, fontSize:16, color:'var(--teal)' }}>{formatCurrency(p.revenue)}</div>
@@ -455,7 +455,7 @@ export default function Reports() {
                         <span>حصة المبيعات</span>
                         <span>{share.toFixed(1)}%</span>
                       </div>
-                      <div style={{ height:4, background:'var(--glass-border)', borderRadius:99 }}>
+                      <div style={{ height:4, background:'var(--border)', borderRadius:99 }}>
                         <div style={{ width:`${share}%`, height:'100%', background:'linear-gradient(90deg,var(--teal),var(--violet))', borderRadius:99, transition:'width 0.4s ease' }}/>
                       </div>
                     </div>

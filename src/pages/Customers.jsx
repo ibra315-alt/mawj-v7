@@ -6,11 +6,11 @@ import { IcSearch, IcWhatsapp } from '../components/Icons'
 
 function getSegment(c) {
   const daysSinceLast = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
-  if (c.totalSpent >= 2000 || c.orderCount >= 5) return { label:'VIP',   color:'#f59e0b', icon:'👑' }
+  if (c.totalSpent >= 2000 || c.orderCount >= 5) return { label:'VIP',   color:'#f59e0b', icon:'' }
   if (c.orderCount >= 3 && daysSinceLast < 60)   return { label:'مخلص', color:'#00e4b8', icon:'⭐' }
-  if (daysSinceLast > 90 && c.orderCount >= 2)   return { label:'خامل', color:'#ef4444', icon:'🌙' }
-  if (c.orderCount === 1)                        return { label:'جديد',  color:'#a78bfa', icon:'✨' }
-  return                                                { label:'نشط',   color:'#34d399', icon:'🔥' }
+  if (daysSinceLast > 90 && c.orderCount >= 2)   return { label:'خامل', color:'#ef4444', icon:'' }
+  if (c.orderCount === 1)                        return { label:'جديد',  color:'#a78bfa', icon:'' }
+  return                                                { label:'نشط',   color:'#34d399', icon:'' }
 }
 
 const SORT_OPTIONS = [
@@ -89,7 +89,7 @@ export default function Customers() {
         actions={
           customers.length > 0 && (
             <Btn variant="secondary" onClick={() => setBroadcastOpen(true)} style={{ gap:6 }}>
-              📢 رسالة جماعية
+              رسالة جماعية
             </Btn>
           )
         }
@@ -102,7 +102,7 @@ export default function Customers() {
           { label:'متوسط قيمة العميل', value: formatCurrency(avgLTV), color:'var(--teal)' },
           { label:'عملاء VIP',        value: vipCount,                color:'#f59e0b' },
         ].map(s => (
-          <div key={s.label} style={{ background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:'10px 12px', textAlign:'center' }}>
+          <div key={s.label} style={{ background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center' }}>
             <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:3 }}>{s.label}</div>
             <div style={{ fontSize:15, fontWeight:900, color:s.color }}>{s.value}</div>
           </div>
@@ -114,8 +114,8 @@ export default function Customers() {
         {segments.map(seg => (
           <button key={seg} onClick={() => setSegFilter(seg)} style={{
             padding:'5px 12px', borderRadius:999,
-            border:`1.5px solid ${segFilter===seg ? 'var(--teal)' : 'var(--glass-border)'}`,
-            background: segFilter===seg ? 'rgba(0,228,184,0.12)' : 'var(--bg-glass)',
+            border:`1.5px solid ${segFilter===seg ? 'var(--teal)' : 'var(--border)'}`,
+            background: segFilter===seg ? 'rgba(0,228,184,0.12)' : 'var(--bg-hover)',
             color: segFilter===seg ? 'var(--teal)' : 'var(--text-muted)',
             fontSize:12, fontWeight: segFilter===seg ? 800 : 500,
             cursor:'pointer', fontFamily:'inherit', flexShrink:0, whiteSpace:'nowrap',
@@ -130,10 +130,10 @@ export default function Customers() {
         <div style={{ position:'relative', flex:1 }}>
           <IcSearch size={14} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..."
-            style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', outline:'none', boxSizing:'border-box' }}/>
+            style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-          style={{ padding:'9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:12, fontFamily:'var(--font)', cursor:'pointer' }}>
+          style={{ padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer' }}>
           {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
@@ -160,10 +160,10 @@ function CustomerCard({ customer: c, onClick }) {
   const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
   return (
     <div onClick={onClick} className="list-row" style={{
-      background:'var(--bg-glass)', backdropFilter:'var(--blur-md)',
-      border:`1.5px solid var(--glass-border)`, borderTop:`3px solid ${seg.color}`,
-      borderRadius:'var(--radius)', padding:'16px', cursor:'pointer',
-      transition:'all 0.2s ease', boxShadow:'var(--shadow-card)', position:'relative', overflow:'hidden',
+      background:'var(--bg-surface)',
+      borderTop:`3px solid ${seg.color}`,
+      borderRadius:'var(--r-lg)', padding:'16px', cursor:'pointer',
+      transition:'box-shadow 120ms ease, transform 120ms ease', boxShadow:'var(--card-shadow)', position:'relative', overflow:'hidden',
     }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:40, background:`radial-gradient(ellipse at 50% 0%, ${seg.color}15, transparent 70%)`, pointerEvents:'none' }}/>
       {/* Header */}
@@ -193,9 +193,9 @@ function CustomerCard({ customer: c, onClick }) {
         ))}
       </div>
       {/* Footer */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:10, borderTop:'1px solid var(--glass-border)' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:10, borderTop:'none' }}>
         <div style={{ fontSize:11, color:'var(--text-muted)' }}>
-          {c.city && `📍 ${c.city} • `}آخر طلب: {daysSince===0 ? 'اليوم' : `منذ ${daysSince} يوم`}
+          {c.city && ` ${c.city} • `}آخر طلب: {daysSince===0 ? 'اليوم' : `منذ ${daysSince} يوم`}
         </div>
         {c.phone && (
           <a href={`https://wa.me/${c.phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
@@ -218,7 +218,7 @@ function CustomerModal({ customer: c, onClose }) {
     <Modal open={!!c} onClose={onClose} title={c.name || c.phone || 'عميل'} maxWidth={520}>
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
         {/* Segment strip */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', background:`${seg.color}0e`, border:`1px solid ${seg.color}30`, borderRadius:'var(--radius-sm)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', background:`${seg.color}0e`, border:`1px solid ${seg.color}30`, borderRadius:'var(--r-md)' }}>
           <span style={{ fontSize:28 }}>{seg.icon}</span>
           <div>
             <div style={{ fontWeight:800, fontSize:15, color:seg.color }}>{seg.label}</div>
@@ -238,7 +238,7 @@ function CustomerModal({ customer: c, onClose }) {
             { label:'عدد الطلبات',      value: `${c.orderCount} طلب`,         color:'var(--violet-light,#a78bfa)' },
             { label:'متوسط قيمة الطلب', value: formatCurrency(c.avgOrder),   color:'var(--text)' },
           ].map(s => (
-            <div key={s.label} style={{ padding:'12px 14px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
+            <div key={s.label} style={{ padding:'12px 14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
               <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>{s.label}</div>
               <div style={{ fontSize:18, fontWeight:900, color:s.color }}>{s.value}</div>
             </div>
@@ -246,17 +246,17 @@ function CustomerModal({ customer: c, onClose }) {
         </div>
         {/* Info */}
         <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 20px', fontSize:12, color:'var(--text-sec)' }}>
-          {c.city  && <span>📍 {c.city}</span>}
-          {c.phone && <span style={{direction:'ltr'}}>📞 {c.phone}</span>}
-          <span>📅 أول طلب: {formatDate(c.firstOrderDate)}</span>
-          <span>🕒 آخر طلب: {formatDate(c.lastOrderDate)}</span>
+          {c.city  && <span> {c.city}</span>}
+          {c.phone && <span style={{direction:'ltr'}}> {c.phone}</span>}
+          <span> أول طلب: {formatDate(c.firstOrderDate)}</span>
+          <span> آخر طلب: {formatDate(c.lastOrderDate)}</span>
         </div>
         {/* Order history */}
         <div>
           <div style={{ fontWeight:700, fontSize:13, color:'var(--text-sec)', marginBottom:8 }}>سجل الطلبات</div>
           <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:220, overflowY:'auto' }}>
             {sorted.map(o => (
-              <div key={o.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:'var(--bg-glass)', borderRadius:'var(--radius-sm)', border:'1px solid var(--glass-border)' }}>
+              <div key={o.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:'var(--bg-hover)', borderRadius:'var(--r-md)', border:'none' }}>
                 <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600, flexShrink:0 }}>{o.order_number}</span>
                 <span style={{ fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>{formatDate(o.created_at)}</span>
                 {o.items?.length > 0 && <span style={{ fontSize:11, color:'var(--text-sec)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.items.map(i=>`${i.name}×${i.qty}`).join('، ')}</span>}
@@ -277,7 +277,7 @@ function CustomerModal({ customer: c, onClose }) {
 function WhatsAppBroadcast({ open, onClose, customers }) {
   const [segFilter, setSegFilter] = useState('all')
   const [cityFilter, setCityFilter] = useState('all')
-  const [message, setMessage] = useState('مرحباً {الاسم}،\n\nلدينا عروض حصرية لعملائنا المميزين 🎁\nتواصلوا معنا للاستفادة من العروض.\n\nموج للهدايا الكريستالية 💎')
+  const [message, setMessage] = useState('مرحباً {الاسم}،\n\nلدينا عروض حصرية لعملائنا المميزين \nتواصلوا معنا للاستفادة من العروض.\n\nموج للهدايا الكريستالية ')
   const [sending, setSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
 
@@ -323,7 +323,7 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
         <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
         <Btn onClick={sendToAll} loading={sending} disabled={targets.length===0}
           style={{ background:'#25d166', color:'#fff', border:'none', gap:6 }}>
-          📢 إرسال لـ {targets.length} عميل
+          إرسال لـ {targets.length} عميل
         </Btn>
       </>}
     >
@@ -334,21 +334,21 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
           <div>
             <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>الشريحة</div>
             <select value={segFilter} onChange={e=>setSegFilter(e.target.value)}
-              style={{ width:'100%', padding:'9px 10px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+              style={{ width:'100%', padding:'9px 10px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
               {segments.map(s => <option key={s} value={s}>{s==='all'?'الكل':s}</option>)}
             </select>
           </div>
           <div>
             <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>المدينة</div>
             <select value={cityFilter} onChange={e=>setCityFilter(e.target.value)}
-              style={{ width:'100%', padding:'9px 10px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+              style={{ width:'100%', padding:'9px 10px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
               {cities.map(c => <option key={c} value={c}>{c==='all'?'كل المدن':c}</option>)}
             </select>
           </div>
         </div>
 
         {/* Target count */}
-        <div style={{ padding:'10px 14px', background:'rgba(37,209,102,0.06)', border:'1px solid rgba(37,209,102,0.2)', borderRadius:'var(--radius-sm)', fontSize:13 }}>
+        <div style={{ padding:'10px 14px', background:'rgba(37,209,102,0.06)', border:'1px solid rgba(37,209,102,0.2)', borderRadius:'var(--r-md)', fontSize:13 }}>
           <span style={{ fontWeight:800, color:'#25d166', fontSize:16 }}>{targets.length}</span>
           <span style={{ color:'var(--text-sec)' }}> عميل سيصلهم الرسالة</span>
           {targets.length === 0 && <span style={{ color:'var(--red)', marginRight:8 }}>— لا يوجد عملاء بأرقام هاتف</span>}
@@ -363,13 +363,13 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
             value={message}
             onChange={e=>setMessage(e.target.value)}
             rows={6}
-            style={{ width:'100%', padding:'10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', resize:'vertical', outline:'none', boxSizing:'border-box' }}
+            style={{ width:'100%', padding:'10px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', resize:'vertical', outline:'none', boxSizing:'border-box' }}
           />
         </div>
 
         {/* Preview */}
         {targets.length > 0 && (
-          <div style={{ padding:'10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
+          <div style={{ padding:'10px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
             <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:6 }}>معاينة (أول عميل):</div>
             <div style={{ fontSize:12, color:'var(--text-sec)', whiteSpace:'pre-wrap', lineHeight:1.6 }}>
               {buildMessage(targets[0])}
@@ -378,7 +378,7 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
         )}
 
         {sending && (
-          <div style={{ padding:'10px 14px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--radius-sm)', textAlign:'center' }}>
+          <div style={{ padding:'10px 14px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--r-md)', textAlign:'center' }}>
             <div style={{ fontSize:13, color:'var(--teal)', fontWeight:700 }}>جاري الإرسال... {sentCount}/{targets.length}</div>
             <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>سيتم فتح واتساب لكل عميل — يرجى عدم إغلاق النوافذ</div>
           </div>

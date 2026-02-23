@@ -88,7 +88,7 @@ export default function Inventory() {
           <>
             {movements.length > 0 && (
               <Btn variant="secondary" onClick={() => { setMovesItem(null); setShowMoves(true) }}>
-                📋 سجل الحركات {movements.length > 0 && <span style={{ marginRight:4, padding:'1px 6px', background:'var(--violet)', color:'#fff', borderRadius:99, fontSize:10 }}>{movements.length}</span>}
+                سجل الحركات {movements.length > 0 && <span style={{ marginRight:4, padding:'1px 6px', background:'var(--violet)', color:'#fff', borderRadius:99, fontSize:10 }}>{movements.length}</span>}
               </Btn>
             )}
             <Btn onClick={() => { setEditItem(null); setShowForm(true) }}><IcPlus size={15} /> منتج جديد</Btn>
@@ -98,13 +98,13 @@ export default function Inventory() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
         <StatCard label="إجمالي المنتجات" value={items.filter(i => i.active).length} color="var(--violet)" />
-        <StatCard label="قيمة المخزون" value={formatCurrency(totalValue)} color="var(--gold)" />
+        <StatCard label="قيمة المخزون" value={formatCurrency(totalValue)} color="var(--amber)" />
         <StatCard label="مخزون منخفض" value={lowStockCount} color={lowStockCount > 0 ? 'var(--amber)' : 'var(--green)'} />
       </div>
 
       {/* Reorder suggestions */}
       {items.filter(i=>i.active && i.stock_qty <= i.low_stock_threshold).length > 0 && (
-        <div style={{ marginBottom:16, padding:'12px 14px', background:'rgba(245,158,11,0.06)', border:'1.5px solid rgba(245,158,11,0.25)', borderRadius:'var(--radius)' }}>
+        <div style={{ marginBottom:16, padding:'12px 14px', background:'rgba(245,158,11,0.06)', border:'1.5px solid rgba(245,158,11,0.25)', borderRadius:'var(--r-lg)' }}>
           <div style={{ fontWeight:800, fontSize:13, color:'var(--amber,#f59e0b)', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
             <IcAlert size={15} color="var(--amber,#f59e0b)"/> مقترح إعادة الطلب
           </div>
@@ -128,7 +128,7 @@ export default function Inventory() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="بحث بالاسم، SKU، الفئة..."
-            style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', outline: 'none' }}
+            style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font)', outline: 'none' }}
           />
         </div>
         <Btn
@@ -148,7 +148,7 @@ export default function Inventory() {
             return (
               <Card
                 key={item.id}
-                style={{ borderColor: isLow ? 'rgba(245,158,11,0.4)' : 'var(--bg-border)' }}
+                style={{ borderColor: isLow ? 'rgba(245,158,11,0.4)' : 'var(--border)' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
@@ -158,7 +158,7 @@ export default function Inventory() {
                   </div>
                   {isLow && (
                     <div style={{ padding: '4px 8px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, fontSize: 11, color: 'var(--amber)', fontWeight: 700, flexShrink: 0 }}>
-                      ⚠ منخفض
+                      منخفض
                     </div>
                   )}
                 </div>
@@ -174,11 +174,11 @@ export default function Inventory() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid var(--bg-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <button onClick={() => adjustStock(item.id, -1)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--bg-border)', background: 'var(--bg-surface)', color: 'var(--text)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
+                    <button onClick={() => adjustStock(item.id, -1)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
                     <span style={{ fontWeight: 800, fontSize: 18, minWidth: 36, textAlign: 'center', color: isLow ? 'var(--amber)' : 'var(--text)' }}>{item.stock_qty}</span>
-                    <button onClick={() => adjustStock(item.id, 1)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--bg-border)', background: 'var(--bg-surface)', color: 'var(--text)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                    <button onClick={() => adjustStock(item.id, 1)} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                   </div>
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>وحدة</span>
                 </div>
@@ -279,15 +279,15 @@ function StockMovementsModal({ open, onClose, movements, title }) {
       <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:420, overflowY:'auto' }}>
         {movements.length === 0 ? (
           <div style={{ textAlign:'center', padding:'32px 0', color:'var(--text-muted)' }}>
-            <div style={{ fontSize:36, marginBottom:8 }}>📋</div>
+            <div style={{ fontSize:36, marginBottom:8 }}></div>
             لا يوجد حركات مخزون بعد
           </div>
         ) : movements.map(m => {
           const d = new Date(m.time)
           const isAdd = m.delta > 0
           return (
-            <div key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
-              <span style={{ fontSize:18, flexShrink:0 }}>{isAdd ? '📥' : '📤'}</span>
+            <div key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
+              <span style={{ fontSize:18, flexShrink:0 }}>{isAdd ? '' : ''}</span>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontWeight:700, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.itemName}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)' }}>{m.note}</div>
@@ -300,7 +300,7 @@ function StockMovementsModal({ open, onClose, movements, title }) {
                   {d.toLocaleDateString('ar-AE',{month:'short',day:'numeric'})} {d.toLocaleTimeString('ar-AE',{hour:'2-digit',minute:'2-digit'})}
                 </div>
               </div>
-              <div style={{ padding:'3px 8px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:999, fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>
+              <div style={{ padding:'3px 8px', background:'var(--bg-hover)', border:'none', borderRadius:999, fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>
                 {m.qty} متبقي
               </div>
             </div>

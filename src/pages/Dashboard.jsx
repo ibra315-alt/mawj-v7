@@ -3,7 +3,7 @@ import { DB, Settings } from '../data/db'
 import { subscribeOrders, subscribeInventory } from '../data/realtime'
 import { formatCurrency, formatDate } from '../data/constants'
 import { StatCard, Card, Badge, Spinner, Empty, SkeletonStats, SkeletonCard, PageHeader, DonutMini, ProgressBar } from '../components/ui'
-import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcAlert, IcArrowLeft } from '../components/Icons'
+import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcAlert, IcArrowLeft, IcPlus, IcCustomers, IcReports, IcInventory } from '../components/Icons'
 import Sparkline from '../components/Sparkline'
 
 /* ══════════════════════════════════════════════════
@@ -114,40 +114,58 @@ export default function Dashboard({ onNavigate }) {
       <div className="page-wave-accent" />
 
       {/* ── Quick actions ── */}
-      <div style={{ display:'flex', gap:8, marginBottom:20, overflowX:'auto', paddingBottom:2 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:20, overflowX:'auto', paddingBottom:4, scrollbarWidth:'none' }}>
         {[
-          { icon:'➕', label:'طلب جديد',    color:'var(--teal)',   action:() => onNavigate('orders') },
-          { icon:'💰', label:'مصروف جديد',  color:'var(--pink)',   action:() => onNavigate('expenses') },
-          { icon:'📦', label:'المخزون',     color:'var(--violet)', action:() => onNavigate('inventory') },
-          { icon:'👥', label:'العملاء',     color:'#f59e0b',       action:() => onNavigate('customers') },
-          { icon:'📊', label:'التقارير',    color:'var(--blue)',   action:() => onNavigate('reports') },
+          { icon:<IcPlus size={16}/>,      label:'طلب جديد',   color:'var(--action)',   action:() => onNavigate('orders')    },
+          { icon:<IcExpenses size={16}/>,  label:'مصروف جديد', color:'var(--warning)',  action:() => onNavigate('expenses')  },
+          { icon:<IcInventory size={16}/>, label:'المخزون',    color:'var(--info)',     action:() => onNavigate('inventory') },
+          { icon:<IcCustomers size={16}/>, label:'العملاء',    color:'var(--warning)',  action:() => onNavigate('customers') },
+          { icon:<IcReports size={16}/>,   label:'التقارير',   color:'var(--info)',     action:() => onNavigate('reports')   },
         ].map(a => (
           <button key={a.label} onClick={a.action} style={{
-            display:'flex', flexDirection:'column', alignItems:'center', gap:5,
-            padding:'10px 16px', background:'var(--bg-glass)',
-            border:`1.5px solid var(--glass-border)`,
-            borderRadius:'var(--radius)', cursor:'pointer', fontFamily:'inherit',
-            flexShrink:0, transition:'all 0.18s ease', minWidth:72,
-          }} className="list-row">
-            <span style={{ fontSize:20 }}>{a.icon}</span>
-            <span style={{ fontSize:10, fontWeight:700, color:a.color, whiteSpace:'nowrap' }}>{a.label}</span>
+            display:'flex', flexDirection:'column', alignItems:'center', gap:6,
+            padding:'12px 16px',
+            background:'var(--bg-surface)', boxShadow:'var(--card-shadow)',
+            borderRadius:'var(--r-md)', cursor:'pointer', fontFamily:'inherit',
+            flexShrink:0, minWidth:72, border:'none',
+            color: a.color,
+            transition:'box-shadow 120ms ease, transform 120ms ease',
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='var(--card-shadow-hover)'}}
+          onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='var(--card-shadow)'}}
+          >
+            {a.icon}
+            <span style={{ fontSize:10, fontWeight:700, whiteSpace:'nowrap', color:'var(--text-muted)' }}>{a.label}</span>
           </button>
         ))}
       </div>
 
-      {/* ── Today strip ── */}
-      <div style={{ display:'flex', gap:8, marginBottom:16, padding:'10px 14px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', flexWrap:'wrap', alignItems:'center' }}>
-        <span style={{ fontSize:12, color:'var(--text-muted)', fontWeight:700 }}>اليوم:</span>
-        <span style={{ fontSize:13, fontWeight:900, color:'var(--teal)' }}>{formatCurrency(stats?.todayRevenue||0)}</span>
-        <span style={{ fontSize:12, color:'var(--text-muted)' }}>•</span>
-        <span style={{ fontSize:12, color:'var(--text-sec)' }}>{stats?.todayOrders||0} طلب</span>
+      {/* ── Today hero strip ── */}
+      <div style={{
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        padding:'16px 20px', marginBottom:20,
+        background:'var(--bg-surface)', boxShadow:'var(--card-shadow)',
+        borderRadius:'var(--r-lg)', flexWrap:'wrap', gap:12,
+      }}>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:4 }}>إيرادات اليوم</div>
+          <div style={{ fontSize:28, fontWeight:900, color:'var(--action)', fontFamily:'Inter,sans-serif', lineHeight:1 }}>
+            {formatCurrency(stats?.todayRevenue||0)}
+          </div>
+          <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:4 }}>{stats?.todayOrders||0} طلب</div>
+        </div>
         {stats?.revChange !== null && stats?.revChange !== undefined && (
-          <span style={{ fontSize:11, fontWeight:800, padding:'2px 8px', borderRadius:999, marginRight:'auto',
-            background: stats.revChange >= 0 ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)',
-            color: stats.revChange >= 0 ? 'var(--green,#34d399)' : 'var(--red)',
+          <div style={{
+            display:'flex', alignItems:'center', gap:6,
+            padding:'8px 14px', borderRadius:'var(--r-pill)',
+            background: stats.revChange >= 0 ? 'rgba(16,185,129,0.10)' : 'rgba(239,68,68,0.10)',
+            color: stats.revChange >= 0 ? 'var(--success-light)' : 'var(--danger-light)',
           }}>
-            {stats.revChange >= 0 ? '▲' : '▼'} {Math.abs(stats.revChange)}% مقارنة بالأمس
-          </span>
+            <span style={{ fontSize:13, fontWeight:800 }}>
+              {stats.revChange >= 0 ? '↑' : '↓'} {Math.abs(stats.revChange)}%
+            </span>
+            <span style={{ fontSize:11, opacity:0.8 }}>مقارنة بالأمس</span>
+          </div>
         )}
       </div>
 
@@ -213,11 +231,7 @@ export default function Dashboard({ onNavigate }) {
         <StatCard label="طلبات معلقة" value={stats?.pending||0} icon={<IcPackage size={18}/>} color="var(--amber)" />
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:12,marginBottom:24}}>
-        <StatCard label="تم التسليم"  value={stats?.delivered||0}            color="var(--green)" />
-        <StatCard label="مرتجعات"     value={stats?.returned||0}             color="var(--pink)" />
-        <StatCard label="متوسط الطلب" value={formatCurrency(stats?.avgOrder||0)} color="var(--blue)" />
-      </div>
+
 
       {/* ── Recent orders + low stock ── */}
       <div style={{display:'grid',gridTemplateColumns:'1fr',gap:20}}>
@@ -244,12 +258,11 @@ export default function Dashboard({ onNavigate }) {
               {recentOrders.map(order => {
                 const statusObj = statuses.find(s=>s.id===order.status)
                 return (
-                  <div key={order.id} className="list-row" style={{
+                  <div key={order.id} style={{
                     display:'flex',alignItems:'center',justifyContent:'space-between',
                     padding:'10px 14px',
-                    background:'var(--bg-surface)',
-                    border:'1.5px solid var(--glass-border)',
-                    borderRadius:'var(--radius-sm)',gap:12,flexWrap:'wrap',
+                    background:'var(--bg-surface)', boxShadow:'var(--card-shadow)', borderRadius:'var(--r-sm)', border:'none',
+                    borderRadius:'var(--r-md)',gap:12,flexWrap:'wrap',
                   }}>
                     <div style={{flex:1,minWidth:120}}>
                       <div style={{fontWeight:700,fontSize:13,color:'var(--text)'}}>{order.customer_name}</div>
@@ -283,7 +296,7 @@ export default function Dashboard({ onNavigate }) {
                   padding:'8px 12px',
                   background:'rgba(245,158,11,0.05)',
                   border:'1px solid rgba(245,158,11,0.16)',
-                  borderRadius:'var(--radius-sm)',
+                  borderRadius:'var(--r-md)',
                 }}>
                   <span style={{fontSize:13,color:'var(--text)'}}>{item.name}</span>
                   <Badge color="var(--amber)">{item.stock_qty} متبقي</Badge>
@@ -351,10 +364,9 @@ function ArcRing({ pct=0 }) {
 function DonutCard({ label, pct, color }) {
   return (
     <div style={{
-      background:'var(--bg-glass)',
-      backdropFilter:'var(--blur-sm)',WebkitBackdropFilter:'var(--blur-sm)',
-      border:'1.5px solid var(--glass-border)',
-      borderRadius:'var(--radius)',padding:'12px 14px',
+      background:'var(--bg-hover)',
+      border:'none',
+      borderRadius:'var(--r-lg)',padding:'12px 14px',
       display:'flex',alignItems:'center',gap:10,
       minWidth:130,
     }}>
@@ -374,13 +386,12 @@ function StatCardWithSpark({ label, value, color, icon, spark=[], sparkColor }) 
   const hasSpark = spark.length > 1
   return (
     <div className="hover-lift" style={{
-      background:'var(--bg-glass)',
-      backdropFilter:'var(--blur-md)',WebkitBackdropFilter:'var(--blur-md)',
-      border:'1.5px solid var(--glass-border)',
-      borderRadius:'var(--radius)',
+      background:'var(--bg-hover)',
+      border:'none',
+      borderRadius:'var(--r-lg)',
       padding: hasSpark ? '18px 20px 56px' : '18px 20px',
       position:'relative',overflow:'hidden',
-      boxShadow:'var(--shadow-card)',
+      boxShadow:'var(--card-shadow)',
       minHeight: hasSpark ? 110 : 'auto',
     }}>
       {/* Top accent */}

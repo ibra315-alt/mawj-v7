@@ -19,9 +19,8 @@ export const COLORS = {
 }
 
 export const FONTS = {
-  'Noto Kufi Arabic': "'Noto Kufi Arabic', sans-serif",
-  'Cairo': "'Cairo', sans-serif",
-  'Tajawal': "'Tajawal', sans-serif",
+  'Almarai': "'Almarai', sans-serif",
+  'Inter': "'Inter', sans-serif",
 }
 
 export const SOURCE_LABELS = {

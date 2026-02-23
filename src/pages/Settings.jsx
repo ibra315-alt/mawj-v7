@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Settings as SettingsDB, DB, supabase } from '../data/db'
-import { THEMES, DARK_THEMES, LIGHT_THEMES, DEFAULT_PREFS, saveAppearance } from '../data/appearance'
-import { UAE_CITIES, FONTS } from '../data/constants'
+import { saveAppearance } from '../data/appearance'
+import { UAE_CITIES } from '../data/constants'
 import { Btn, Card, Input, Select, Textarea, Spinner, Toggle, Badge, toast } from '../components/ui'
 import { IcPlus, IcSave, IcDownload } from '../components/Icons'
 
@@ -12,16 +12,16 @@ import { IcPlus, IcSave, IcDownload } from '../components/Icons'
 ══════════════════════════════════════════════════ */
 
 const SECTIONS = [
-  { id:'business',      icon:'🏪', label:'المتجر',            desc:'معلومات المتجر والمنتجات' },
-  { id:'statuses',      icon:'📋', label:'الحالات',           desc:'حالات الطلبات وألوانها' },
-  { id:'team',          icon:'👥', label:'الفريق',            desc:'أعضاء وصلاحيات' },
-  { id:'whatsapp',      icon:'📱', label:'واتساب',            desc:'قوالب الرسائل' },
-  { id:'appearance',    icon:'🎨', label:'المظهر',            desc:'ثيمات وألوان وخطوط' },
-  { id:'delivery',      icon:'🚚', label:'التوصيل',           desc:'مناطق وتكاليف' },
-  { id:'discounts',     icon:'🏷️', label:'الخصومات',          desc:'أكواد وعروض' },
-  { id:'notifications', icon:'🔔', label:'الإشعارات',         desc:'تنبيهات وتذكيرات' },
-  { id:'security',      icon:'🔐', label:'الأمان',            desc:'كلمة المرور والجلسة' },
-  { id:'backup',        icon:'💾', label:'النسخ الاحتياطي',   desc:'تصدير واستيراد' },
+  { id:'business',      label:'المتجر',           desc:'معلومات المتجر والمنتجات' },
+  { id:'statuses',      label:'الحالات',          desc:'حالات الطلبات وألوانها'  },
+  { id:'team',          label:'الفريق',           desc:'أعضاء وصلاحيات'         },
+  { id:'whatsapp',      label:'واتساب',           desc:'قوالب الرسائل'           },
+  { id:'appearance',    label:'المظهر',           desc:'الوضع الداكن والفاتح'    },
+  { id:'delivery',      label:'التوصيل',          desc:'مناطق وتكاليف'           },
+  { id:'discounts',     label:'الخصومات',         desc:'أكواد وعروض'             },
+  { id:'notifications', label:'الإشعارات',        desc:'تنبيهات وتذكيرات'        },
+  { id:'security',      label:'الأمان',           desc:'كلمة المرور والجلسة'     },
+  { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد'          },
 ]
 
 export default function Settings({ theme, toggleTheme }) {
@@ -47,7 +47,7 @@ export default function Settings({ theme, toggleTheme }) {
   }
 
   async function saveSetting(key, value) {
-    try { await SettingsDB.set(key, value); toast('تم الحفظ ✓') }
+    try { await SettingsDB.set(key, value); toast('تم الحفظ ') }
     catch { toast('فشل الحفظ', 'error') }
   }
 
@@ -94,14 +94,13 @@ export default function Settings({ theme, toggleTheme }) {
     <div style={{
       position:'fixed', inset:0, zIndex:99999,
       background:'var(--bg)', display:'flex', flexDirection:'column',
-      animation:'pageIn 0.22s var(--ease-smooth) both',
+      animation:'pageIn 0.22s var(--ease-io) both',
     }}>
       <div style={{height:3,flexShrink:0,background:'linear-gradient(90deg,var(--violet-light),var(--teal),var(--pink))'}} />
       <div style={{
         display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'14px 16px', borderBottom:'1px solid var(--glass-border)',
+        padding:'14px 16px', borderBottom:'none',
         flexShrink:0, background:'var(--header-bg)',
-        backdropFilter:'var(--blur-md)', WebkitBackdropFilter:'var(--blur-md)',
       }}>
         <button onClick={()=>setMobileOpen(false)} style={{
           display:'flex', alignItems:'center', gap:6,
@@ -135,9 +134,8 @@ export default function Settings({ theme, toggleTheme }) {
         {/* Sidebar */}
         <div style={{
           width:220, flexShrink:0,
-          background:'var(--bg-glass)',
-          backdropFilter:'var(--blur-md)', WebkitBackdropFilter:'var(--blur-md)',
-          border:'1.5px solid var(--glass-border)',
+          background:'var(--bg-hover)',
+          border:'none',
           borderRadius:'var(--radius-lg)',
           padding:8,
           position:'sticky', top:16,
@@ -147,7 +145,7 @@ export default function Settings({ theme, toggleTheme }) {
             return (
               <button key={s.id} onClick={() => setSection(s.id)} style={{
                 width:'100%', display:'flex', alignItems:'center', gap:10,
-                padding:'10px 12px', borderRadius:'var(--radius-sm)',
+                padding:'10px 12px', borderRadius:'var(--r-md)',
                 border:'none', background: active
                   ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))'
                   : 'transparent',
@@ -172,15 +170,14 @@ export default function Settings({ theme, toggleTheme }) {
           <div style={{
             display:'flex', alignItems:'center', gap:12, marginBottom:20,
             padding:'14px 18px',
-            background:'var(--bg-glass)',
-            backdropFilter:'var(--blur-sm)', WebkitBackdropFilter:'var(--blur-sm)',
-            border:'1.5px solid var(--glass-border)',
-            borderRadius:'var(--radius)',
+            background:'var(--bg-hover)',
+            border:'none',
+            borderRadius:'var(--r-lg)',
           }}>
             <div style={{
-              width:44,height:44,borderRadius:'var(--radius-sm)',
+              width:44,height:44,borderRadius:'var(--r-md)',
               background:'linear-gradient(135deg,rgba(0,228,184,0.15),rgba(37,99,235,0.10))',
-              border:'1px solid var(--glass-border-teal)',
+              border:'1px solid var(--action-soft)',
               display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
             }}>{active?.icon}</div>
             <div>
@@ -198,16 +195,16 @@ export default function Settings({ theme, toggleTheme }) {
           <button key={s.id} onClick={()=>{ setSection(s.id); setMobileOpen(true) }} style={{
             width:'100%', display:'flex', alignItems:'center', gap:14,
             padding:'14px 16px', marginBottom:8,
-            background:'var(--bg-glass)',
-            border:'1.5px solid var(--glass-border)',
-            borderRadius:'var(--radius)',
+            background:'var(--bg-hover)',
+            border:'none',
+            borderRadius:'var(--r-lg)',
             cursor:'pointer', fontFamily:'inherit',
             transition:'all 0.15s ease',
           }} className="mawj-card mawj-card-hover">
             <div style={{
-              width:44,height:44,borderRadius:'var(--radius-sm)',flexShrink:0,
+              width:44,height:44,borderRadius:'var(--r-md)',flexShrink:0,
               background:'linear-gradient(135deg,rgba(0,228,184,0.10),rgba(37,99,235,0.08))',
-              border:'1px solid var(--glass-border)',
+              border:'none',
               display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
             }}>{s.icon}</div>
             <div style={{flex:1,textAlign:'right'}}>
@@ -240,7 +237,7 @@ export default function Settings({ theme, toggleTheme }) {
 ══════════════════════════════════════════════════ */
 function SectionTitle({ children, icon, style }) {
   return (
-    <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:800,fontSize:15,marginBottom:18,color:'var(--text)',paddingBottom:10,borderBottom:'1px solid var(--glass-border)',...(style||{})}}>
+    <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:800,fontSize:15,marginBottom:18,color:'var(--text)',paddingBottom:10,borderBottom:'none',...(style||{})}}>
       {icon && <span style={{fontSize:18}}>{icon}</span>}
       {children}
     </div>
@@ -252,7 +249,7 @@ function ControlRow({ label, desc, children, last }) {
     <div style={{
       display:'flex',alignItems:'center',justifyContent:'space-between',
       padding:'14px 0',
-      borderBottom: last ? 'none' : '1px solid var(--glass-border)',
+      borderBottom: last ? 'none' : 'none',
       gap:16,
     }}>
       <div style={{minWidth:0}}>
@@ -267,9 +264,9 @@ function ControlRow({ label, desc, children, last }) {
 function ControlBtn({ active, onClick, children, style={}, title }) {
   return (
     <button onClick={onClick} title={title} style={{
-      minWidth:36,height:36,padding:'0 10px',borderRadius:'var(--radius-sm)',
-      border:`2px solid ${active?'var(--teal)':'var(--glass-border)'}`,
-      background: active ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-glass)',
+      minWidth:36,height:36,padding:'0 10px',borderRadius:'var(--r-md)',
+      border:`2px solid ${active?'var(--teal)':'var(--border)'}`,
+      background: active ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-hover)',
       color: active?'var(--teal)':'var(--text-sec)',
       cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:13,
       transition:'all 0.15s ease',
@@ -285,21 +282,20 @@ function GlassRow({ children, style }) {
       display:'flex',alignItems:'center',gap:12,
       padding:'10px 14px',
       background:'var(--bg-surface)',
-      backdropFilter:'var(--blur-sm)',WebkitBackdropFilter:'var(--blur-sm)',
-      border:'1.5px solid var(--glass-border)',
-      borderRadius:'var(--radius-sm)',
+      border:'none',
+      borderRadius:'var(--r-md)',
       ...style,
     }}>{children}</div>
   )
 }
 
-function InfoBox({ children, color='var(--teal)', icon='💡' }) {
+function InfoBox({ children, color='var(--teal)', icon='' }) {
   return (
     <div style={{
       padding:'12px 16px',
       background:`rgba(${color==='var(--teal)'?'0,228,184':'37,99,235'},0.06)`,
       border:`1px solid ${color==='var(--teal)'?'rgba(0,228,184,0.18)':'rgba(37,99,235,0.18)'}`,
-      borderRadius:'var(--radius-sm)',fontSize:13,color:'var(--text-sec)',
+      borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',
       display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
     }}>
       <span>{icon}</span>
@@ -338,7 +334,7 @@ function BusinessTab({ data, products, partners, updateData }) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
-        <SectionTitle icon="🏪">معلومات المتجر</SectionTitle>
+        <SectionTitle>معلومات المتجر</SectionTitle>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:16}}>
           <Input label="اسم المتجر" value={form.name||''} onChange={e=>field('name',e.target.value)} containerStyle={{gridColumn:'1/-1'}} />
           <Input label="الهدف الشهري (د.إ)" type="number" value={form.monthly_target||''} onChange={e=>field('monthly_target',parseFloat(e.target.value)||0)} />
@@ -352,7 +348,7 @@ function BusinessTab({ data, products, partners, updateData }) {
       </Card>
 
       <Card>
-        <SectionTitle icon="📦">المنتجات</SectionTitle>
+        <SectionTitle>المنتجات</SectionTitle>
         <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:14}}>
           {(products||[]).length === 0 && <div style={{color:'var(--text-muted)',fontSize:13,padding:'12px 0',textAlign:'center'}}>لا توجد منتجات بعد</div>}
           {(products||[]).map(p => (
@@ -363,7 +359,7 @@ function BusinessTab({ data, products, partners, updateData }) {
               </div>
               <span style={{fontSize:11,color:'var(--text-sec)'}}>تكلفة: {p.cost}</span>
               <span style={{fontSize:13,fontWeight:800,color:'var(--teal)'}}>{p.price} د.إ</span>
-              <button onClick={()=>removeProduct(p.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16,padding:4}}>✕</button>
+              <button onClick={()=>removeProduct(p.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16,padding:4}}></button>
             </GlassRow>
           ))}
         </div>
@@ -416,7 +412,7 @@ function StatusesTab({ statuses, updateData }) {
 
   return (
     <Card>
-      <SectionTitle icon="📋">حالات الطلبات</SectionTitle>
+      <SectionTitle>حالات الطلبات</SectionTitle>
       <InfoBox>اسحب الحالات لإعادة ترتيبها. الترتيب يؤثر على عمود الكانبان.</InfoBox>
       <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:14,marginBottom:18}}>
         {list.map((s,i) => (
@@ -436,10 +432,10 @@ function StatusesTab({ statuses, updateData }) {
             <input value={s.label}
               onChange={e=>update(s.id,'label',e.target.value)}
               onBlur={()=>updateData('statuses',list)}
-              style={{flex:1,padding:'8px 12px',background:'var(--bg-glass)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',color:'var(--text)',fontSize:13,fontFamily:'inherit',outline:'none'}}
+              style={{flex:1,padding:'8px 12px',background:'var(--bg-hover)',border:'none',borderRadius:'var(--r-md)',color:'var(--text)',fontSize:13,fontFamily:'inherit',outline:'none'}}
             />
             <Badge color={s.color}>{s.label}</Badge>
-            <button onClick={()=>remove(s.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16,padding:4}}>✕</button>
+            <button onClick={()=>remove(s.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16,padding:4}}></button>
           </GlassRow>
         ))}
       </div>
@@ -506,7 +502,7 @@ function TeamTab() {
       setUsers(p => [...p, newUser])
       setForm({ name:'', email:'', password:'', role:'sales' })
       setShowForm(false)
-      toast('تم إضافة المستخدم ✓')
+      toast('تم إضافة المستخدم ')
     } catch(e) {
       setFormError(e.message || 'فشل إنشاء المستخدم')
     }
@@ -517,7 +513,7 @@ function TeamTab() {
     try {
       await DB.update('users', id, { role })
       setUsers(p => p.map(u => u.id === id ? {...u, role} : u))
-      toast('تم تحديث الصلاحية ✓')
+      toast('تم تحديث الصلاحية ')
     } catch { toast('فشل التحديث', 'error') }
   }
 
@@ -531,7 +527,7 @@ function TeamTab() {
   }
 
   const ROLES = { admin:'مدير النظام', accountant:'محاسب', sales:'مبيعات', viewer:'مشاهد' }
-  const ROLE_C = { admin:'var(--teal)', accountant:'var(--gold)', sales:'var(--violet-light)', viewer:'var(--text-muted)' }
+  const ROLE_C = { admin:'var(--teal)', accountant:'var(--amber)', sales:'var(--violet-light)', viewer:'var(--text-muted)' }
 
   if (loading) return <Spinner />
 
@@ -539,9 +535,9 @@ function TeamTab() {
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-          <SectionTitle icon="👥" style={{marginBottom:0}}>أعضاء الفريق</SectionTitle>
+          <SectionTitle icon="" style={{marginBottom:0}}>أعضاء الفريق</SectionTitle>
           <Btn onClick={()=>{setShowForm(!showForm);setFormError('')}} variant={showForm?'secondary':'primary'}>
-            {showForm ? '✕ إلغاء' : '＋ مستخدم جديد'}
+            {showForm ? 'إلغاء' : '＋ مستخدم جديد'}
           </Btn>
         </div>
 
@@ -549,8 +545,8 @@ function TeamTab() {
         {showForm && (
           <div style={{
             marginBottom:20, padding:'16px',
-            background:'var(--bg-glass)', border:'1.5px solid var(--glass-border-teal)',
-            borderRadius:'var(--radius)', display:'flex', flexDirection:'column', gap:12,
+            background:'var(--bg-hover)', border:'1.5px solid var(--action-soft)',
+            borderRadius:'var(--r-lg)', display:'flex', flexDirection:'column', gap:12,
           }}>
             <div style={{fontWeight:700,fontSize:14,color:'var(--teal)',marginBottom:4}}>إضافة مستخدم جديد</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
@@ -562,7 +558,7 @@ function TeamTab() {
               </Select>
             </div>
             {formError && (
-              <div style={{color:'var(--red)',fontSize:12,padding:'8px 12px',background:'rgba(239,68,68,0.08)',borderRadius:'var(--radius-sm)',border:'1px solid rgba(239,68,68,0.2)'}}>{formError}</div>
+              <div style={{color:'var(--red)',fontSize:12,padding:'8px 12px',background:'rgba(239,68,68,0.08)',borderRadius:'var(--r-md)',border:'1px solid rgba(239,68,68,0.2)'}}>{formError}</div>
             )}
             <Btn loading={saving} onClick={addUser} style={{alignSelf:'flex-start'}}>
               <IcPlus size={14}/> إضافة المستخدم
@@ -589,7 +585,7 @@ function TeamTab() {
                 style={{fontSize:12,padding:'4px 10px',height:32,minWidth:110}}>
                 {Object.entries(ROLES).map(([v,l])=><option key={v} value={v}>{l}</option>)}
               </Select>
-              <button onClick={()=>removeUser(u.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:18,padding:4,flexShrink:0}}>✕</button>
+              <button onClick={()=>removeUser(u.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:18,padding:4,flexShrink:0}}></button>
             </GlassRow>
           ))}
         </div>
@@ -598,10 +594,10 @@ function TeamTab() {
       <div style={{
         padding:'12px 16px',
         background:'rgba(37,99,235,0.06)',border:'1px solid rgba(37,99,235,0.14)',
-        borderRadius:'var(--radius-sm)',fontSize:13,color:'var(--text-sec)',
+        borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',
         display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
       }}>
-        <span>💡</span>
+        <span></span>
         <span>المستخدمون المضافون هنا سيتلقون بريد تأكيل من Supabase. كلمة المرور مؤقتة ويمكن تغييرها لاحقاً.</span>
       </div>
     </div>
@@ -626,11 +622,11 @@ function WhatsAppTab({ templates, updateData }) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card style={{padding:'14px 18px'}}>
-        <SectionTitle icon="📱">قوالب الرسائل</SectionTitle>
+        <SectionTitle>قوالب الرسائل</SectionTitle>
         <div style={{fontSize:13,color:'var(--text-sec)',marginBottom:10,fontWeight:600}}>المتغيرات المتاحة:</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
           {VARS.map(v => (
-            <code key={v} style={{fontSize:11,padding:'4px 10px',background:'rgba(37,99,235,0.08)',border:'1px solid var(--glass-border)',borderRadius:999,color:'var(--teal)',cursor:'pointer'}}
+            <code key={v} style={{fontSize:11,padding:'4px 10px',background:'rgba(37,99,235,0.08)',border:'none',borderRadius:999,color:'var(--teal)',cursor:'pointer'}}
               onClick={()=>{ navigator.clipboard?.writeText(v); toast('تم نسخ المتغير') }}
             >{v}</code>
           ))}
@@ -638,7 +634,7 @@ function WhatsAppTab({ templates, updateData }) {
       </Card>
       {Object.entries(TMPL).map(([key,label]) => (
         <Card key={key}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:10,color:'var(--text)'}}>📱 {label}</div>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:10,color:'var(--text)'}}>{label}</div>
           <Textarea value={form[key]||''} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} style={{minHeight:90,direction:'rtl'}} placeholder={`قالب رسالة ${label}...`} />
         </Card>
       ))}
@@ -653,202 +649,38 @@ function WhatsAppTab({ templates, updateData }) {
 
 
 function AppearanceTab({ theme, toggleTheme, user }) {
-  const [prefs, setPrefs]           = useState(() => window.__mawjPrefs || DEFAULT_PREFS)
-  const [isGlobal, setIsGlobal]     = useState(false)
-  const [savingGlobal, setSavingGlobal] = useState(false)
-  const [globalPrefs, setGlobalPrefs]   = useState(null)
-  const isAdmin = user?.role === 'admin'
+  const [dark, setDark] = useState(
+    () => document.documentElement.getAttribute('data-theme') !== 'light'
+  )
 
-  useEffect(() => {
-    SettingsDB.get('global_appearance').then(gp => {
-      setGlobalPrefs(gp)
-      if (gp && gp.theme === prefs.theme) setIsGlobal(true)
-    })
-  }, [])
-
-  function update(patch) {
-    let next = { ...prefs, ...patch }
-    // When user picks a theme, auto-switch mode to match that theme's type
-    if (patch.theme) {
-      const picked = THEMES.find(t => t.id === patch.theme)
-      if (picked?.mode) next.mode = picked.mode
-    }
-    setPrefs(next)
-    window.__mawjPrefs = next
-    saveAppearance(next)
-  }
-
-  async function handleSetGlobal(val) {
-    if (!val) return
-    setSavingGlobal(true)
-    try {
-      const { saveGlobalDefault } = await import('../data/appearance')
-      await saveGlobalDefault(prefs)
-      setIsGlobal(true)
-      setGlobalPrefs(prefs)
-      toast('✓ تم تعيين هذا الثيم افتراضياً لجميع المستخدمين')
-    } catch { toast('فشل الحفظ', 'error') }
-    finally { setSavingGlobal(false) }
-  }
-
-  const ACCENT_PRESETS = [
-    { color:'#00e4b8', name:'فيروزي' },{ color:'#60a5fa', name:'أزرق' },
-    { color:'#a78bfa', name:'بنفسجي' },{ color:'#ec4899', name:'وردي' },
-    { color:'#f59e0b', name:'عنبري' },{ color:'#10b981', name:'أخضر' },
-    { color:'#ef4444', name:'أحمر' }, { color:'#f97316', name:'برتقالي' },
-  ]
-
-  function ThemeGrid({ themes }) {
-    return (
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:10}}>
-        {themes.map(t => {
-          const isActive = prefs.theme === t.id
-          const isGlobalTheme = globalPrefs?.theme === t.id
-          return (
-            <button key={t.id} onClick={()=>update({theme:t.id})} style={{
-              padding:'12px 8px',borderRadius:'var(--radius)',
-              border:`2px solid ${isActive?'var(--teal)':'var(--glass-border)'}`,
-              background: isActive
-                ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))'
-                : 'var(--bg-glass)',
-              cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s ease',
-              boxShadow: isActive ? '0 0 20px rgba(0,228,184,0.18)' : 'none',
-              position:'relative',overflow:'hidden',
-            }}>
-              {/* Color swatches */}
-              <div style={{display:'flex',gap:3,justifyContent:'center',marginBottom:8}}>
-                <div style={{width:14,height:14,borderRadius:'50%',background:t.vars['--bg'],border:`1px solid ${t.mode==='light'?'rgba(0,0,0,0.12)':'rgba(255,255,255,0.1)'}`}} />
-                <div style={{width:14,height:14,borderRadius:'50%',background:t.vars['--teal'],boxShadow:`0 0 6px ${t.vars['--teal']}88`}} />
-                <div style={{width:14,height:14,borderRadius:'50%',background:t.vars['--violet-light']}} />
-                <div style={{width:14,height:14,borderRadius:'50%',background:t.vars['--pink']||t.vars['--violet-light']}} />
-              </div>
-              <div style={{fontSize:18,marginBottom:4}}>{t.emoji}</div>
-              <div style={{fontSize:12,fontWeight:isActive?800:600,color:isActive?'var(--teal)':'var(--text)'}}>{t.name}</div>
-              <div style={{fontSize:10,color:'var(--text-muted)',marginTop:1}}>{t.desc}</div>
-              {isActive  && <div style={{position:'absolute',top:5,left:5,width:7,height:7,borderRadius:'50%',background:'var(--teal)',boxShadow:'0 0 8px var(--teal)'}} />}
-              {isGlobalTheme && <div style={{position:'absolute',top:5,right:5,fontSize:9,padding:'1px 5px',borderRadius:999,background:'rgba(0,228,184,0.15)',border:'1px solid rgba(0,228,184,0.3)',color:'var(--teal)',fontWeight:700}}>عام</div>}
-            </button>
-          )
-        })}
-      </div>
-    )
+  function toggle() {
+    const next = !dark
+    setDark(next)
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
+    try { localStorage.setItem('mawj-theme', next ? 'dark' : 'light') } catch {}
+    toast(next ? 'تم تفعيل الوضع الداكن' : 'تم تفعيل الوضع الفاتح')
   }
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
-
-      {/* Global default — admin only */}
-      {isAdmin && (
-        <Card style={{borderColor:'rgba(0,228,184,0.25)'}}>
-          <SectionTitle icon="🌍">الثيم الافتراضي العام</SectionTitle>
-          <div style={{fontSize:13,color:'var(--text-sec)',marginBottom:14,lineHeight:1.6}}>
-            الثيم الذي ستراه جميع المستخدمين الجدد أو من لم يختاروا ثيماً بعد.
-            {globalPrefs && <span style={{color:'var(--teal)',fontWeight:700,marginRight:6}}>الحالي: {THEMES.find(t=>t.id===globalPrefs.theme)?.name}</span>}
-          </div>
-          <ControlRow label="تعيين الثيم الحالي كافتراضي عام" desc="يطبق على كل المستخدمين الذين لم يختاروا ثيماً" last>
-            <Toggle checked={isGlobal} onChange={handleSetGlobal} disabled={savingGlobal} />
-          </ControlRow>
-          {savingGlobal && <div style={{fontSize:12,color:'var(--text-muted)',marginTop:8}}>جاري الحفظ...</div>}
-        </Card>
-      )}
-
-      {/* Dark themes */}
       <Card>
-        <SectionTitle icon="🌙">الثيمات الداكنة</SectionTitle>
-        <ThemeGrid themes={DARK_THEMES} />
-      </Card>
-
-      {/* Light themes */}
-      <Card>
-        <SectionTitle icon="☀️">الثيمات الفاتحة</SectionTitle>
-        <ThemeGrid themes={LIGHT_THEMES} />
-        <InfoBox style={{marginTop:12}}>اختيار ثيم فاتح يطبق الوضع الفاتح تلقائياً</InfoBox>
-      </Card>
-
-      {/* Action color — only relevant for dark themes */}
-      {DARK_THEMES.find(t=>t.id===prefs.theme) && (
-        <Card>
-          <SectionTitle icon="🎯">لون الإجراء</SectionTitle>
-          <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:12}}>
-            {ACCENT_PRESETS.map(p=>(
-              <button key={p.color} onClick={()=>update({accent:p.color})} title={p.name} style={{
-                width:40,height:40,borderRadius:'var(--radius-sm)',background:p.color,
-                border:`3px solid ${prefs.accent===p.color?'var(--text)':'transparent'}`,
-                cursor:'pointer',transition:'all 0.2s ease',flexShrink:0,position:'relative',
-                boxShadow:prefs.accent===p.color?`0 0 16px ${p.color}aa`:`0 2px 8px ${p.color}44`,
-              }}>
-                {prefs.accent===p.color&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:'#fff',fontWeight:900,textShadow:'0 1px 4px rgba(0,0,0,0.5)'}}>✓</div>}
-              </button>
-            ))}
-            <div style={{position:'relative',width:40,height:40,flexShrink:0}}>
-              <div style={{width:40,height:40,borderRadius:'var(--radius-sm)',background:'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)',border:'2px solid var(--glass-border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:'var(--text)',cursor:'pointer'}}>＋</div>
-              <input type="color" value={prefs.accent} onChange={e=>update({accent:e.target.value})} style={{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%'}} />
-            </div>
-          </div>
-          <div style={{fontSize:11,color:'var(--text-muted)'}}>اللون الحالي: <span style={{color:prefs.accent,fontWeight:700}}>■ {prefs.accent}</span></div>
-        </Card>
-      )}
-
-      {/* Font */}
-      <Card>
-        <SectionTitle icon="🔤">الخط</SectionTitle>
-        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          {Object.entries(FONTS).map(([name,family])=>{
-            const active=prefs.font===family
-            return (
-              <button key={name} onClick={()=>update({font:family})} style={{
-                padding:'10px 16px',borderRadius:999,
-                border:`2px solid ${active?'var(--teal)':'var(--glass-border)'}`,
-                background:active?'linear-gradient(135deg,rgba(0,228,184,0.10),rgba(37,99,235,0.06))':'var(--bg-glass)',
-                color:active?'var(--teal)':'var(--text-sec)',
-                cursor:'pointer',fontFamily:family,fontSize:14,fontWeight:700,transition:'all 0.2s ease',
-              }}>
-                {name}
-                <div style={{fontSize:11,marginTop:2,fontWeight:400,opacity:0.65}}>أبجد هوز ١٢٣</div>
-              </button>
-            )
-          })}
-        </div>
-      </Card>
-
-      {/* Size, Shape, Density */}
-      <Card>
-        <SectionTitle icon="📐">الحجم والشكل</SectionTitle>
-        <ControlRow label="حجم الخط" desc="يؤثر على كل النصوص">
-          <div style={{display:'flex',gap:6}}>
-            {[{id:'small',l:'صغير'},{id:'medium',l:'متوسط'},{id:'large',l:'كبير'}].map(s=>(
-              <ControlBtn key={s.id} active={prefs.fontSize===s.id} onClick={()=>update({fontSize:s.id})}>{s.l}</ControlBtn>
-            ))}
-          </div>
-        </ControlRow>
-        <ControlRow label="شكل الزوايا" desc="حواف البطاقات والأزرار">
-          <div style={{display:'flex',gap:6}}>
-            {[{id:'sharp',l:'حاد'},{id:'rounded',l:'مدوّر'},{id:'pill',l:'بيضوي'}].map(r=>(
-              <ControlBtn key={r.id} active={prefs.radius===r.id} onClick={()=>update({radius:r.id})}>{r.l}</ControlBtn>
-            ))}
-          </div>
-        </ControlRow>
-        <ControlRow label="كثافة العرض" desc="المسافات بين العناصر" last>
-          <div style={{display:'flex',gap:6}}>
-            {[{id:'compact',l:'ضيق'},{id:'normal',l:'عادي'},{id:'comfortable',l:'مريح'}].map(d=>(
-              <ControlBtn key={d.id} active={prefs.density===d.id} onClick={()=>update({density:d.id})}>{d.l}</ControlBtn>
-            ))}
-          </div>
+        <SectionTitle>وضع العرض</SectionTitle>
+        <ControlRow
+          label={dark ? 'الوضع الداكن' : 'الوضع الفاتح'}
+          desc={dark ? 'خلفية داكنة — مريح للعين ليلاً' : 'خلفية فاتحة — واضح في الإضاءة الساطعة'}
+          last
+        >
+          <Toggle checked={dark} onChange={toggle} />
         </ControlRow>
       </Card>
-
-      {/* Toggles */}
       <Card>
-        <SectionTitle icon="⚙️">تفضيلات العرض</SectionTitle>
-        {[
-          { key:'animations', label:'حركات وانتقالات', desc:'تأثيرات الحركة بين الصفحات' },
-          { key:'noise',      label:'ملمس الخلفية',    desc:'نسيج خفيف على الخلفية' },
-          { key:'spotlight',  label:'تأثير المؤشر',    desc:'هالة ضوئية تتبع مؤشر الماوس' },
-        ].map((item,i,arr)=>(
-          <ControlRow key={item.key} label={item.label} desc={item.desc} last={i===arr.length-1}>
-            <Toggle checked={!!prefs[item.key]} onChange={v=>update({[item.key]:v})} />
-          </ControlRow>
-        ))}
+        <SectionTitle>الخطوط</SectionTitle>
+        <ControlRow label="الخط العربي" desc="Almarai — مصمم للواجهات العربية" last>
+          <span style={{fontFamily:'Almarai,sans-serif',fontWeight:700,color:'var(--action)',fontSize:13}}>Almarai</span>
+        </ControlRow>
+        <ControlRow label="خط الأرقام" desc="Inter — واضح للأرقام والأكواد">
+          <span style={{fontFamily:'Inter,sans-serif',fontWeight:700,color:'var(--info-light)',fontSize:13,direction:'ltr'}}>Inter</span>
+        </ControlRow>
       </Card>
     </div>
   )
@@ -883,7 +715,7 @@ function DeliveryTab({ business, updateData }) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
-        <SectionTitle icon="⚙️">الإعدادات العامة</SectionTitle>
+        <SectionTitle>الإعدادات العامة</SectionTitle>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:16}}>
           <Input label="تكلفة التوصيل الافتراضية (د.إ)" type="number" value={defaultCost} onChange={e=>setDefaultCost(parseFloat(e.target.value)||0)} />
           <Input label="حد التوصيل المجاني (د.إ)" type="number" value={freeThreshold} onChange={e=>setFreeThreshold(parseFloat(e.target.value)||0)} placeholder="0 = معطّل" />
@@ -895,19 +727,19 @@ function DeliveryTab({ business, updateData }) {
       </Card>
 
       <Card>
-        <SectionTitle icon="📍">مناطق التوصيل</SectionTitle>
+        <SectionTitle>مناطق التوصيل</SectionTitle>
         <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:18}}>
           {zones.length === 0 && <div style={{color:'var(--text-muted)',fontSize:13,textAlign:'center',padding:'12px 0'}}>لا توجد مناطق محددة</div>}
           {zones.map((z,i) => (
             <GlassRow key={i}>
-              <span style={{flex:1,fontWeight:600,fontSize:14,color:'var(--text)'}}>📍 {z.city}</span>
+              <span style={{flex:1,fontWeight:600,fontSize:14,color:'var(--text)'}}>{z.city}</span>
               <input type="number" value={z.cost}
                 onChange={e=>updateCost(i,e.target.value)}
                 onBlur={()=>updateData('business',{...business,delivery_zones:zones})}
-                style={{width:80,padding:'6px 10px',background:'var(--bg-glass)',border:'1px solid var(--glass-border)',borderRadius:999,color:'var(--teal)',fontWeight:700,fontSize:13,textAlign:'center',fontFamily:'inherit',outline:'none'}}
+                style={{width:80,padding:'6px 10px',background:'var(--bg-hover)',border:'none',borderRadius:999,color:'var(--teal)',fontWeight:700,fontSize:13,textAlign:'center',fontFamily:'inherit',outline:'none'}}
               />
               <span style={{fontSize:12,color:'var(--text-muted)'}}>د.إ</span>
-              <button onClick={()=>remove(i)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16}}>✕</button>
+              <button onClick={()=>remove(i)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16}}></button>
             </GlassRow>
           ))}
         </div>
@@ -946,7 +778,7 @@ function DiscountsTab() {
       })
       setList(p=>[saved,...p])
       setForm({ code:'', type:'percent', value:'', min_order:'', max_uses:'', expiry:'', active:true })
-      toast('تم إضافة الكود ✓')
+      toast('تم إضافة الكود ')
     } catch(e) { toast(e.message,'error') }
   }
 
@@ -966,20 +798,20 @@ function DiscountsTab() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
-        <SectionTitle icon="🏷️">أكواد الخصم</SectionTitle>
+        <SectionTitle>أكواد الخصم</SectionTitle>
         <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:20}}>
           {list.length===0 && <div style={{color:'var(--text-muted)',fontSize:13,padding:'20px 0',textAlign:'center'}}>لا يوجد أكواد خصم بعد</div>}
           {list.map(d => (
             <GlassRow key={d.id}>
               <code style={{fontSize:14,fontWeight:800,color:'var(--teal)',minWidth:90,direction:'ltr'}}>{d.code}</code>
-              <Badge color={d.type==='percent'?'var(--violet-light)':'var(--gold)'}>{d.value}{d.type==='percent'?'%':' د.إ'}</Badge>
+              <Badge color={d.type==='percent'?'var(--violet-light)':'var(--amber)'}>{d.value}{d.type==='percent'?'%':' د.إ'}</Badge>
               <div style={{flex:1,minWidth:0}}>
                 {d.min_order>0 && <div style={{fontSize:10,color:'var(--text-muted)'}}>حد أدنى: {d.min_order} د.إ</div>}
                 {d.max_uses>0 && <div style={{fontSize:10,color:'var(--text-muted)'}}>استخدام: {d.uses_count||0}/{d.max_uses}</div>}
                 {d.expiry && <div style={{fontSize:10,color:'var(--text-muted)'}}>ينتهي: {d.expiry}</div>}
               </div>
               <Toggle checked={d.active} onChange={v=>toggle(d.id,v)} />
-              <button onClick={()=>remove(d.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16}}>✕</button>
+              <button onClick={()=>remove(d.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16}}></button>
             </GlassRow>
           ))}
         </div>
@@ -1013,7 +845,7 @@ function NotificationsTab() {
     const updated = {...settings, [key]: !settings[key]}
     setSettings(updated)
     localStorage.setItem('mawj_notifications', JSON.stringify(updated))
-    toast('تم الحفظ ✓')
+    toast('تم الحفظ ')
   }
 
   function updateVal(key, val) {
@@ -1023,37 +855,37 @@ function NotificationsTab() {
   }
 
   const ITEMS = [
-    { key:'new_order',      label:'طلب جديد',         desc:'تنبيه عند وصول طلب جديد',           icon:'📦' },
-    { key:'low_stock',      label:'مخزون منخفض',      desc:'تنبيه عند وصول المخزون للحد الأدنى', icon:'⚠️' },
-    { key:'daily_summary',  label:'الملخص اليومي',     desc:'ملخص يومي في نهاية الدوام',           icon:'📊' },
-    { key:'payment_due',    label:'دفعة متأخرة',       desc:'تذكير بالدفعات غير المحصلة',         icon:'💳' },
-    { key:'target_reached', label:'تحقيق الهدف',      desc:'تهنئة عند تجاوز الهدف الشهري',        icon:'🎯' },
+    { key:'new_order',      label:'طلب جديد',         desc:'تنبيه عند وصول طلب جديد',           icon:'' },
+    { key:'low_stock',      label:'مخزون منخفض',      desc:'تنبيه عند وصول المخزون للحد الأدنى', icon:'️' },
+    { key:'daily_summary',  label:'الملخص اليومي',     desc:'ملخص يومي في نهاية الدوام',           icon:'' },
+    { key:'payment_due',    label:'دفعة متأخرة',       desc:'تذكير بالدفعات غير المحصلة',         icon:'' },
+    { key:'target_reached', label:'تحقيق الهدف',      desc:'تهنئة عند تجاوز الهدف الشهري',        icon:'' },
   ]
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
-        <SectionTitle icon="🔔">إعدادات الإشعارات</SectionTitle>
+        <SectionTitle>إعدادات الإشعارات</SectionTitle>
         {ITEMS.map((item,i)=>(
-          <ControlRow key={item.key} label={`${item.icon} ${item.label}`} desc={item.desc} last={i===ITEMS.length-1}>
+          <ControlRow key={item.key} label={item.label} desc={item.desc} last={i===ITEMS.length-1}>
             <Toggle checked={!!settings[item.key]} onChange={()=>toggle(item.key)} />
           </ControlRow>
         ))}
       </Card>
 
       <Card>
-        <SectionTitle icon="⏰">وقت الملخص اليومي</SectionTitle>
+        <SectionTitle>وقت الملخص اليومي</SectionTitle>
         <ControlRow label="وقت الإرسال" desc="الوقت الذي يُرسل فيه الملخص اليومي" last>
           <input type="time" value={settings.summary_time||'20:00'} onChange={e=>updateVal('summary_time',e.target.value)}
-            style={{padding:'8px 12px',background:'var(--bg-glass)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',color:'var(--text)',fontFamily:'inherit',outline:'none',direction:'ltr'}} />
+            style={{padding:'8px 12px',background:'var(--bg-hover)',border:'none',borderRadius:'var(--r-md)',color:'var(--text)',fontFamily:'inherit',outline:'none',direction:'ltr'}} />
         </ControlRow>
       </Card>
 
       <Card>
-        <SectionTitle icon="📉">حد المخزون المنخفض</SectionTitle>
+        <SectionTitle>حد المخزون المنخفض</SectionTitle>
         <ControlRow label="الحد الأدنى للمخزون" desc="التنبيه عند وصول الكمية لهذا الحد" last>
           <input type="number" value={settings.low_stock_threshold||5} onChange={e=>updateVal('low_stock_threshold',parseInt(e.target.value)||5)}
-            style={{width:80,padding:'8px 12px',background:'var(--bg-glass)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',color:'var(--teal)',fontWeight:700,fontFamily:'inherit',outline:'none',textAlign:'center'}} />
+            style={{width:80,padding:'8px 12px',background:'var(--bg-hover)',border:'none',borderRadius:'var(--r-md)',color:'var(--teal)',fontWeight:700,fontFamily:'inherit',outline:'none',textAlign:'center'}} />
         </ControlRow>
       </Card>
 
@@ -1075,13 +907,13 @@ function SecurityTab() {
 
   function saveTimeout() {
     localStorage.setItem('mawj_session_timeout', sessionTimeout)
-    toast('تم حفظ إعدادات الجلسة ✓')
+    toast('تم حفظ إعدادات الجلسة ')
   }
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
-        <SectionTitle icon="⏱️">إعدادات الجلسة</SectionTitle>
+        <SectionTitle>إعدادات الجلسة</SectionTitle>
         <ControlRow label="انتهاء الجلسة التلقائي" desc="تسجيل خروج تلقائي بعد فترة عدم النشاط" last>
           <Select value={sessionTimeout} onChange={e=>setSessionTimeout(parseInt(e.target.value))}>
             <option value={0}>معطّل</option>
@@ -1095,7 +927,7 @@ function SecurityTab() {
       </Card>
 
       <Card>
-        <SectionTitle icon="📋">سجل النشاط</SectionTitle>
+        <SectionTitle>سجل النشاط</SectionTitle>
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {log.map((entry,i)=>(
             <GlassRow key={i}>
@@ -1109,7 +941,7 @@ function SecurityTab() {
         </div>
       </Card>
 
-      <InfoBox icon="🔐">كلمة المرور تُدار عبر Supabase Authentication. لتغييرها اذهب إلى إعدادات حسابك.</InfoBox>
+      <InfoBox icon="">كلمة المرور تُدار عبر Supabase Authentication. لتغييرها اذهب إلى إعدادات حسابك.</InfoBox>
     </div>
   )
 }
@@ -1137,7 +969,7 @@ function BackupTab() {
       a.href = URL.createObjectURL(blob)
       a.download = `mawj-backup-${new Date().toISOString().split('T')[0]}.json`
       a.click()
-      toast('تم تصدير البيانات ✓')
+      toast('تم تصدير البيانات ')
     } catch { toast('فشل التصدير','error') }
     finally { setLoading(false) }
   }
@@ -1158,7 +990,7 @@ function BackupTab() {
       a.href = URL.createObjectURL(blob)
       a.download = `orders-${new Date().toISOString().split('T')[0]}.csv`
       a.click()
-      toast('تم تصدير CSV ✓')
+      toast('تم تصدير CSV ')
     } catch { toast('فشل التصدير','error') }
     finally { setLoading(false) }
   }
@@ -1172,7 +1004,7 @@ function BackupTab() {
       try {
         const backup = JSON.parse(ev.target.result)
         if (!backup.data) throw new Error('ملف غير صالح')
-        toast(`تم استيراد النسخة بتاريخ ${new Date(backup.exportDate).toLocaleDateString('ar')} ✓`)
+        toast(`تم استيراد النسخة بتاريخ ${new Date(backup.exportDate).toLocaleDateString('ar')} `)
       } catch(err) { toast('فشل الاستيراد: '+err.message,'error') }
       finally { setImporting(false) }
     }
@@ -1182,7 +1014,7 @@ function BackupTab() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
-        <SectionTitle icon="📤">تصدير البيانات</SectionTitle>
+        <SectionTitle>تصدير البيانات</SectionTitle>
         <div style={{fontSize:13,color:'var(--text-sec)',marginBottom:18,lineHeight:1.7}}>
           احتفظ بنسخة احتياطية من جميع بياناتك. يُنصح بالتصدير أسبوعياً.
         </div>
@@ -1193,17 +1025,17 @@ function BackupTab() {
       </Card>
 
       <Card>
-        <SectionTitle icon="📥">استيراد نسخة احتياطية</SectionTitle>
+        <SectionTitle>استيراد نسخة احتياطية</SectionTitle>
         <div style={{fontSize:13,color:'var(--text-sec)',marginBottom:14,lineHeight:1.7}}>
           استيراد ملف JSON سبق تصديره من موج. تأكد من صحة الملف قبل الاستيراد.
         </div>
         <label style={{
           display:'flex',alignItems:'center',gap:10,padding:'14px 18px',
-          background:'var(--bg-glass)',border:'2px dashed var(--glass-border)',
-          borderRadius:'var(--radius)',cursor:'pointer',
+          background:'var(--bg-hover)',border:'2px dashed var(--border)',
+          borderRadius:'var(--r-lg)',cursor:'pointer',
           transition:'border-color 0.2s ease',
         }}>
-          <span style={{fontSize:24}}>📁</span>
+          <span style={{fontSize:24}}></span>
           <div>
             <div style={{fontWeight:700,fontSize:13,color:'var(--text)'}}>{importing?'جاري الاستيراد...':'اختر ملف النسخة الاحتياطية'}</div>
             <div style={{fontSize:11,color:'var(--text-muted)'}}>mawj-backup-YYYY-MM-DD.json</div>
@@ -1212,7 +1044,7 @@ function BackupTab() {
         </label>
       </Card>
 
-      <InfoBox icon="☁️">بياناتك محفوظة تلقائياً في Supabase Cloud. النسخ الاحتياطي هنا للأرشفة الشخصية فقط.</InfoBox>
+      <InfoBox icon="️">بياناتك محفوظة تلقائياً في Supabase Cloud. النسخ الاحتياطي هنا للأرشفة الشخصية فقط.</InfoBox>
     </div>
   )
 }

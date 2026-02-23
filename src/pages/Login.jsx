@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { Auth } from '../data/db'
-import MawjLogo from '../components/Logo'
 
 /* ══════════════════════════════════════════════════
-   LOGIN v8.5 — Deep indigo-violet atmospheric
-   Glassmorphism card · Teal-violet-pink gradients
+   LOGIN v9.0
+   Clean · RTL-first · Almarai+Inter · No glass
+   Deep navy dark · Warm white light
 ══════════════════════════════════════════════════ */
 export default function Login({ theme, toggleTheme }) {
   const [email, setEmail]       = useState('')
@@ -12,7 +12,8 @@ export default function Login({ theme, toggleTheme }) {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [showPass, setShowPass] = useState(false)
-  const isLight = theme === 'light'
+
+  const isDark = theme !== 'light'
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -26,164 +27,141 @@ export default function Login({ theme, toggleTheme }) {
     }
   }
 
-  const bg   = isLight ? '#e8e5f5' : '#07051c'
-  const cardBg   = isLight ? 'rgba(255,255,255,0.88)' : 'rgba(12,8,38,0.90)'
-  const cardBdr  = isLight ? 'rgba(124,58,237,0.18)' : 'rgba(167,139,250,0.22)'
-  const inputBg  = isLight ? 'rgba(255,255,255,0.80)' : 'rgba(124,58,237,0.07)'
-  const inputBdr = isLight ? 'rgba(124,58,237,0.18)' : 'rgba(167,139,250,0.16)'
-  const textC    = isLight ? '#0e0a2e' : '#e8e0ff'
-  const textSec  = isLight ? '#4a3f7a' : '#9d8fd4'
-  const gridC    = isLight ? 'rgba(124,58,237,0.03)' : 'rgba(167,139,250,0.025)'
-
   return (
     <div style={{
-      minHeight:'100vh',
-      display:'flex',alignItems:'center',justifyContent:'center',
-      background:bg,
-      position:'relative',overflow:'hidden',padding:16,
-      transition:'background 0.4s ease',
+      minHeight: '100vh',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg)',
+      padding: '20px',
+      direction: 'rtl',
+      position: 'relative',
     }}>
 
-      {/* ── 4 atmospheric orbs ── */}
-      <div style={{position:'absolute',top:'-8%',right:'-4%',width:600,height:600,borderRadius:'50%',background:'radial-gradient(circle,rgba(124,58,237,0.12) 0%,transparent 68%)',animation:'orbFloat 11s ease-in-out infinite',pointerEvents:'none',willChange:'transform'}} />
-      <div style={{position:'absolute',bottom:'-15%',left:'-8%',width:720,height:720,borderRadius:'50%',background:'radial-gradient(circle,rgba(124,58,237,0.08) 0%,transparent 68%)',animation:'orbFloat 15s ease-in-out infinite reverse',pointerEvents:'none',willChange:'transform'}} />
-      <div style={{position:'absolute',top:'35%',left:'25%',width:380,height:380,borderRadius:'50%',background:'radial-gradient(circle,rgba(0,228,184,0.06) 0%,transparent 68%)',animation:'orbFloat 19s ease-in-out infinite',animationDelay:'-7s',pointerEvents:'none',willChange:'transform'}} />
-      <div style={{position:'absolute',top:'10%',left:'55%',width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle,rgba(236,72,153,0.05) 0%,transparent 68%)',animation:'orbFloat 25s ease-in-out infinite reverse',animationDelay:'-12s',pointerEvents:'none',willChange:'transform'}} />
+      {/* Subtle atmospheric bg glow — dark only */}
+      {isDark && (
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37,99,235,0.08) 0%, transparent 70%)',
+        }}/>
+      )}
 
-      {/* ── Violet-tinted grid ── */}
-      <div style={{
-        position:'absolute',inset:0,pointerEvents:'none',
-        backgroundImage:`linear-gradient(${gridC} 1px,transparent 1px),linear-gradient(90deg,${gridC} 1px,transparent 1px)`,
-        backgroundSize:'64px 64px',
-      }} />
-
-      {/* ── Radial mesh overlay ── */}
-      <div style={{
-        position:'absolute',inset:0,pointerEvents:'none',
-        background:'radial-gradient(ellipse 80% 60% at 50% -10%,rgba(124,58,237,0.15) 0%,transparent 60%)',
-        opacity: isLight ? 0.5 : 1,
-      }} />
-
-      {/* ── Theme toggle ── */}
+      {/* Theme toggle — top left in RTL = top right visually */}
       {toggleTheme && (
-        <button onClick={toggleTheme} style={{
-          position:'absolute',top:20,left:20,
-          background: isLight ? 'rgba(124,58,237,0.08)' : 'rgba(167,139,250,0.08)',
-          border:`1px solid ${isLight?'rgba(124,58,237,0.18)':'rgba(167,139,250,0.16)'}`,
-          borderRadius:999,padding:'7px 14px',cursor:'pointer',
-          color: textSec, fontSize:12,fontFamily:'inherit',
-          display:'flex',alignItems:'center',gap:6,
-          backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',
-          transition:'all 0.2s ease',
-        }}>
-          {isLight ? '🌙 داكن' : '☀️ فاتح'}
+        <button
+          onClick={toggleTheme}
+          style={{
+            position: 'absolute', top: 20, left: 20,
+            padding: '8px 14px', borderRadius: 'var(--r-pill)',
+            background: 'var(--bg-surface)', border: 'none',
+            boxShadow: 'var(--card-shadow)',
+            color: 'var(--text-sec)', fontSize: 12,
+            fontFamily: 'inherit', fontWeight: 600,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+            transition: 'box-shadow 120ms ease',
+          }}
+        >
+          {isDark ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+          )}
+          {isDark ? 'فاتح' : 'داكن'}
         </button>
       )}
 
-      {/* ── Main card container ── */}
+      {/* Card */}
       <div style={{
-        width:'100%',maxWidth:420,position:'relative',zIndex:1,
-        animation:'fadeInUp 0.45s cubic-bezier(0.4,0,0.2,1) both',
+        width: '100%', maxWidth: 400,
+        background: 'var(--bg-surface)',
+        boxShadow: 'var(--float-shadow)',
+        borderRadius: 'var(--r-xl)',
+        overflow: 'hidden',
+        animation: 'cardEntrance var(--dur-base) var(--ease-out) both',
       }}>
 
-        {/* ── Brand header ── */}
-        <div style={{textAlign:'center',marginBottom:32}}>
-          {/* Logo circle */}
-          <div style={{
-            display:'inline-flex',alignItems:'center',justifyContent:'center',
-            width:76,height:76,borderRadius:22,
-            background:isLight
-              ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(124,58,237,0.10))'
-              : 'linear-gradient(135deg,rgba(0,228,184,0.08),rgba(124,58,237,0.14))',
-            border:'1.5px solid rgba(167,139,250,0.28)',
-            marginBottom:18,
-            boxShadow:'0 0 48px rgba(124,58,237,0.25),0 0 20px rgba(0,228,184,0.15)',
-            animation:'pulseViolet 4s ease-in-out infinite',
-          }}>
-            {/* Wave SVG mark */}
-            <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
-              <defs>
-                <linearGradient id="loginLogo" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#00e4b8"/>
-                  <stop offset="0.5" stopColor="#a78bfa"/>
-                  <stop offset="1" stopColor="#ec4899"/>
-                </linearGradient>
-              </defs>
-              <path d="M4 20c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
-                stroke="url(#loginLogo)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-              <path d="M4 14c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
-                stroke="url(#loginLogo)" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.4"/>
-            </svg>
+        {/* Teal top accent bar */}
+        <div style={{
+          height: 3,
+          background: 'linear-gradient(90deg, var(--action), var(--info-light))',
+        }}/>
+
+        <div style={{ padding: '36px 32px 32px' }}>
+
+          {/* Brand */}
+          <div style={{ textAlign: 'center', marginBottom: 36 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 64, height: 64, borderRadius: 'var(--r-md)',
+              background: 'var(--action-soft)', marginBottom: 16,
+            }}>
+              <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
+                <defs>
+                  <linearGradient id="llg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#00e4b8"/>
+                    <stop offset="1" stopColor="#3b82f6"/>
+                  </linearGradient>
+                </defs>
+                <path d="M4 20c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
+                  stroke="url(#llg)" strokeWidth="2.5" strokeLinecap="round"/>
+                <path d="M4 14c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
+                  stroke="url(#llg)" strokeWidth="2.5" strokeLinecap="round" opacity="0.35"/>
+              </svg>
+            </div>
+            <div style={{
+              fontSize: 28, fontWeight: 900,
+              background: 'linear-gradient(135deg, var(--action), var(--info-light))',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              lineHeight: 1, marginBottom: 6,
+            }}>مَوج</div>
+            <div style={{
+              fontSize: 12, color: 'var(--text-muted)',
+              letterSpacing: '0.06em',
+            }}>نظام إدارة المبيعات</div>
           </div>
 
-          {/* مَوج heading */}
-          <h1 style={{
-            fontSize:36,fontWeight:900,letterSpacing:'-0.04em',lineHeight:1,
-            background:'linear-gradient(135deg,#00e4b8,#a78bfa,#ec4899)',
-            WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',
-            margin:'0 0 6px',
-          }}>مَوج</h1>
-          <p style={{
-            color:isLight?'rgba(74,63,122,0.5)':'rgba(167,139,250,0.35)',
-            fontSize:11,letterSpacing:'0.10em',textTransform:'uppercase',
-          }}>نظام إدارة المبيعات</p>
-        </div>
-
-        {/* ── Login glass card ── */}
-        <div style={{
-          background:cardBg,
-          backdropFilter:'blur(48px)',WebkitBackdropFilter:'blur(48px)',
-          border:`1.5px solid ${cardBdr}`,
-          borderRadius:24,padding:'28px 24px',
-          boxShadow: isLight
-            ? '0 20px 60px rgba(100,80,180,0.12)'
-            : '0 32px 80px rgba(7,5,28,0.6),0 0 0 1px rgba(167,139,250,0.08)',
-          position:'relative',overflow:'hidden',
-        }}>
-          {/* Violet-teal top accent */}
-          <div style={{
-            position:'absolute',top:0,left:0,right:0,height:2,
-            background:'linear-gradient(90deg,transparent,rgba(167,139,250,0.6),rgba(0,228,184,0.5),rgba(236,72,153,0.4),transparent)',
-            pointerEvents:'none',
-          }} />
-          {/* Corner glow orb */}
-          <div style={{
-            position:'absolute',top:-40,right:-40,
-            width:120,height:120,borderRadius:'50%',
-            background:'rgba(124,58,237,0.08)',filter:'blur(30px)',
-            pointerEvents:'none',
-          }} />
-
-          <form onSubmit={handleSubmit} style={{display:'flex',flexDirection:'column',gap:20,position:'relative'}}>
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Email */}
             <div>
               <label style={{
-                display:'block',fontSize:10,fontWeight:700,
-                color:textSec,marginBottom:7,
-                letterSpacing:'0.07em',textTransform:'uppercase',
+                display: 'block', fontSize: 11, fontWeight: 700,
+                color: 'var(--text-muted)', marginBottom: 8,
+                letterSpacing: '0.05em', textTransform: 'uppercase',
               }}>البريد الإلكتروني</label>
               <input
-                type="email" value={email}
-                onChange={e=>setEmail(e.target.value)}
-                required placeholder="you@example.com"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                autoComplete="email"
                 style={{
-                  width:'100%',padding:'11px 14px',
-                  background:inputBg,
-                  border:`1.5px solid ${inputBdr}`,
-                  borderRadius:12,color:textC,fontSize:13,outline:'none',
-                  transition:'all 0.18s ease',
-                  direction:'ltr',textAlign:'left',fontFamily:'inherit',
-                  boxSizing:'border-box',
-                  backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',
+                  width: '100%', padding: '11px 14px',
+                  background: 'var(--bg-elevated)',
+                  border: '1.5px solid var(--input-border)',
+                  borderRadius: 'var(--r-sm)',
+                  color: 'var(--text)', fontSize: 13,
+                  fontFamily: 'Inter, sans-serif',
+                  outline: 'none', boxSizing: 'border-box',
+                  direction: 'ltr', textAlign: 'left',
+                  transition: 'border-color 120ms ease, box-shadow 120ms ease',
                 }}
-                onFocus={e=>{
-                  e.target.style.borderColor='rgba(167,139,250,0.55)'
-                  e.target.style.boxShadow='0 0 0 3px rgba(124,58,237,0.14)'
+                onFocus={e => {
+                  e.target.style.borderColor = 'var(--action)'
+                  e.target.style.boxShadow = '0 0 0 3px var(--action-faint)'
                 }}
-                onBlur={e=>{
-                  e.target.style.borderColor=inputBdr
-                  e.target.style.boxShadow='none'
+                onBlur={e => {
+                  e.target.style.borderColor = 'var(--input-border)'
+                  e.target.style.boxShadow = 'none'
                 }}
               />
             </div>
@@ -191,44 +169,65 @@ export default function Login({ theme, toggleTheme }) {
             {/* Password */}
             <div>
               <label style={{
-                display:'block',fontSize:10,fontWeight:700,
-                color:textSec,marginBottom:7,
-                letterSpacing:'0.07em',textTransform:'uppercase',
+                display: 'block', fontSize: 11, fontWeight: 700,
+                color: 'var(--text-muted)', marginBottom: 8,
+                letterSpacing: '0.05em', textTransform: 'uppercase',
               }}>كلمة المرور</label>
-              <div style={{position:'relative'}}>
+              <div style={{ position: 'relative' }}>
                 <input
-                  type={showPass?'text':'password'} value={password}
-                  onChange={e=>setPassword(e.target.value)}
-                  required placeholder="••••••••"
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  autoComplete="current-password"
                   style={{
-                    width:'100%',padding:'11px 44px 11px 14px',
-                    background:inputBg,
-                    border:`1.5px solid ${inputBdr}`,
-                    borderRadius:12,color:textC,fontSize:13,outline:'none',
-                    transition:'all 0.18s ease',
-                    direction:'ltr',textAlign:'left',fontFamily:'inherit',
-                    boxSizing:'border-box',
-                    backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',
+                    width: '100%',
+                    /* padding-left for eye icon on left (trailing in RTL) */
+                    padding: '11px 14px 11px 44px',
+                    background: 'var(--bg-elevated)',
+                    border: '1.5px solid var(--input-border)',
+                    borderRadius: 'var(--r-sm)',
+                    color: 'var(--text)', fontSize: 14,
+                    fontFamily: 'Inter, sans-serif',
+                    outline: 'none', boxSizing: 'border-box',
+                    direction: 'rtl', textAlign: 'right',
+                    letterSpacing: showPass ? 'normal' : '0.12em',
+                    transition: 'border-color 120ms ease, box-shadow 120ms ease',
                   }}
-                  onFocus={e=>{
-                    e.target.style.borderColor='rgba(167,139,250,0.55)'
-                    e.target.style.boxShadow='0 0 0 3px rgba(124,58,237,0.14)'
+                  onFocus={e => {
+                    e.target.style.borderColor = 'var(--action)'
+                    e.target.style.boxShadow = '0 0 0 3px var(--action-faint)'
                   }}
-                  onBlur={e=>{
-                    e.target.style.borderColor=inputBdr
-                    e.target.style.boxShadow='none'
+                  onBlur={e => {
+                    e.target.style.borderColor = 'var(--input-border)'
+                    e.target.style.boxShadow = 'none'
                   }}
                 />
+                {/* Eye toggle — left side (trailing in RTL = end of input) */}
                 <button
-                  type="button" onClick={()=>setShowPass(p=>!p)}
+                  type="button"
+                  onClick={() => setShowPass(p => !p)}
                   style={{
-                    position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',
-                    background:'none',border:'none',cursor:'pointer',
-                    fontSize:15,lineHeight:1,padding:4,
-                    color:isLight?'rgba(74,63,122,0.5)':'rgba(167,139,250,0.4)',
+                    position: 'absolute', left: 12, top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none', border: 'none',
+                    cursor: 'pointer', padding: 4,
+                    color: 'var(--text-muted)',
+                    display: 'flex', alignItems: 'center',
+                    transition: 'color 120ms ease',
                   }}
                 >
-                  {showPass?'🙈':'👁️'}
+                  {showPass ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
@@ -236,63 +235,66 @@ export default function Login({ theme, toggleTheme }) {
             {/* Error */}
             {error && (
               <div style={{
-                padding:'10px 14px',
-                background:'rgba(255,71,87,0.09)',
-                border:'1px solid rgba(255,71,87,0.24)',
-                borderRadius:10,fontSize:12,color:'#ff4757',
-                textAlign:'center',display:'flex',alignItems:'center',
-                justifyContent:'center',gap:6,
+                padding: '10px 14px',
+                background: 'rgba(239,68,68,0.08)',
+                borderRadius: 'var(--r-sm)',
+                fontSize: 12, color: 'var(--danger-light)',
+                textAlign: 'center',
               }}>
-                ⚠ {error}
+                {error}
               </div>
             )}
 
             {/* Submit */}
-            <button type="submit" disabled={loading} style={{
-              width:'100%',padding:'13px',
-              background: loading
-                ? 'rgba(0,228,184,0.35)'
-                : 'linear-gradient(135deg,#00e4b8,#00c49f)',
-              border:'none',borderRadius:12,
-              color:'#07051c',fontSize:14,fontWeight:900,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontFamily:'inherit',
-              transition:'all 0.22s ease',
-              boxShadow: loading ? 'none' : '0 6px 24px rgba(0,228,184,0.42)',
-              letterSpacing:'0.02em',
-            }}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%', padding: '13px',
+                background: loading ? 'var(--bg-hover)' : 'var(--action)',
+                border: 'none', borderRadius: 'var(--r-sm)',
+                color: loading ? 'var(--text-muted)' : '#031a13',
+                fontSize: 14, fontWeight: 900,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+                transition: 'background 120ms ease, transform 100ms ease',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+              onMouseDown={e => { if (!loading) e.currentTarget.style.transform = 'scale(0.985)' }}
+              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+            >
               {loading ? (
-                <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" style={{animation:'spin 0.7s linear infinite'}}>
-                    <circle cx="12" cy="12" r="10" fill="none" stroke="#07051c" strokeWidth="2.5" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round"/>
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: 'spin 0.7s linear infinite' }}>
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round"/>
                   </svg>
                   جاري الدخول...
-                </span>
+                </>
               ) : 'تسجيل الدخول'}
             </button>
           </form>
+
         </div>
 
         {/* Footer credit */}
-        <p style={{
-          textAlign:'center',marginTop:20,
-          fontSize:10,color:isLight?'rgba(74,63,122,0.35)':'rgba(167,139,250,0.25)',
-          letterSpacing:'0.04em',
+        <div style={{
+          padding: '12px 32px 20px',
+          textAlign: 'center',
+          borderTop: '1px solid var(--border)',
+          fontSize: 11, color: 'var(--text-muted)',
         }}>
           تم التصميم بواسطة{' '}
           <span style={{
-            background:'linear-gradient(135deg,var(--teal),var(--violet-light))',
-            WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',
-            fontWeight:700,
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, var(--action), var(--info-light))',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>إبراهيم كنعي</span>
-        </p>
+        </div>
       </div>
 
       <style>{`
-        @keyframes orbFloat    { 0%,100%{transform:translateY(0) scale(1)} 33%{transform:translateY(-28px) scale(1.02)} 66%{transform:translateY(-12px) scale(0.98)} }
-        @keyframes pulseViolet { 0%,100%{box-shadow:0 0 48px rgba(124,58,237,0.25),0 0 20px rgba(0,228,184,0.15)} 50%{box-shadow:0 0 72px rgba(124,58,237,0.45),0 0 36px rgba(0,228,184,0.22)} }
-        @keyframes fadeInUp    { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin        { to{transform:rotate(360deg)} }
+        @keyframes spin { to { transform: rotate(360deg) } }
       `}</style>
     </div>
   )

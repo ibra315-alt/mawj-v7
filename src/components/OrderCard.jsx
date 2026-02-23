@@ -12,9 +12,9 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
     if (!phone) return
     let text = ''
     if (type === 'confirm') {
-      text = `مرحباً ${order.customer_name}،\nتم استلام طلبكم رقم ${order.order_number} بنجاح ✅\nالمبلغ الإجمالي: ${formatCurrency(order.total)}\nسيتم التواصل معكم قريباً 🚚`
+      text = `مرحباً ${order.customer_name}،\nتم استلام طلبكم رقم ${order.order_number} بنجاح \nالمبلغ الإجمالي: ${formatCurrency(order.total)}\nسيتم التواصل معكم قريباً `
     } else {
-      text = `مرحباً ${order.customer_name}،\nطلبكم رقم ${order.order_number} في الطريق إليكم 🚚✨`
+      text = `مرحباً ${order.customer_name}،\nطلبكم رقم ${order.order_number} في الطريق إليكم `
     }
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank')
   }
@@ -23,9 +23,9 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
 
   return (
     <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--bg-border)',
-      borderRadius: 'var(--radius)',
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--r-lg)',
       padding: 16,
       display: 'flex',
       flexDirection: 'column',
@@ -73,7 +73,7 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
       )}
 
       {/* Financial */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--bg-border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
         <div>
           <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{formatCurrency(order.total)}</span>
           {order.discount_amount > 0 && (
@@ -105,7 +105,7 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
         )}
         <button
           onClick={() => onEdit?.(order)}
-          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 10px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 7, color: 'var(--text-sec)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)' }}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-sec)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)' }}
         >
           <IcEdit size={14} /> تعديل
         </button>
@@ -125,9 +125,9 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
                 top: '100%',
                 right: 0,
                 marginTop: 4,
-                background: 'var(--bg-card)',
-                border: '1px solid var(--bg-border)',
-                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r-md)',
                 zIndex: 50,
                 minWidth: 140,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.4)',

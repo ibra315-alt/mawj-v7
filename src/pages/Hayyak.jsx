@@ -135,7 +135,7 @@ export default function Hayyak() {
         actions={
           <div style={{ display:'flex', gap:8 }}>
             <Btn variant="secondary" onClick={() => { setEditSett(null); setShowSettForm(true) }}>
-              💰 تسوية جديدة
+              تسوية جديدة
             </Btn>
             <Btn onClick={() => { setEditShip(null); setShowShipForm(true) }}>
               <IcPlus size={15}/> شحنة جديدة
@@ -145,7 +145,7 @@ export default function Hayyak() {
       />
 
       {/* ── Tabs ── */}
-      <div style={{ display:'flex', gap:4, marginBottom:20, background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', padding:4 }}>
+      <div style={{ display:'flex', gap:4, marginBottom:20, background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', padding:4 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'9px 8px', borderRadius:8, border:'none', cursor:'pointer',
@@ -173,16 +173,16 @@ export default function Hayyak() {
           {/* COD reconciliation card */}
           <Card glow style={{ marginBottom:16, padding:'20px' }}>
             <div style={{ fontWeight:800, fontSize:16, marginBottom:16, color:'var(--text)' }}>
-              💰 مطابقة COD
+              مطابقة COD
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:12 }}>
               {[
-                { label:'إجمالي COD المحصّل',   value: formatCurrency(stats.totalCOD),    color:'var(--teal)',              icon:'📥' },
-                { label:'إجمالي التسويات',      value: formatCurrency(stats.totalSettled), color:'var(--green,#34d399)',     icon:'✅' },
+                { label:'إجمالي COD المحصّل',   value: formatCurrency(stats.totalCOD),    color:'var(--teal)',              icon:'' },
+                { label:'إجمالي التسويات',      value: formatCurrency(stats.totalSettled), color:'var(--green,#34d399)',     icon:'' },
                 { label:'المبلغ غير المسوّى',   value: formatCurrency(stats.pendingCOD),  color: stats.pendingCOD>0?'var(--amber,#f59e0b)':'var(--green,#34d399)', icon:'⏳' },
                 { label:'خسارة المرتجعات',      value: formatCurrency(stats.returnedLoss), color:'var(--red)',              icon:'↩' },
               ].map(s => (
-                <div key={s.label} style={{ padding:'14px', background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
+                <div key={s.label} style={{ padding:'14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
                   <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:6 }}>{s.icon} {s.label}</div>
                   <div style={{ fontSize:20, fontWeight:900, color:s.color }}>{s.value}</div>
                 </div>
@@ -191,8 +191,8 @@ export default function Hayyak() {
 
             {/* Pending COD warning */}
             {stats.pendingCOD > 0 && (
-              <div style={{ marginTop:14, padding:'10px 14px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:'var(--radius-sm)', fontSize:13 }}>
-                ⚠️ <span style={{ fontWeight:700, color:'var(--amber,#f59e0b)' }}>{formatCurrency(stats.pendingCOD)}</span>
+              <div style={{ marginTop:14, padding:'10px 14px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:'var(--r-md)', fontSize:13 }}>
+                ️ <span style={{ fontWeight:700, color:'var(--amber,#f59e0b)' }}>{formatCurrency(stats.pendingCOD)}</span>
                 <span style={{ color:'var(--text-sec)' }}> محصّلة من العملاء ولم تُحوَّل بعد من حياك</span>
               </div>
             )}
@@ -206,8 +206,8 @@ export default function Hayyak() {
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {[...settlements].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5).map(s => (
-                  <div key={s.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
-                    <span style={{ fontSize:20 }}>💸</span>
+                  <div key={s.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
+                    <span style={{ fontSize:20 }}></span>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:700, fontSize:13 }}>{formatDate(s.date)}</div>
                       {s.notes && <div style={{ fontSize:11, color:'var(--text-muted)' }}>{s.notes}</div>}
@@ -229,10 +229,10 @@ export default function Hayyak() {
             <div style={{ position:'relative', flex:1, minWidth:200 }}>
               <IcSearch size={14} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث برقم التتبع أو اسم العميل..."
-                style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', outline:'none', boxSizing:'border-box' }}/>
+                style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
             </div>
             <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-              style={{ padding:'9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:12, fontFamily:'var(--font)', cursor:'pointer' }}>
+              style={{ padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer' }}>
               <option value="all">كل الحالات</option>
               {SHIP_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
@@ -267,7 +267,7 @@ export default function Hayyak() {
               { label:'تم تسويته', value: formatCurrency(stats.totalSettled), color:'var(--green,#34d399)' },
               { label:'المتبقي',   value: formatCurrency(stats.pendingCOD),  color: stats.pendingCOD>0?'var(--amber,#f59e0b)':'var(--teal)' },
             ].map(s => (
-              <div key={s.label} style={{ padding:'12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', textAlign:'center' }}>
+              <div key={s.label} style={{ padding:'12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', textAlign:'center' }}>
                 <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4 }}>{s.label}</div>
                 <div style={{ fontSize:16, fontWeight:900, color:s.color }}>{s.value}</div>
               </div>
@@ -297,9 +297,9 @@ export default function Hayyak() {
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:16 }}>
             {[
               { label:'مرتجعات', value: stats.returned, sub: `خسارة شحن: ${formatCurrency(stats.returnedLoss)}`, color:'var(--amber,#f59e0b)', icon:'↩' },
-              { label:'مفقودة', value: stats.lost, sub: `قيمة مفقودة: ${formatCurrency(stats.lostAmount)}`, color:'var(--red)', icon:'❌' },
+              { label:'مفقودة', value: stats.lost, sub: `قيمة مفقودة: ${formatCurrency(stats.lostAmount)}`, color:'var(--red)', icon:'' },
             ].map(s => (
-              <div key={s.label} style={{ padding:'14px', background:'var(--bg-glass)', border:`1.5px solid ${s.color}30`, borderRadius:'var(--radius)' }}>
+              <div key={s.label} style={{ padding:'14px', background:'var(--bg-hover)', border:`1.5px solid ${s.color}30`, borderRadius:'var(--r-lg)' }}>
                 <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
                 <div style={{ fontSize:24, fontWeight:900, color:s.color }}>{s.value}</div>
                 <div style={{ fontSize:12, fontWeight:700, color:'var(--text)', marginBottom:2 }}>{s.label}</div>
@@ -337,7 +337,7 @@ export default function Hayyak() {
           if (editShip) setShipments(p => p.map(s => s.id===ship.id ? ship : s))
           else setShipments(p => [ship, ...p])
           setShowShipForm(false); setEditShip(null)
-          toast(editShip ? 'تم التحديث' : 'تمت الإضافة ✓')
+          toast(editShip ? 'تم التحديث' : 'تمت الإضافة ')
         }}
       />
 
@@ -349,7 +349,7 @@ export default function Hayyak() {
           if (editSett) setSettlements(p => p.map(s => s.id===sett.id ? sett : s))
           else setSettlements(p => [sett, ...p])
           setShowSettForm(false); setEditSett(null)
-          toast(editSett ? 'تم التحديث' : 'تمت إضافة التسوية ✓')
+          toast(editSett ? 'تم التحديث' : 'تمت إضافة التسوية ')
         }}
       />
 
@@ -366,9 +366,9 @@ function ShipmentRow({ ship, order, status, onEdit, onDelete, showReason }) {
   return (
     <div className="list-row" style={{
       display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
-      background:'var(--bg-glass)', border:`1.5px solid ${status.color}22`,
+      background:'var(--bg-hover)', border:`1.5px solid ${status.color}22`,
       borderRight:`3px solid ${status.color}`,
-      borderRadius:'var(--radius-sm)', flexWrap:'wrap',
+      borderRadius:'var(--r-md)', flexWrap:'wrap',
     }}>
       {/* Status dot */}
       <span style={{ width:10, height:10, borderRadius:'50%', background:status.color, flexShrink:0, boxShadow:`0 0 6px ${status.color}` }}/>
@@ -403,7 +403,7 @@ function ShipmentRow({ ship, order, status, onEdit, onDelete, showReason }) {
       {/* Settlement badge */}
       <div style={{ flexShrink:0 }}>
         {ship.settled ? (
-          <span style={{ fontSize:11, padding:'3px 10px', borderRadius:999, background:'rgba(52,211,153,0.12)', color:'var(--green,#34d399)', border:'1px solid rgba(52,211,153,0.25)', fontWeight:700 }}>✓ مسوّى</span>
+          <span style={{ fontSize:11, padding:'3px 10px', borderRadius:999, background:'rgba(52,211,153,0.12)', color:'var(--green,#34d399)', border:'1px solid rgba(52,211,153,0.25)', fontWeight:700 }}>مسوّى</span>
         ) : ship.status==='delivered' ? (
           <span style={{ fontSize:11, padding:'3px 10px', borderRadius:999, background:'rgba(245,158,11,0.1)', color:'var(--amber,#f59e0b)', border:'1px solid rgba(245,158,11,0.25)', fontWeight:700 }}>⏳ معلق</span>
         ) : null}
@@ -425,11 +425,11 @@ function SettlementRow({ sett, onEdit, onDelete }) {
   return (
     <div className="list-row" style={{
       display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
-      background:'var(--bg-glass)', border:'1.5px solid var(--glass-border)',
+      background:'var(--bg-hover)', border:'none',
       borderRight:'3px solid var(--green,#34d399)',
-      borderRadius:'var(--radius-sm)',
+      borderRadius:'var(--r-md)',
     }}>
-      <span style={{ fontSize:22, flexShrink:0 }}>💸</span>
+      <span style={{ fontSize:22, flexShrink:0 }}></span>
       <div style={{ flex:1, minWidth:120 }}>
         <div style={{ fontWeight:800, fontSize:14, color:'var(--text)' }}>{formatDate(sett.date)}</div>
         {sett.reference && <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace' }}>ref: {sett.reference}</div>}
@@ -502,7 +502,7 @@ function ShipmentForm({ open, onClose, ship, orders, onSaved }) {
         <div style={{ gridColumn:'1/-1' }}>
           <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>ربط بطلب</div>
           <select value={form.order_id||''} onChange={e=>setField('order_id', e.target.value)}
-            style={{ width:'100%', padding:'9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+            style={{ width:'100%', padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
             <option value="">— اختر طلب —</option>
             {[...orders].reverse().map(o => (
               <option key={o.id} value={o.id}>{o.order_number} — {o.customer_name} — {formatCurrency(o.total)}</option>
@@ -515,7 +515,7 @@ function ShipmentForm({ open, onClose, ship, orders, onSaved }) {
         <div>
           <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>الحالة</div>
           <select value={form.status||'pending'} onChange={e=>setField('status',e.target.value)}
-            style={{ width:'100%', padding:'9px 12px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)', color:'var(--text)', fontSize:13, fontFamily:'var(--font)', cursor:'pointer' }}>
+            style={{ width:'100%', padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
             {SHIP_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </div>
@@ -531,11 +531,11 @@ function ShipmentForm({ open, onClose, ship, orders, onSaved }) {
         )}
 
         {/* Settled toggle */}
-        <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'var(--bg-glass)', border:'1px solid var(--glass-border)', borderRadius:'var(--radius-sm)' }}>
-          <span style={{ flex:1, fontSize:13, fontWeight:700 }}>تم تسوية هذه الشحنة ✓</span>
+        <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
+          <span style={{ flex:1, fontSize:13, fontWeight:700 }}>تم تسوية هذه الشحنة </span>
           <button onClick={() => setField('settled', !form.settled)} style={{
             width:44, height:24, borderRadius:999, border:'none', cursor:'pointer',
-            background: form.settled ? 'var(--teal)' : 'var(--glass-border)',
+            background: form.settled ? 'var(--teal)' : 'var(--border)',
             transition:'all 0.2s',
             position:'relative',
           }}>
