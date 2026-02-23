@@ -127,12 +127,16 @@ export function applyThemeVars(themeId) {
 
 export function applyAppearance(prefs) {
   const p = { ...DEFAULT_PREFS, ...prefs }
-  const t = THEMES.find(t => t.id === p.theme)
-  const effectiveMode = t?.mode || p.mode
+  const t = THEMES.find(th => th.id === p.theme)
+  // p.mode is the user's explicit toggle (dark/light). 
+  // If selected theme is a light theme, force light regardless.
+  const effectiveMode = (t?.mode === 'light') ? 'light' : p.mode
   document.documentElement.setAttribute('data-theme', effectiveMode)
   if (effectiveMode === 'light') {
+    // Clear dark inline overrides first
     ALL_THEME_VARS.forEach(v => document.documentElement.style.removeProperty(v))
-    applyThemeVars(p.theme)
+    // If a light theme is selected, apply its specific vars
+    if (t?.mode === 'light') applyThemeVars(p.theme)
   } else {
     applyThemeVars(p.theme)
     const themeDefault = t?.vars['--teal']
