@@ -75,6 +75,11 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
         <div className="bg-orb bg-orb-1"/>
         <div className="bg-orb bg-orb-2"/>
         <div className="bg-orb bg-orb-3"/>
+        <div className="bg-waves">
+          <div className="bg-wave bg-wave-1"/>
+          <div className="bg-wave bg-wave-2"/>
+          <div className="bg-wave bg-wave-3"/>
+        </div>
       </div>
 
       {/* ── DESKTOP SIDEBAR ──────────────────────────── */}
