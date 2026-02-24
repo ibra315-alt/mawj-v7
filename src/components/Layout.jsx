@@ -4,7 +4,7 @@ import {
   IcDashboard, IcOrders, IcCustomers, IcExpenses,
   IcReports, IcInventory, IcSettings, IcLogout,
   IcTruck, IcMoreGrid, IcMoon, IcSun, IcClose,
-  IcSuppliers, IcPartners, IcAccounting,
+  IcSuppliers, IcPartners, IcAccounting, IcUpload,
 } from './Icons'
 
 /* ══════════════════════════════════════════════════
@@ -27,6 +27,7 @@ const MORE_NAV = [
   { id: 'expenses',    label: 'المصاريف',  icon: IcExpenses    },
   { id: 'suppliers',   label: 'الموردون', icon: IcSuppliers    },
   { id: 'accounting',  label: 'المحاسبة', icon: IcAccounting  },
+  { id: 'import',      label: 'استيراد البيانات', icon: IcUpload  },
   { id: 'partners',    label: 'الشركاء',  icon: IcPartners     },
   { id: 'settings',   label: 'الإعدادات', icon: IcSettings    },
 ]
