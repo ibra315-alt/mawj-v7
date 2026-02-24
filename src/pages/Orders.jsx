@@ -356,10 +356,22 @@ function OrderCard({ order, onView, onEdit, onDelete, onStatusTap }) {
         )}
 
         {/* Actions */}
-        <div style={{ display:'flex', gap:6, paddingTop:8, borderTop:'1px solid var(--border)', justifyContent:'flex-start' }} onClick={e => e.stopPropagation()}>
-          <Btn variant="ghost"     size="sm" onClick={onView}  ><IcEye    size={13}/></Btn>
-          <Btn variant="secondary" size="sm" onClick={onEdit}  ><IcEdit   size={13}/></Btn>
-          <Btn variant="danger"    size="sm" onClick={onDelete}><IcDelete size={13}/></Btn>
+        <div style={{ display:'flex', gap:6, paddingTop:8, borderTop:'1px solid var(--border)', justifyContent:'space-between', alignItems:'center' }} onClick={e => e.stopPropagation()}>
+          <div style={{ display:'flex', gap:6 }}>
+            <Btn variant="ghost"     size="sm" onClick={onView}  ><IcEye    size={13}/></Btn>
+            <Btn variant="secondary" size="sm" onClick={onEdit}  ><IcEdit   size={13}/></Btn>
+            <Btn variant="danger"    size="sm" onClick={onDelete}><IcDelete size={13}/></Btn>
+          </div>
+          {order.customer_phone && (
+            <a
+              href={`https://wa.me/${order.customer_phone.replace(/\D/g,'')}?text=${encodeURIComponent(`مرحبا ${order.customer_name||''}،\nرقم طلبك: ${order.order_number}\nالإجمالي: ${(order.total||0).toLocaleString()} درهم\n\nشكراً لتسوقك مع موج 🌊`)}`}
+              target="_blank" rel="noreferrer"
+              onClick={e => e.stopPropagation()}
+              style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', background:'rgba(37,211,102,0.08)', border:'1px solid rgba(37,211,102,0.25)', borderRadius:999, color:'#25d166', fontSize:11, fontWeight:700, textDecoration:'none' }}
+            >
+              <IcWhatsapp size={12}/> واتساب
+            </a>
+          )}
         </div>
       </div>
     </div>
@@ -664,23 +676,37 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
 /* ═══════════════════════════════════════════
    ORDER VIEW MODAL
 ═══════════════════════════════════════════ */
-function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplacement }) {
+function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplacement, waTemplates = {} }) {
   if (!order) return null
   const status = getStatus(order.status)
   const profit = order.gross_profit ?? 0
 
-  function sendWhatsApp() {
+  const [waMenuOpen, setWaMenuOpen] = useState(false)
+
+  function buildMessage(templateKey) {
     const phone = order.customer_phone?.replace(/\D/g,'')
-    if (!phone) return
-    const lines = [
-      `مرحبا${order.customer_name ? ' ' + order.customer_name : ''}،`,
-      `رقم طلبك: ${order.order_number}`,
-      `الحالة: ${status.label}`,
-      `الإجمالي: ${(order.total||0).toLocaleString()} درهم`,
-      '',
-      'شكراً لتسوقك مع موج 🌊',
-    ].filter(Boolean)
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
+    if (!phone) return null
+    // Default fallbacks if template not configured
+    const defaults = {
+      order_confirm:   `مرحبا {customer_name}،\n\nتم استلام طلبك بنجاح ✅\nرقم الطلب: {order_number}\nالإجمالي: {total} درهم\n\nسيتم التواصل معك قريباً لتأكيد موعد التسليم.\n\nشكراً لتسوقك مع موج 🌊`,
+      order_delivered: `مرحبا {customer_name}،\n\nنأمل أن طلبك وصلك بشكل سليم 🎁\nرقم الطلب: {order_number}\n\nيسعدنا خدمتك دائماً.\nموج للهدايا الكريستالية 🌊`,
+      not_delivered:   `مرحبا {customer_name}،\n\nتعذر علينا توصيل طلبك رقم {order_number} 😕\n\nهل يمكنك تأكيد العنوان؟ أو اختيار وقت مناسب للتوصيل؟\n\nنحن هنا لخدمتك 💙`,
+    }
+    const raw = (waTemplates?.[templateKey] || defaults[templateKey] || defaults.order_confirm)
+    const text = raw
+      .replace(/\{customer_name\}/g, order.customer_name || 'عزيزي العميل')
+      .replace(/\{order_number\}/g,  order.order_number || '')
+      .replace(/\{total\}/g,          (order.total||0).toLocaleString())
+      .replace(/\{city\}/g,           order.customer_city || '')
+      .replace(/\{date\}/g,            order.order_date || new Date().toLocaleDateString('ar-AE'))
+    return { phone, text }
+  }
+
+  function sendWhatsApp(templateKey) {
+    const result = buildMessage(templateKey)
+    if (!result) return
+    window.open(`https://wa.me/${result.phone}?text=${encodeURIComponent(result.text)}`, '_blank')
+    setWaMenuOpen(false)
   }
 
   return (
@@ -771,9 +797,36 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
         {/* Action buttons */}
         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
           {order.customer_phone && (
-            <Btn variant="ghost" onClick={sendWhatsApp} style={{ color:'#25d166', borderColor:'rgba(37,211,102,0.3)' }}>
-              <IcWhatsapp size={15}/> واتساب
-            </Btn>
+            <div style={{ position:'relative' }}>
+              <Btn variant="ghost" onClick={() => setWaMenuOpen(p=>!p)} style={{ color:'#25d166', borderColor:'rgba(37,211,102,0.3)' }}>
+                <IcWhatsapp size={15}/> واتساب ▾
+              </Btn>
+              {waMenuOpen && (
+                <div style={{
+                  position:'absolute', bottom:'calc(100% + 6px)', right:0, zIndex:200,
+                  background:'var(--modal-bg)', border:'1px solid var(--border)',
+                  borderRadius:'var(--r-md)', overflow:'hidden', minWidth:180,
+                  boxShadow:'var(--float-shadow)',
+                }}>
+                  {[
+                    { key:'order_confirm',   label:'✅ تأكيد الطلب' },
+                    { key:'order_delivered', label:'🎁 تم التسليم' },
+                    { key:'not_delivered',   label:'😕 لم يتم — متابعة' },
+                  ].map(t => (
+                    <button key={t.key} onClick={() => sendWhatsApp(t.key)} style={{
+                      display:'block', width:'100%', padding:'11px 16px',
+                      background:'none', border:'none', cursor:'pointer',
+                      fontSize:13, color:'var(--text)', textAlign:'right',
+                      fontFamily:'inherit', fontWeight:600,
+                      transition:'background 100ms',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background='none'}
+                    >{t.label}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           {order.status === 'delivered' && !order.is_replacement && (
             <Btn variant="ghost" onClick={() => onReplacement?.(order)} style={{ color:'#f59e0b', borderColor:'rgba(245,158,11,0.3)' }}>
