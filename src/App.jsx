@@ -24,7 +24,7 @@ import AIAssistant from './components/AIAssistant'
 export default function App() {
   const [session, setSession]   = useState(undefined)
   const [user, setUser]         = useState(null)
-  const [page, setPage]         = useState('dashboard')
+  const [page, setPage]         = useState(() => localStorage.getItem('mawj-page') || 'dashboard')
   const [pageKey, setPageKey]   = useState(0)
   const [theme, setTheme]       = useState('dark')
   const [showAI, setShowAI]     = useState(false)
@@ -84,6 +84,7 @@ export default function App() {
   function navigate(id) {
     setPage(id)
     setPageKey(k => k + 1)
+    localStorage.setItem('mawj-page', id)
   }
 
   function toggleTheme() {
