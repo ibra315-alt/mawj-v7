@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard'
 import Orders from './pages/Orders'
 import Customers from './pages/Customers'
 import Expenses from './pages/Expenses'
-import Settlements from './pages/Settlements'
 import Reports from './pages/Reports'
 import Partners from './pages/Partners'
 import Inventory from './pages/Inventory'
@@ -150,7 +149,6 @@ export default function App() {
       case 'inventory':   return <Inventory    key={pageKey} {...props} />
       case 'suppliers':   return <Suppliers    key={pageKey} {...props} />
       case 'expenses':    return <Expenses     key={pageKey} {...props} />
-      case 'settlements': return <Settlements  key={pageKey} {...props} />
       case 'accounting':  return <Accounting   key={pageKey} {...props} />
       case 'partners':    return <Partners     key={pageKey} {...props} />
       case 'reports':     return <Reports      key={pageKey} {...props} />
