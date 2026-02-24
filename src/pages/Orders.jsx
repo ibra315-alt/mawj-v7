@@ -637,8 +637,6 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
         />
         <Input label="خصم (د.إ)" type="number" min="0" value={form.discount || ''} onChange={e => setField('discount', e.target.value)}/>
         {!isEdit && <Input label="تاريخ الطلب" type="date" value={form.order_date || ''} onChange={e => setField('order_date', e.target.value)}/>}
-        {!isEdit && (
-        )}
       </div>
 
       {/* Live profit summary */}
