@@ -206,11 +206,11 @@ export default function Import({ user }) {
           </div>
         </div>
 
-        <div style={{ marginBottom: 20, padding: 14, background: 'var(--bg-surface)', borderRadius: 'var(--r-md)', fontSize: 12 }}>
+        <div style={{ marginBottom: 20, padding: 14, background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', fontSize: 12 }}>
           <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--text-sec)' }}>الأعمدة المدعومة تلقائياً:</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {Object.keys(COL_MAP).map(col => (
-              <code key={col} style={{ padding: '3px 8px', background: 'var(--bg-surface)', border: 'none', borderRadius: 4, color: 'var(--teal)', fontSize: 11 }}>{col}</code>
+              <code key={col} style={{ padding: '3px 8px', background: 'var(--bg-card)', border: '1px solid var(--bg-border)', borderRadius: 4, color: 'var(--teal)', fontSize: 11 }}>{col}</code>
             ))}
           </div>
         </div>
@@ -218,8 +218,8 @@ export default function Import({ user }) {
         <div
           onClick={() => fileRef.current?.click()}
           style={{
-            border: '2px dashed var(--border)',
-            borderRadius: 'var(--r-lg)',
+            border: '2px dashed var(--bg-border)',
+            borderRadius: 'var(--radius)',
             padding: '40px 20px',
             textAlign: 'center',
             cursor: 'pointer',
@@ -280,9 +280,9 @@ export default function Import({ user }) {
             gridTemplateColumns: '40px 1fr 120px 100px 100px 100px 36px',
             gap: 12,
             padding: '12px 14px',
-            background: 'var(--bg-surface)',
-            border: 'none',
-            borderRadius: 'var(--r-md)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--bg-border)',
+            borderRadius: 'var(--radius-sm)',
             alignItems: 'center',
             fontSize: 13,
           }}>
@@ -302,7 +302,7 @@ export default function Import({ user }) {
         ))}
       </div>
 
-      <div style={{ marginTop: 16, padding: '14px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--r-md)', display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13 }}>
+      <div style={{ marginTop: 16, padding: '14px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13 }}>
         <span>عدد الطلبات: <b style={{ color: 'var(--teal)' }}>{rows.length}</b></span>
         <span>إجمالي المبيعات: <b style={{ color: 'var(--teal)' }}>{formatCurrency(rows.reduce((s, r) => s + r.total, 0))}</b></span>
         <span>إجمالي الأرباح: <b style={{ color: 'var(--green)' }}>{formatCurrency(rows.reduce((s, r) => s + r.profit, 0))}</b></span>
@@ -319,7 +319,7 @@ export default function Import({ user }) {
         <Spinner size={40} />
         <div style={{ fontWeight: 700, fontSize: 18, margin: '16px 0 8px' }}>جاري الاستيراد...</div>
         <div style={{ fontSize: 13, color: 'var(--text-sec)', marginBottom: 20 }}>{progress}% مكتمل</div>
-        <div style={{ height: 8, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ height: 8, background: 'var(--bg-border)', borderRadius: 99, overflow: 'hidden' }}>
           <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg, var(--teal), var(--violet))', borderRadius: 99, transition: 'width 0.3s ease' }} />
         </div>
         <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>لا تغلق الصفحة</div>
@@ -331,7 +331,7 @@ export default function Import({ user }) {
   if (step === 'done') return (
     <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <Card style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 52, marginBottom: 16 }}></div>
+        <div style={{ fontSize: 52, marginBottom: 16 }}>🎉</div>
         <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 8 }}>تم الاستيراد بنجاح!</div>
         <div style={{ fontSize: 14, color: 'var(--text-sec)', marginBottom: 24 }}>
           تم استيراد <b style={{ color: 'var(--teal)' }}>{imported}</b> طلب بنجاح
@@ -339,7 +339,7 @@ export default function Import({ user }) {
         </div>
 
         {skipped.length > 0 && (
-          <div style={{ marginBottom: 20, padding: 14, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 'var(--r-md)', textAlign: 'right' }}>
+          <div style={{ marginBottom: 20, padding: 14, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 'var(--radius-sm)', textAlign: 'right' }}>
             <div style={{ fontWeight: 600, color: 'var(--red)', marginBottom: 8, fontSize: 13 }}>الطلبات التي فشلت:</div>
             {skipped.map((s, i) => (
               <div key={i} style={{ fontSize: 12, color: 'var(--text-sec)', padding: '2px 0' }}>صف {s.row}: {s.error}</div>

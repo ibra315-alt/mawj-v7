@@ -61,7 +61,7 @@ export default function Settlements() {
       {settlements.length === 0 ? <Empty title="لا يوجد تسويات" action={<Btn onClick={() => setShowForm(true)}><IcPlus size={14}/> أضف قيد</Btn>} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {settlements.map(s => (
-            <div key={s.id} style={{ background: 'var(--bg-surface)', border: 'none', borderRadius: 'var(--r-lg)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div key={s.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--bg-border)', borderRadius: 'var(--radius)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{s.partner_name}</div>
                 {s.notes && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{s.notes}</div>}

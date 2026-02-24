@@ -80,12 +80,12 @@ export default function Expenses() {
       {/* Per-person breakdown */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:12, marginBottom:20 }}>
         {byPerson.map(({ name, total:t }) => (
-          <div key={name}
+          <div key={name} style={{ background:'var(--bg-glass)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius)', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', transition:'all 0.2s ease' }}
             onClick={() => setFilterPaid(filterPaid===name?'all':name)}
             style={{
-              background: filterPaid===name ? 'rgba(0,228,184,0.06)' : 'var(--bg-hover)',
-              border: `1.5px solid ${filterPaid===name?'rgba(0,228,184,0.3)':'var(--border)'}`,
-              borderRadius:'var(--r-lg)', padding:'14px 16px',
+              background: filterPaid===name ? 'rgba(0,228,184,0.06)' : 'var(--bg-glass)',
+              border: `1.5px solid ${filterPaid===name?'rgba(0,228,184,0.3)':'var(--bg-border)'}`,
+              borderRadius:'var(--radius)', padding:'14px 16px',
               display:'flex', alignItems:'center', justifyContent:'space-between',
               cursor:'pointer', transition:'all 0.2s ease',
             }}
@@ -112,7 +112,7 @@ export default function Expenses() {
                   <span>{cat}</span>
                   <span style={{ color:'var(--text-sec)', fontWeight:600 }}>{formatCurrency(ct)}</span>
                 </div>
-                <div style={{ height:5, background:'var(--border)', borderRadius:99, overflow:'hidden' }}>
+                <div style={{ height:5, background:'var(--bg-border)', borderRadius:99, overflow:'hidden' }}>
                   <div style={{ width:`${Math.min(100,(ct/total)*100)}%`, height:'100%', background:'linear-gradient(90deg,var(--red),#ff6b7a)', borderRadius:99, transition:'width 0.6s ease' }} />
                 </div>
               </div>
@@ -124,12 +124,12 @@ export default function Expenses() {
       {/* Filters */}
       <div style={{ display:'flex', gap:10, marginBottom:16, flexWrap:'wrap' }}>
         <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
-          style={{ padding:'8px 14px', background:'var(--bg-surface)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-pill)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer', outline:'none' }}>
+          style={{ padding:'8px 14px', background:'var(--bg-surface)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius-pill)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer', outline:'none' }}>
           <option value="all">كل الفئات</option>
           {EXPENSE_CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
         </select>
         <select value={filterPaid} onChange={e=>setFilterPaid(e.target.value)}
-          style={{ padding:'8px 14px', background:'var(--bg-surface)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-pill)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer', outline:'none' }}>
+          style={{ padding:'8px 14px', background:'var(--bg-surface)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius-pill)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer', outline:'none' }}>
           <option value="all">الكل</option>
           {PAID_BY_OPTIONS.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
@@ -141,7 +141,7 @@ export default function Expenses() {
         : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {allFiltered.map(exp => (
-              <div key={exp.id} style={{ background:'var(--bg-hover)', border:'1.5px solid var(--border)', borderRadius:'var(--r-lg)', padding:'13px 16px', display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' }}>
+              <div key={exp.id} style={{ background:'var(--bg-glass)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius)', padding:'13px 16px', display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' }}>
                 <div style={{ flex:1, minWidth:130 }}>
                   <div style={{ fontWeight:700, fontSize:14 }}>{exp.title}</div>
                   {exp.notes && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{exp.notes}</div>}

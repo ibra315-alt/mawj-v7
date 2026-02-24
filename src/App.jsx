@@ -51,19 +51,11 @@ export default function App() {
   const [theme, setTheme]           = useState(() => localStorage.getItem('mawj_theme') || 'dark')
   const [showAI, setShowAI]         = useState(false)
   const [pageKey, setPageKey]       = useState(0)
-  const [pwaPrompt, setPwaPrompt]   = useState(null)
-  const [showPwaBanner, setShowPwaBanner] = useState(false)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('mawj_theme', theme)
   }, [theme])
-
-  useEffect(() => {
-    const handler = (e) => { e.preventDefault(); setPwaPrompt(e); setShowPwaBanner(true) }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
 
   // Restore ALL saved appearance settings on mount
   useEffect(() => {
@@ -151,22 +143,13 @@ export default function App() {
     setDrawerOpen(false)
   }
 
-  async function handlePwaInstall() {
-    if (!pwaPrompt) return
-    pwaPrompt.prompt()
-    await pwaPrompt.userChoice
-    setPwaPrompt(null)
-    setShowPwaBanner(false)
-  }
-
   function toggleTheme() { setTheme(t => t === 'dark' ? 'light' : 'dark') }
 
   if (session === undefined) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#070c1a', flexDirection:'column', gap:20, position:'relative', overflow:'hidden' }}>
-      {/* Same orbs as main app */}
-      <div style={{ position:'absolute', top:'-10%', right:'-5%', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(0,228,184,0.16) 0%, transparent 68%)', animation:'float 8s ease-in-out infinite', pointerEvents:'none' }} />
-      <div style={{ position:'absolute', bottom:'-10%', left:'-5%', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 68%)', animation:'float 11s ease-in-out infinite reverse', pointerEvents:'none' }} />
-      <div style={{ position:'absolute', top:'40%', left:'30%', width:300, height:300, borderRadius:'50%', background:'radial-gradient(circle, rgba(0,168,228,0.08) 0%, transparent 68%)', animation:'float 15s ease-in-out infinite', animationDelay:'-5s', pointerEvents:'none' }} />
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#050810', flexDirection:'column', gap:20, position:'relative', overflow:'hidden' }}>
+      {/* Same orbs as login */}
+      <div style={{ position:'absolute', top:'-10%', right:'-5%', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle, rgba(0,228,184,0.08) 0%, transparent 70%)', animation:'float 8s ease-in-out infinite', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', bottom:'-10%', left:'-5%', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)', animation:'float 11s ease-in-out infinite reverse', pointerEvents:'none' }} />
       {/* Grid */}
       <div style={{ position:'absolute', inset:0, backgroundImage:'linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px)', backgroundSize:'64px 64px', pointerEvents:'none' }} />
       {/* Logo */}
@@ -331,32 +314,6 @@ export default function App() {
       <ToastContainer />
       {theme === 'dark' && <CursorSpotlight />}
       {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
-
-      {/* ── PWA INSTALL — compact corner ── */}
-      {showPwaBanner && (
-        <div style={{
-          position:'fixed', bottom:76, right:16, zIndex:800,
-          background:'rgba(10,15,38,0.97)',
-          backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
-          border:'1px solid rgba(0,228,184,0.22)',
-          borderRadius:16, padding:'12px 14px',
-          boxShadow:'0 12px 40px rgba(0,0,0,0.5)',
-          display:'flex', flexDirection:'column', gap:10,
-          width:200, animation:'toastIn 0.3s cubic-bezier(0.4,0,0.2,1) both',
-        }}>
-          <button onClick={() => setShowPwaBanner(false)} style={{ position:'absolute', top:8, left:8, background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:14, lineHeight:1, padding:2 }}>✕</button>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <MawjLogo size={28} color="#00e4b8" animated />
-            <div>
-              <div style={{ fontSize:12, fontWeight:800, color:'var(--text)', lineHeight:1.2 }}>تثبيت موج</div>
-              <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>تثبيت كتطبيق</div>
-            </div>
-          </div>
-          <button onClick={handlePwaInstall} style={{ background:'linear-gradient(135deg,var(--teal),var(--violet))', border:'none', borderRadius:10, padding:'8px 0', color:'#fff', fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit', width:'100%' }}>
-            تثبيت الآن
-          </button>
-        </div>
-      )}
 
       {/* Floating AI button */}
       <button onClick={() => setShowAI(p => !p)} title="موج AI" style={{

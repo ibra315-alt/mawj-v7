@@ -74,9 +74,9 @@ export default function Partners() {
           const partWith = withdrawals.filter(w => w.partner_name === name).reduce((s,w)=>s+w.amount,0)
           const net = partCap - partWith
           return (
-            <Card key={name} glow style={{  }}>
+            <Card key={name} glow style={{ borderColor:'rgba(139,92,246,0.2)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-                <div style={{ width:46, height:46, borderRadius:'50%', background:'linear-gradient(135deg,var(--info-light),var(--action))', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:20, color:'#fff', flexShrink:0, boxShadow:'0 4px 16px rgba(37,99,235,0.3)' }}>
+                <div style={{ width:46, height:46, borderRadius:'50%', background:'linear-gradient(135deg,var(--violet),var(--teal))', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:20, color:'#fff', flexShrink:0, boxShadow:'0 4px 16px rgba(139,92,246,0.4)' }}>
                   {name[0]}
                 </div>
                 <div>
@@ -85,15 +85,15 @@ export default function Partners() {
                 </div>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-surface)', borderRadius:'var(--r-md)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-surface)', borderRadius:'var(--radius-sm)' }}>
                   <span style={{ fontSize:12, color:'var(--text-muted)' }}>رأس المال</span>
                   <span style={{ fontWeight:700, color:'var(--teal)', fontSize:13 }}>{formatCurrency(partCap)}</span>
                 </div>
-                <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-surface)', borderRadius:'var(--r-md)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-surface)', borderRadius:'var(--radius-sm)' }}>
                   <span style={{ fontSize:12, color:'var(--text-muted)' }}>المسحوبات</span>
                   <span style={{ fontWeight:700, color:'var(--red)', fontSize:13 }}>{formatCurrency(partWith)}</span>
                 </div>
-                <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background: net>=0?'rgba(16,185,129,0.08)':'rgba(255,71,87,0.08)', borderRadius:'var(--r-md)', border:`1px solid ${net>=0?'rgba(16,185,129,0.2)':'rgba(255,71,87,0.2)'}` }}>
+                <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background: net>=0?'rgba(16,185,129,0.08)':'rgba(255,71,87,0.08)', borderRadius:'var(--radius-sm)', border:`1px solid ${net>=0?'rgba(16,185,129,0.2)':'rgba(255,71,87,0.2)'}` }}>
                   <span style={{ fontSize:12, fontWeight:700, color: net>=0?'var(--green)':'var(--red)' }}>الصافي</span>
                   <span style={{ fontWeight:800, color: net>=0?'var(--green)':'var(--red)', fontSize:13 }}>{net>0?'+':''}{formatCurrency(net)}</span>
                 </div>
@@ -109,7 +109,7 @@ export default function Partners() {
         {capital.length === 0 ? <Empty title="لا يوجد قيود"/> : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {capital.map(c => (
-              <div key={c.id} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-lg)', padding:'12px 16px', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+              <div key={c.id} style={{ background:'var(--bg-glass)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius)', padding:'12px 16px', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontWeight:700, fontSize:13 }}>{c.partner_name}</div>
                   {c.notes && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{c.notes}</div>}
@@ -130,7 +130,7 @@ export default function Partners() {
         {withdrawals.length === 0 ? <Empty title="لا يوجد مسحوبات"/> : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {withdrawals.map(w => (
-              <div key={w.id} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-lg)', padding:'12px 16px', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+              <div key={w.id} style={{ background:'var(--bg-glass)', border:'1.5px solid var(--bg-border)', borderRadius:'var(--radius)', padding:'12px 16px', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontWeight:700, fontSize:13 }}>{w.partner_name}</div>
                   {w.notes && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{w.notes}</div>}
