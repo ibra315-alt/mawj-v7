@@ -373,9 +373,10 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
   const isEdit   = !!order
   const isRepl   = !!replacementFor && !order
 
-  const [form,   setForm]   = useState({})
-  const [items,  setItems]  = useState([])
-  const [saving, setSaving] = useState(false)
+  const [form,            setForm]            = useState({})
+  const [items,           setItems]           = useState([])
+  const [saving,          setSaving]          = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState(null) // awaiting size selection
 
   useEffect(() => {
     if (!open) return
@@ -424,13 +425,15 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
 
   const setField = (k, v) => setForm(p => ({ ...p, [k]:v }))
 
-  function addItem(product) {
+  function addItem(productName, sizeVariant) {
+    // sizeVariant = { id, size, cost, price, category }
+    const key = `${sizeVariant.id}`
     setItems(prev => {
-      const key = `${product.id}__${product.size}`
-      const existing = prev.find(i => `${i.id}__${i.size}` === key)
-      if (existing) return prev.map(i => `${i.id}__${i.size}` === key ? { ...i, qty: i.qty + 1 } : i)
-      return [...prev, { id:product.id, name:product.name, size:product.size, price:product.price, cost:product.cost, qty:1, engraving_notes:'' }]
+      const existing = prev.find(i => i.id === key)
+      if (existing) return prev.map(i => i.id === key ? { ...i, qty: i.qty + 1 } : i)
+      return [...prev, { id: key, name: productName, size: sizeVariant.size, price: sizeVariant.price, cost: sizeVariant.cost, qty: 1, engraving_notes: '' }]
     })
+    setSelectedProduct(null)
   }
   function removeItem(idx) { setItems(p => p.filter((_,i) => i !== idx)) }
   function updateItem(idx, field, val) { setItems(p => p.map((it, i) => i === idx ? { ...it, [field]: val } : it)) }
@@ -482,8 +485,6 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
     } finally { setSaving(false) }
   }
 
-  const smallProds = products.filter(p => p.category === 'small')
-  const largeProds = products.filter(p => p.category === 'large')
 
   return (
     <Modal
@@ -515,36 +516,70 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
         <Input label="العنوان التفصيلي"   value={form.customer_address || ''} onChange={e => setField('customer_address', e.target.value)} placeholder="الحي / الشارع..."/>
       </div>
 
-      {/* Products picker */}
+      {/* Products picker — single-size: direct add | multi-size: opens size picker */}
       <div style={{ marginBottom:16 }}>
         <div style={{ fontWeight:700, fontSize:11, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:10 }}>المنتجات</div>
 
-        {smallProds.length > 0 && (
-          <div style={{ marginBottom:8 }}>
-            <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:6, fontWeight:600 }}>صغير</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-              {smallProds.map(p => (
-                <button key={p.id} onClick={() => addItem(p)} style={{ padding:'6px 12px', background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', color:'var(--text-sec)', fontSize:12, cursor:'pointer', fontFamily:'inherit', transition:'all 120ms' }}
-                  onMouseEnter={e => { e.target.style.borderColor='var(--action)'; e.target.style.color='var(--action)' }}
-                  onMouseLeave={e => { e.target.style.borderColor='var(--border)'; e.target.style.color='var(--text-sec)' }}
-                >
-                  + {p.name} <span style={{ fontSize:10, color:'var(--text-muted)' }}>{p.size}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Product name buttons */}
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom: selectedProduct ? 10 : 0 }}>
+          {products.map(p => {
+            const isSingle   = p.sizes.length === 1
+            const isSelected = selectedProduct?.id === p.id
+            return (
+              <button
+                key={p.id}
+                onClick={() => {
+                  if (isSingle) {
+                    addItem(p.name, p.sizes[0])  // direct add
+                  } else {
+                    setSelectedProduct(isSelected ? null : p)
+                  }
+                }}
+                style={{
+                  padding:'8px 14px', borderRadius:'var(--r-sm)', cursor:'pointer',
+                  fontFamily:'inherit', fontSize:13, fontWeight:700, transition:'all 120ms',
+                  background: isSelected ? 'var(--action-soft)' : 'var(--bg-hover)',
+                  border: `1.5px solid ${isSelected ? 'var(--action)' : 'var(--border)'}`,
+                  color: isSelected ? 'var(--action)' : 'var(--text-sec)',
+                }}
+                onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.borderColor='var(--action)'; e.currentTarget.style.color='var(--action)' }}}
+                onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text-sec)' }}}
+              >
+                {p.name}
+                {!isSingle && <span style={{ fontSize:10, marginRight:5, opacity:0.6 }}>{isSelected ? '▲' : '▼'}</span>}
+              </button>
+            )
+          })}
+        </div>
 
-        {largeProds.length > 0 && (
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:6, fontWeight:600 }}>كبير</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-              {largeProds.map(p => (
-                <button key={`${p.id}-${p.size}`} onClick={() => addItem(p)} style={{ padding:'6px 12px', background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', color:'var(--text-sec)', fontSize:12, cursor:'pointer', fontFamily:'inherit', transition:'all 120ms' }}
-                  onMouseEnter={e => { e.target.style.borderColor='var(--violet-light)'; e.target.style.color='var(--violet-light)' }}
-                  onMouseLeave={e => { e.target.style.borderColor='var(--border)'; e.target.style.color='var(--text-sec)' }}
+        {/* Size picker — only for multi-size products */}
+        {selectedProduct && (
+          <div style={{
+            padding:'12px 14px', marginBottom:8,
+            background:'var(--bg-surface)', borderRadius:'var(--r-md)',
+            border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(0,228,184,0.08)',
+          }}>
+            <div style={{ fontSize:11, color:'var(--action)', fontWeight:700, marginBottom:8 }}>
+              {selectedProduct.name} — اختر الحجم:
+            </div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {selectedProduct.sizes.map(sv => (
+                <button
+                  key={sv.id}
+                  onClick={() => addItem(selectedProduct.name, sv)}
+                  style={{
+                    padding:'10px 18px', borderRadius:'var(--r-sm)', cursor:'pointer',
+                    fontFamily:'inherit', transition:'all 120ms', textAlign:'center',
+                    background:'var(--bg-hover)', border:'1.5px solid var(--border)',
+                    color:'var(--text)', display:'flex', flexDirection:'column', alignItems:'center', gap:3,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor='var(--action)'; e.currentTarget.style.color='var(--action)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text)' }}
                 >
-                  + {p.name} <span style={{ fontSize:10, color:'var(--text-muted)' }}>{p.size}</span>
+                  <span style={{ fontSize:15, fontWeight:800 }}>{sv.size}</span>
+                  <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>
+                    {sv.price} د.إ
+                  </span>
                 </button>
               ))}
             </div>

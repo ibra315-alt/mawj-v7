@@ -1,361 +1,403 @@
 import React, { useState, useRef } from 'react'
-import { DB, generateOrderNumber, supabase } from '../data/db'
+import { DB, Settings, supabase } from '../data/db'
 import { formatCurrency } from '../data/constants'
-import { Btn, Card, Badge, Spinner, PageHeader, toast } from '../components/ui'
-import { IcUpload, IcCheck, IcAlert, IcDelete } from '../components/Icons'
+import { Btn, PageHeader, toast } from '../components/ui'
+import { IcPlus, IcCheck, IcAlert, IcDelete } from '../components/Icons'
 
-// ── Column mapping from your Google Sheets headers ────────────
-// رقم باركود التوصيل → tracking_number
-// رقم هاتف العميل   → customer_phone
-// تاريخ الطلب       → created_at / date
-// الكمية            → quantity (stored in items)
-// تكلفة الشحن       → delivery_cost
-// الامارة           → customer_city
-// العنوان التفصيلي  → notes (address)
-// السعر الاجمالي    → total
-// صافي المبيعات     → profit
-// تم الاستلام       → status flag (ignored — all set to delivered)
+/* ═══════════════════════════════════════════════════════════
+   IMPORT TOOL — Mawj ERP v8.5
+   ─────────────────────────────────────────────────────────
+   Reads mawj_import.json and inserts into Supabase:
+     1. settings.products  → 5 product groups (7 size variants)
+     2. inventory          → 7 rows (one per size variant)
+     3. hayyak_remittances → 20 remittances
+     4. orders             → 112 historical orders
 
-const COL_MAP = {
-  'رقم باركود التوصيل':  'tracking_number',
-  'رقم هاتف العميل':     'customer_phone',
-  'تاريخ الطلب':         'order_date',
-  'الكمية':              'quantity',
-  'تكلفة الشحن':         'delivery_cost',
-  'الامارة':             'customer_city',
-  'العنوان التفصيلي':    'address',
-  'السعر الاجمالي':      'total',
-  'صافي المبيعات':       'profit',
-  'تم الاستلام':         'received',
-}
+   Safe to run once — checks for existing order_numbers
+   before inserting to avoid duplicates.
+═══════════════════════════════════════════════════════════ */
 
-function parseCSV(text) {
-  const lines = text.trim().split('\n')
-  if (lines.length < 2) return []
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').trim())
-  return lines.slice(1).map(line => {
-    // Handle quoted commas
-    const cols = []
-    let cur = ''
-    let inQuote = false
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i]
-      if (ch === '"') { inQuote = !inQuote }
-      else if (ch === ',' && !inQuote) { cols.push(cur.trim()); cur = '' }
-      else { cur += ch }
-    }
-    cols.push(cur.trim())
+const STEPS = [
+  { id: 'products',     label: 'المنتجات (الإعدادات)', icon: '📦', count_key: 'products' },
+  { id: 'inventory',    label: 'المخزون',              icon: '🗃️', count_key: 'inventory' },
+  { id: 'remittances',  label: 'التحويلات البنكية',    icon: '🏦', count_key: 'remittances' },
+  { id: 'orders',       label: 'الطلبات',              icon: '📋', count_key: 'orders' },
+]
 
-    const row = {}
-    headers.forEach((h, i) => { row[h] = (cols[i] || '').replace(/^"|"$/g, '').trim() })
-    return row
-  }).filter(row => Object.values(row).some(v => v !== ''))
-}
+export default function ImportTool() {
+  const [file,       setFile]       = useState(null)   // parsed JSON
+  const [preview,    setPreview]    = useState(null)   // summary stats
+  const [importing,  setImporting]  = useState(false)
+  const [done,       setDone]       = useState(false)
+  const [log,        setLog]        = useState([])     // live log lines
+  const [stepStatus, setStepStatus] = useState({})     // { products: 'done'|'error'|'running' }
+  const [error,      setError]      = useState(null)
+  const inputRef = useRef()
 
-function mapRow(row, index) {
-  const mapped = {}
-  Object.entries(row).forEach(([header, value]) => {
-    const field = COL_MAP[header]
-    if (field) mapped[field] = value
-  })
-
-  const total = parseFloat(mapped.total?.replace(/,/g, '') || 0) || 0
-  const profit = parseFloat(mapped.profit?.replace(/,/g, '') || 0) || 0
-  const deliveryCost = parseFloat(mapped.delivery_cost?.replace(/,/g, '') || 0) || 0
-  const qty = parseInt(mapped.quantity || 1) || 1
-
-  // Try to extract customer name from tracking number or use phone as fallback
-  const phone = mapped.customer_phone || ''
-  const tracking = mapped.tracking_number || ''
-  const city = mapped.customer_city || ''
-
-  return {
-    _index: index,
-    _raw: row,
-    customer_name: phone ? `عميل ${phone.slice(-4)}` : `طلب ${index + 1}`,
-    customer_phone: phone,
-    customer_city: city,
-    delivery_zone: city,
-    delivery_cost: deliveryCost,
-    tracking_number: tracking,
-    courier: 'Hayyak',
-    status: 'delivered',
-    source: 'other',
-    notes: mapped.address || '',
-    total,
-    subtotal: total - deliveryCost,
-    profit,
-    cost: total - profit - deliveryCost,
-    items: qty > 0 ? [{ id: 'imported', name: 'منتج مستورد', price: total - deliveryCost, cost: 0, qty }] : [],
-    order_date: mapped.order_date || '',
-    internal_notes: [{ text: 'تم الاستيراد من Google Sheets', time: new Date().toISOString() }],
-    discount_amount: 0,
-    discount_code: '',
-    photos: [],
-    custom_fields: {},
+  function addLog(msg, type = 'info') {
+    setLog(prev => [...prev, { msg, type, time: new Date().toLocaleTimeString('ar-AE') }])
   }
-}
-
-export default function Import({ user }) {
-  const [step, setStep] = useState('upload') // upload | preview | importing | done
-  const [rows, setRows] = useState([])
-  const [errors, setErrors] = useState([])
-  const [importing, setImporting] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [imported, setImported] = useState(0)
-  const [skipped, setSkipped] = useState([])
-  const fileRef = useRef()
 
   function handleFile(e) {
-    const file = e.target.files[0]
-    if (!file) return
+    const f = e.target.files?.[0]
+    if (!f) return
     const reader = new FileReader()
-    reader.onload = (ev) => {
+    reader.onload = evt => {
       try {
-        const text = ev.target.result
-        const parsed = parseCSV(text)
-        if (parsed.length === 0) { toast('الملف فارغ أو غير صحيح', 'error'); return }
-        const mapped = parsed.map((row, i) => mapRow(row, i))
-        const errs = []
-        mapped.forEach((r, i) => {
-          if (!r.total || r.total === 0) errs.push(`صف ${i + 2}: السعر الإجمالي فارغ`)
+        const data = JSON.parse(evt.target.result)
+        if (!data.orders || !data.remittances) {
+          setError('الملف غير صحيح — يجب أن يحتوي على orders و remittances')
+          return
+        }
+        setFile(data)
+        setError(null)
+        setLog([])
+        setDone(false)
+        setStepStatus({})
+        setPreview({
+          products:    data.products?.reduce((s, p) => s + (p.sizes?.length || 1), 0) || 0,
+          inventory:   data.inventory?.length   || 0,
+          orders:      data.orders?.length      || 0,
+          remittances: data.remittances?.length || 0,
+          revenue:     data.summary?.total_revenue      || data.orders.reduce((s,o) => s+(o.total||0), 0),
+          profit:      data.summary?.total_gross_profit || data.orders.reduce((s,o) => s+(o.gross_profit||0), 0),
+          bank:        data.summary?.total_bank_received|| data.remittances.reduce((s,r) => s+(r.bank_received||0), 0),
+          delivered:   data.orders.filter(o => o.status === 'delivered').length,
+          replacements:data.orders.filter(o => o.is_replacement).length,
+          not_delivered:data.orders.filter(o => o.status === 'not_delivered').length,
         })
-        setRows(mapped)
-        setErrors(errs)
-        setStep('preview')
-      } catch (err) {
-        toast('خطأ في قراءة الملف: ' + err.message, 'error')
+      } catch {
+        setError('تعذّر قراءة الملف — تأكد أنه JSON صحيح')
       }
     }
-    reader.readAsText(file, 'UTF-8')
+    reader.readAsText(f)
   }
 
-  function removeRow(index) {
-    setRows(prev => prev.filter(r => r._index !== index))
-  }
-
-  async function handleImport() {
+  async function runImport() {
+    if (!file) return
     setImporting(true)
-    setStep('importing')
-    setProgress(0)
-    const failed = []
-    let count = 0
+    setLog([])
+    setDone(false)
+    setError(null)
+    setStepStatus({})
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      try {
-        const order_number = await generateOrderNumber()
-        // Parse date if available
-        let created_at = new Date().toISOString()
-        if (row.order_date) {
-          const parsed = new Date(row.order_date)
-          if (!isNaN(parsed)) created_at = parsed.toISOString()
+    try {
+      // ── STEP 1: Products ──────────────────────────────────
+      setStepStatus(p => ({ ...p, products: 'running' }))
+      addLog('جاري حفظ قائمة المنتجات في الإعدادات...')
+      if (file.products?.length > 0) {
+        await Settings.set('products', file.products)
+        addLog(`✓ تم حفظ ${file.products.length} مجموعة (${file.products.reduce((s,p)=>s+(p.sizes?.length||1),0)} حجم)`, 'success')
+      } else {
+        addLog('⚠ لا يوجد منتجات في الملف — تم التخطي', 'warn')
+      }
+      setStepStatus(p => ({ ...p, products: 'done' }))
+
+      // ── STEP 2: Inventory ─────────────────────────────────
+      setStepStatus(p => ({ ...p, inventory: 'running' }))
+      addLog('جاري استيراد صنوف المخزون...')
+      if (file.inventory?.length > 0) {
+        const existingInv = await DB.list('inventory')
+        const existingSkus = new Set(existingInv.map(i => i.sku))
+        let invInserted = 0, invSkipped = 0
+        for (const item of file.inventory) {
+          if (existingSkus.has(item.sku)) { invSkipped++; continue }
+          const { id, ...payload } = item  // let Supabase generate UUID
+          await DB.insert('inventory', payload)
+          invInserted++
+        }
+        addLog(`✓ مخزون: ${invInserted} صنف جديد • ${invSkipped} موجود مسبقاً`, 'success')
+      } else {
+        addLog('⚠ لا يوجد مخزون في الملف — تم التخطي', 'warn')
+      }
+      setStepStatus(p => ({ ...p, inventory: 'done' }))
+
+      // ── STEP 3: Remittances ───────────────────────────────
+      setStepStatus(p => ({ ...p, remittances: 'running' }))
+      addLog('جاري استيراد التحويلات البنكية...')
+
+      // Check existing remittances to avoid duplicates
+      const existingRemits = await DB.list('hayyak_remittances')
+      const existingDates  = new Set(existingRemits.map(r => r.date))
+
+      let remitInserted = 0, remitSkipped = 0
+      const remitIdMap = {} // import_id → real supabase id
+
+      for (const remit of file.remittances) {
+        const importId = remit.id
+        const payload  = {
+          date:          remit.date,
+          bank_received: remit.bank_received,
+          transfer_fee:  remit.transfer_fee || 0,
+          total_cod:     remit.total_cod    || 0,
+          hayyak_fees:   remit.hayyak_fees  || 0,
+          notes:         remit.notes        || '',
+          created_at:    remit.created_at   || new Date().toISOString(),
         }
 
-        await DB.insert('orders', {
-          order_number,
-          customer_name: row.customer_name,
-          customer_phone: row.customer_phone,
-          customer_city: row.customer_city,
-          delivery_zone: row.delivery_zone,
-          delivery_cost: row.delivery_cost,
-          tracking_number: row.tracking_number,
-          courier: row.courier,
-          status: row.status,
-          source: row.source,
-          notes: row.notes,
-          total: row.total,
-          subtotal: row.subtotal,
-          profit: row.profit,
-          cost: row.cost,
-          items: row.items,
-          internal_notes: row.internal_notes,
-          discount_amount: 0,
-          discount_code: '',
-          photos: [],
-          custom_fields: {},
-          created_at,
-          updated_at: new Date().toISOString(),
-          created_by: user?.id || null,
-        })
-        count++
-      } catch (err) {
-        failed.push({ row: i + 1, error: err.message })
-      }
-      setProgress(Math.round(((i + 1) / rows.length) * 100))
-    }
+        // Simple duplicate check: same date + same bank_received
+        const isDupe = existingRemits.some(e => e.date === remit.date && e.bank_received === remit.bank_received)
+        if (isDupe) {
+          // Use existing id for order linking
+          const existing = existingRemits.find(e => e.date === remit.date && e.bank_received === remit.bank_received)
+          remitIdMap[importId] = existing.id
+          remitSkipped++
+          continue
+        }
 
-    setImported(count)
-    setSkipped(failed)
-    setStep('done')
-    setImporting(false)
+        const saved = await DB.insert('hayyak_remittances', payload)
+        remitIdMap[importId] = saved.id
+        remitInserted++
+      }
+
+      addLog(`✓ تحويلات: ${remitInserted} جديدة • ${remitSkipped} موجودة مسبقاً`, 'success')
+      setStepStatus(p => ({ ...p, remittances: 'done' }))
+
+      // ── STEP 4: Orders ────────────────────────────────────
+      setStepStatus(p => ({ ...p, orders: 'running' }))
+      addLog('جاري استيراد الطلبات...')
+
+      // Get existing order numbers to skip duplicates
+      const existingOrders = await DB.list('orders')
+      const existingNums   = new Set(existingOrders.map(o => o.order_number))
+
+      let ordInserted = 0, ordSkipped = 0, ordErrors = 0
+
+      // Insert in batches of 20
+      const BATCH = 20
+      const toInsert = []
+
+      for (const order of file.orders) {
+        if (existingNums.has(order.order_number)) {
+          ordSkipped++
+          continue
+        }
+
+        // Resolve remittance_id from import id to real supabase id
+        const real_remit_id = order.hayyak_remittance_id
+          ? (remitIdMap[order.hayyak_remittance_id] || null)
+          : null
+
+        toInsert.push({
+          order_number:         order.order_number,
+          customer_name:        order.customer_name        || '',
+          customer_phone:       order.customer_phone       || '',
+          customer_city:        order.customer_city        || '',
+          customer_address:     order.customer_address     || '',
+          status:               order.status,
+          is_replacement:       order.is_replacement       || false,
+          replacement_for_id:   order.replacement_for_id   || null,
+          items:                order.items                || [],
+          subtotal:             order.subtotal             || 0,
+          discount:             order.discount             || 0,
+          total:                order.total                || 0,
+          product_cost:         order.product_cost         || 0,
+          hayyak_fee:           order.hayyak_fee           || 25,
+          gross_profit:         order.gross_profit         || 0,
+          hayyak_remittance_id: real_remit_id,
+          order_date:           order.order_date           || null,
+          delivery_date:        order.delivery_date        || null,
+          source:               order.source               || 'تيك توك',
+          notes:                order.notes                || '',
+          internal_notes:       order.internal_notes       || [],
+          created_at:           order.created_at,
+          updated_at:           order.updated_at,
+        })
+      }
+
+      // Batch insert
+      for (let i = 0; i < toInsert.length; i += BATCH) {
+        const batch = toInsert.slice(i, i + BATCH)
+        const { error } = await supabase.from('orders').insert(batch)
+        if (error) {
+          addLog(`⚠ خطأ في الدفعة ${Math.floor(i/BATCH)+1}: ${error.message}`, 'error')
+          ordErrors += batch.length
+        } else {
+          ordInserted += batch.length
+          addLog(`  ↳ دفعة ${Math.floor(i/BATCH)+1}: ${batch.length} طلب ✓`)
+        }
+      }
+
+      const summary = `✓ طلبات: ${ordInserted} مستورد • ${ordSkipped} موجود مسبقاً${ordErrors > 0 ? ` • ${ordErrors} خطأ` : ''}`
+      addLog(summary, ordErrors > 0 ? 'warn' : 'success')
+      setStepStatus(p => ({ ...p, orders: 'done' }))
+
+      // ── DONE ─────────────────────────────────────────────
+      addLog('═══════════════════════════════════════', 'info')
+      addLog(`الاستيراد اكتمل بنجاح 🎉`, 'success')
+      addLog(`${ordInserted} طلب • ${remitInserted} تحويل • ${file.products?.length||0} مجموعة منتجات • ${file.inventory?.length||0} صنف مخزون`, 'success')
+      setDone(true)
+      toast(`تم الاستيراد — ${ordInserted} طلب ✓`)
+
+    } catch (err) {
+      setError('فشل الاستيراد: ' + err.message)
+      addLog('✗ ' + err.message, 'error')
+      setStepStatus(p => {
+        const updated = { ...p }
+        Object.keys(updated).forEach(k => { if (updated[k] === 'running') updated[k] = 'error' })
+        return updated
+      })
+    } finally {
+      setImporting(false)
+    }
   }
 
-  // ── STEP: UPLOAD ──────────────────────────────────────────
-  if (step === 'upload') return (
-    <div className="page">
-      <PageHeader title="استيراد الطلبات القديمة" subtitle="من Google Sheets / Excel" />
-
-      <Card style={{ maxWidth: 560 }}>
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>التعليمات</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: 'var(--text-sec)' }}>
-            <div>١. افتح ملف Google Sheets الخاص بك</div>
-            <div>٢. اذهب إلى <b style={{ color: 'var(--text)' }}>File → Download → CSV</b></div>
-            <div>٣. ارفع الملف هنا</div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 20, padding: 14, background: 'var(--bg-surface)', borderRadius: 'var(--r-md)', fontSize: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--text-sec)' }}>الأعمدة المدعومة تلقائياً:</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {Object.keys(COL_MAP).map(col => (
-              <code key={col} style={{ padding: '3px 8px', background: 'var(--bg-surface)', border: 'none', borderRadius: 4, color: 'var(--teal)', fontSize: 11 }}>{col}</code>
-            ))}
-          </div>
-        </div>
-
-        <div
-          onClick={() => fileRef.current?.click()}
-          style={{
-            border: '2px dashed var(--border)',
-            borderRadius: 'var(--r-lg)',
-            padding: '40px 20px',
-            textAlign: 'center',
-            cursor: 'pointer',
-            transition: 'all var(--transition)',
-          }}
-          className="ghost-btn"
-        >
-          <IcUpload size={32} color="var(--teal)" />
-          <div style={{ marginTop: 12, fontWeight: 700, fontSize: 15 }}>اضغط لرفع ملف CSV</div>
-          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>يدعم ملفات .csv فقط</div>
-        </div>
-        <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} style={{ display: 'none' }} />
-      </Card>
-    </div>
-  )
-
-  // ── STEP: PREVIEW ─────────────────────────────────────────
-  if (step === 'preview') return (
+  return (
     <div className="page">
       <PageHeader
-        title="معاينة الطلبات"
-        subtitle={`${rows.length} طلب جاهز للاستيراد`}
-        actions={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Btn variant="ghost" onClick={() => { setStep('upload'); setRows([]); setErrors([]) }}>رجوع</Btn>
-            <Btn onClick={handleImport} style={{ gap: 6 }}>
-              <IcUpload size={15} /> استيراد {rows.length} طلب
-            </Btn>
-          </div>
-        }
+        title="استيراد البيانات"
+        subtitle="استيراد المنتجات والطلبات والتحويلات التاريخية"
       />
 
-      {errors.length > 0 && (
-        <Card style={{ marginBottom: 16, borderColor: 'rgba(245,158,11,0.4)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <IcAlert size={16} color="var(--amber)" />
-            <span style={{ fontWeight: 700, color: 'var(--amber)', fontSize: 14 }}>تحذيرات ({errors.length})</span>
-          </div>
-          {errors.map((e, i) => <div key={i} style={{ fontSize: 12, color: 'var(--text-sec)', padding: '3px 0' }}>• {e}</div>)}
-        </Card>
-      )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Table header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 120px 100px 100px 100px 36px', gap: 12, padding: '8px 14px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>
-          <span>#</span>
-          <span>العميل / الهاتف</span>
-          <span>المدينة</span>
-          <span>رقم التتبع</span>
-          <span>الإجمالي</span>
-          <span>صافي الربح</span>
-          <span></span>
+      {/* Warning banner */}
+      <div style={{ padding:'12px 16px', marginBottom:16, background:'rgba(245,158,11,0.08)', border:'1.5px solid rgba(245,158,11,0.25)', borderRadius:'var(--r-md)', display:'flex', gap:10, alignItems:'flex-start' }}>
+        <IcAlert size={18} style={{ color:'#f59e0b', flexShrink:0, marginTop:1 }}/>
+        <div style={{ fontSize:12, color:'var(--text-sec)', lineHeight:1.6 }}>
+          <b style={{ color:'#f59e0b' }}>قبل الاستيراد:</b> تأكد أن الجداول فارغة (orders, hayyak_remittances).
+          الأداة تتحقق تلقائياً من الطلبات الموجودة وتتخطاها — لكن الأفضل البدء بقاعدة بيانات نظيفة.
         </div>
+      </div>
 
-        {rows.map((row, i) => (
-          <div key={row._index} style={{
-            display: 'grid',
-            gridTemplateColumns: '40px 1fr 120px 100px 100px 100px 36px',
-            gap: 12,
-            padding: '12px 14px',
-            background: 'var(--bg-surface)',
-            border: 'none',
-            borderRadius: 'var(--r-md)',
-            alignItems: 'center',
-            fontSize: 13,
-          }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{i + 1}</span>
+      {/* File upload */}
+      <div
+        onClick={() => !file && inputRef.current?.click()}
+        style={{
+          padding:'24px', marginBottom:16,
+          background:'var(--bg-surface)', borderRadius:'var(--r-md)',
+          border:`2px dashed ${file ? 'var(--action)' : 'var(--border)'}`,
+          textAlign:'center', cursor: file ? 'default' : 'pointer',
+          transition:'border-color 150ms', boxShadow:'var(--card-shadow)',
+        }}
+      >
+        <input ref={inputRef} type="file" accept=".json" onChange={handleFile} style={{ display:'none' }}/>
+        {file ? (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
+            <span style={{ fontSize:22 }}>✅</span>
             <div>
-              <div style={{ fontWeight: 600 }}>{row.customer_name}</div>
-              {row.customer_phone && <div style={{ fontSize: 11, color: 'var(--text-muted)', direction: 'ltr', textAlign: 'right' }}>{row.customer_phone}</div>}
+              <div style={{ fontWeight:800, color:'var(--action)', fontSize:14 }}>mawj_import.json محمّل</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+                {preview?.orders} طلب • {preview?.remittances} تحويل • {preview?.inventory} صنف مخزون
+              </div>
             </div>
-            <span style={{ color: 'var(--text-sec)' }}>{row.customer_city || '—'}</span>
-            <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.tracking_number || '—'}</span>
-            <span style={{ fontWeight: 700, color: 'var(--teal)' }}>{formatCurrency(row.total)}</span>
-            <span style={{ fontWeight: 600, color: row.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>{formatCurrency(row.profit)}</span>
-            <button onClick={() => removeRow(row._index)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', padding: 4 }}>
-              <IcDelete size={14} />
+            <button onClick={e => { e.stopPropagation(); setFile(null); setPreview(null); setLog([]); setDone(false) }}
+              style={{ marginRight:'auto', background:'none', border:'none', cursor:'pointer', color:'var(--danger)', padding:'4px 8px' }}>
+              <IcDelete size={16}/>
             </button>
           </div>
-        ))}
+        ) : (
+          <>
+            <div style={{ fontSize:28, marginBottom:8 }}>📂</div>
+            <div style={{ fontWeight:700, fontSize:14, color:'var(--text)', marginBottom:4 }}>انقر لتحميل ملف الاستيراد</div>
+            <div style={{ fontSize:11, color:'var(--text-muted)' }}>mawj_import.json</div>
+          </>
+        )}
       </div>
 
-      <div style={{ marginTop: 16, padding: '14px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--r-md)', display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13 }}>
-        <span>عدد الطلبات: <b style={{ color: 'var(--teal)' }}>{rows.length}</b></span>
-        <span>إجمالي المبيعات: <b style={{ color: 'var(--teal)' }}>{formatCurrency(rows.reduce((s, r) => s + r.total, 0))}</b></span>
-        <span>إجمالي الأرباح: <b style={{ color: 'var(--green)' }}>{formatCurrency(rows.reduce((s, r) => s + r.profit, 0))}</b></span>
-        <Badge color="var(--green)">الحالة: تم التسليم</Badge>
-        <Badge color="var(--violet)">Hayyak</Badge>
-      </div>
-    </div>
-  )
-
-  // ── STEP: IMPORTING ───────────────────────────────────────
-  if (step === 'importing') return (
-    <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <Card style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
-        <Spinner size={40} />
-        <div style={{ fontWeight: 700, fontSize: 18, margin: '16px 0 8px' }}>جاري الاستيراد...</div>
-        <div style={{ fontSize: 13, color: 'var(--text-sec)', marginBottom: 20 }}>{progress}% مكتمل</div>
-        <div style={{ height: 8, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg, var(--teal), var(--violet))', borderRadius: 99, transition: 'width 0.3s ease' }} />
+      {error && (
+        <div style={{ padding:'12px 16px', marginBottom:16, background:'rgba(239,68,68,0.08)', border:'1.5px solid rgba(239,68,68,0.25)', borderRadius:'var(--r-md)', fontSize:13, color:'var(--danger)' }}>
+          {error}
         </div>
-        <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>لا تغلق الصفحة</div>
-      </Card>
-    </div>
-  )
+      )}
 
-  // ── STEP: DONE ────────────────────────────────────────────
-  if (step === 'done') return (
-    <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <Card style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 52, marginBottom: 16 }}></div>
-        <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 8 }}>تم الاستيراد بنجاح!</div>
-        <div style={{ fontSize: 14, color: 'var(--text-sec)', marginBottom: 24 }}>
-          تم استيراد <b style={{ color: 'var(--teal)' }}>{imported}</b> طلب بنجاح
-          {skipped.length > 0 && <span style={{ color: 'var(--red)' }}> • {skipped.length} طلب فشل</span>}
-        </div>
-
-        {skipped.length > 0 && (
-          <div style={{ marginBottom: 20, padding: 14, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 'var(--r-md)', textAlign: 'right' }}>
-            <div style={{ fontWeight: 600, color: 'var(--red)', marginBottom: 8, fontSize: 13 }}>الطلبات التي فشلت:</div>
-            {skipped.map((s, i) => (
-              <div key={i} style={{ fontSize: 12, color: 'var(--text-sec)', padding: '2px 0' }}>صف {s.row}: {s.error}</div>
+      {/* Preview */}
+      {preview && !done && (
+        <>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))', gap:8, marginBottom:16 }}>
+            {[
+              { label:'أحجام المنتجات',  value: preview.products,              color:'var(--info-light)' },
+              { label:'صنوف المخزون',     value: preview.inventory,             color:'var(--info-light)' },
+              { label:'طلبات',            value: preview.orders,                color:'var(--action)' },
+              { label:'تحويلات',          value: preview.remittances,           color:'#10b981' },
+              { label:'مسلّم',            value: preview.delivered,             color:'var(--action)' },
+              { label:'استبدال',          value: preview.replacements,          color:'#f59e0b' },
+              { label:'لم يتم',           value: preview.not_delivered,         color:'var(--danger)' },
+              { label:'الإيرادات',        value: formatCurrency(preview.revenue), color:'var(--action)', small:true },
+              { label:'الربح',            value: formatCurrency(preview.profit),  color:'#10b981',       small:true },
+              { label:'نقد بنكي',         value: formatCurrency(preview.bank),    color:'var(--info-light)', small:true },
+            ].map(s => (
+              <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
+                <div style={{ fontSize: s.small ? 11 : 18, fontWeight:800, color:s.color, fontFamily:'Inter,sans-serif', lineHeight:1.2 }}>{s.value}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:3 }}>{s.label}</div>
+              </div>
             ))}
           </div>
-        )}
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <Btn variant="secondary" onClick={() => { setStep('upload'); setRows([]); setErrors([]) }}>استيراد ملف آخر</Btn>
-          <Btn onClick={() => window.location.reload()}>
-            <IcCheck size={15} /> الذهاب للطلبات
+          {/* Steps preview */}
+          <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'14px 16px', marginBottom:16, boxShadow:'var(--card-shadow)' }}>
+            <div style={{ fontWeight:700, fontSize:13, marginBottom:12 }}>خطوات الاستيراد</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {STEPS.map((step, i) => {
+                const status = stepStatus[step.id]
+                return (
+                  <div key={step.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:'var(--r-sm)' }}>
+                    <div style={{
+                      width:28, height:28, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:12,
+                      background: status === 'done' ? 'var(--action)' : status === 'running' ? 'rgba(0,228,184,0.15)' : status === 'error' ? 'var(--danger)' : 'var(--bg-surface)',
+                      border: status ? 'none' : '1.5px solid var(--border)',
+                      color: status === 'done' ? '#050c1a' : 'var(--text)',
+                      animation: status === 'running' ? 'pulse 1s infinite' : 'none',
+                    }}>
+                      {status === 'done' ? '✓' : status === 'error' ? '✗' : step.icon}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:600 }}>{step.label}</div>
+                    </div>
+                    <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>
+                      {preview[step.count_key]}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <Btn
+            onClick={runImport}
+            loading={importing}
+            style={{ width:'100%', padding:'14px', fontSize:15, fontWeight:800, marginBottom:16 }}
+          >
+            <IcPlus size={18}/> ابدأ الاستيراد — {preview.orders} طلب + {preview.remittances} تحويل + {preview.inventory} صنف
           </Btn>
+        </>
+      )}
+
+      {/* Live log */}
+      {log.length > 0 && (
+        <div style={{ background:'#0a0818', borderRadius:'var(--r-md)', padding:'14px 16px', fontFamily:'monospace', fontSize:12, maxHeight:320, overflowY:'auto', boxShadow:'var(--card-shadow)' }}>
+          {log.map((l, i) => (
+            <div key={i} style={{
+              color: l.type === 'success' ? '#00e4b8' : l.type === 'error' ? '#ef4444' : l.type === 'warn' ? '#f59e0b' : '#a78bfa',
+              marginBottom:3, display:'flex', gap:10,
+            }}>
+              <span style={{ opacity:0.4, flexShrink:0 }}>{l.time}</span>
+              <span>{l.msg}</span>
+            </div>
+          ))}
         </div>
-      </Card>
+      )}
+
+      {/* Done state */}
+      {done && (
+        <div style={{ marginTop:16, padding:'24px', background:'rgba(0,228,184,0.06)', border:'2px solid rgba(0,228,184,0.25)', borderRadius:'var(--r-md)', textAlign:'center' }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
+          <div style={{ fontWeight:900, fontSize:18, color:'var(--action)', marginBottom:8 }}>اكتمل الاستيراد!</div>
+          <div style={{ fontSize:13, color:'var(--text-sec)', marginBottom:20 }}>
+            البيانات التاريخية موجودة الآن في النظام — الطلبات والتحويلات والمنتجات كلها جاهزة.
+          </div>
+          <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
+            <Btn onClick={() => window.location.reload()} style={{ background:'var(--action)', color:'#050c1a' }}>
+              <IcCheck size={15}/> الذهاب للوحة التحكم
+            </Btn>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </div>
   )
-
-  return null
 }
