@@ -1,129 +1,125 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
-import { Btn, Card, StatCard, Badge, Modal, Input, Select, Textarea, Spinner, Empty, PageHeader, ConfirmModal, toast } from '../components/ui'
-import { IcPlus, IcEdit, IcDelete, IcSearch, IcWhatsapp } from '../components/Icons'
+import { Btn, Badge, Modal, Input, Textarea, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
+import { IcPlus, IcEdit, IcDelete, IcSearch, IcCheck, IcAlert, IcWhatsapp } from '../components/Icons'
 
-/* ══════════════════════════════════════════════════
-   HAYYAK PAGE
-   Tracks every detail with the Hayyak courier:
-   • Shipments (linked to orders) + COD collected
-   • Settlements (bank transfers from Hayyak)
-   • Returns & lost shipments
-   • Reconciliation — what they still owe us
-══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   HAYYAK PAGE v8.5
+   Source of truth: orders table + hayyak_remittances table
 
-const SHIP_STATUSES = [
-  { id: 'pending',   label: 'في الطريق',   color: '#a78bfa' },
-  { id: 'delivered', label: 'تم التسليم',  color: '#00e4b8' },
-  { id: 'returned',  label: 'مرتجع',       color: '#f59e0b' },
-  { id: 'lost',      label: 'مفقود',       color: '#ef4444' },
-]
+   DATA FLOW:
+   ┌─────────────────────────────────────────────────────┐
+   │  orders (status='delivered', remittance_id = null)  │
+   │                 = PENDING COD                       │
+   │                                                     │
+   │  hayyak_remittances                                 │
+   │    ← bank_received + transfer_fee per batch         │
+   │    → orders.hayyak_remittance_id set                │
+   └─────────────────────────────────────────────────────┘
+
+   ACCOUNTING reads:
+   • hayyak_remittances → cash actually received from Hayyak
+   • orders.hayyak_fee  → total delivery cost absorbed by Mawj
+   • transfer_fee       → auto-recorded as operating expense
+═══════════════════════════════════════════════════════════ */
 
 const TABS = [
-  { id: 'overview',    label: 'نظرة عامة' },
-  { id: 'shipments',   label: 'الشحنات' },
-  { id: 'settlements', label: 'التسويات' },
-  { id: 'returns',     label: 'المرتجعات' },
+  { id: 'overview',     label: 'نظرة عامة' },
+  { id: 'pending',      label: 'COD المعلق' },
+  { id: 'remittances',  label: 'التحويلات' },
 ]
 
 export default function Hayyak() {
-  const [tab, setTab]               = useState('overview')
-  const [orders, setOrders]         = useState([])
-  const [shipments, setShipments]   = useState([])
-  const [settlements, setSettlements] = useState([])
-  const [loading, setLoading]       = useState(true)
-
-  // Modals
-  const [showShipForm, setShowShipForm]   = useState(false)
-  const [showSettForm, setShowSettForm]   = useState(false)
-  const [editShip, setEditShip]           = useState(null)
-  const [editSett, setEditSett]           = useState(null)
-  const [deleteShip, setDeleteShip]       = useState(null)
-  const [deleteSett, setDeleteSett]       = useState(null)
-  const [deleting, setDeleting]           = useState(false)
-  const [search, setSearch]               = useState('')
-  const [filterStatus, setFilterStatus]   = useState('all')
+  const [orders,       setOrders]       = useState([])
+  const [remittances,  setRemittances]  = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [tab,          setTab]          = useState('overview')
+  const [search,       setSearch]       = useState('')
+  const [showForm,     setShowForm]     = useState(false)
+  const [editRemit,    setEditRemit]    = useState(null)
+  const [deleteId,     setDeleteId]     = useState(null)
+  const [deleting,     setDeleting]     = useState(false)
 
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
     try {
-      const [ords, ships, setts] = await Promise.all([
+      const [ords, remits] = await Promise.all([
         DB.list('orders', { orderBy: 'created_at' }),
-        DB.list('hayyak_shipments', { orderBy: 'created_at' }),
-        DB.list('hayyak_settlements', { orderBy: 'date' }),
+        DB.list('hayyak_remittances', { orderBy: 'date' }),
       ])
       setOrders(ords)
-      setShipments(ships)
-      setSettlements(setts)
+      setRemittances(remits.reverse())
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
 
-  // ── Stats ─────────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────
   const stats = useMemo(() => {
-    const delivered  = shipments.filter(s => s.status === 'delivered')
-    const returned   = shipments.filter(s => s.status === 'returned')
-    const lost       = shipments.filter(s => s.status === 'lost')
-    const pending    = shipments.filter(s => s.status === 'pending')
+    const delivered     = orders.filter(o => o.status === 'delivered')
+    const pendingOrders = delivered.filter(o => !o.hayyak_remittance_id)
+    const settledOrders = delivered.filter(o =>  o.hayyak_remittance_id)
 
-    const totalCOD       = delivered.reduce((s, sh) => s + (sh.cod_amount || 0), 0)
-    const totalSettled   = settlements.reduce((s, st) => s + (st.amount || 0), 0)
-    const pendingCOD     = totalCOD - totalSettled
-    const totalShipping  = shipments.reduce((s, sh) => s + (sh.shipping_cost || 0), 0)
-    const lostAmount     = lost.reduce((s, sh) => s + (sh.cod_amount || 0), 0)
-    const returnedLoss   = returned.reduce((s, sh) => s + (sh.shipping_cost || 0), 0)
+    const totalCOD        = delivered.reduce(    (s, o) => s + (o.total       || 0), 0)
+    const pendingCOD      = pendingOrders.reduce((s, o) => s + (o.total       || 0), 0)
+    const totalHayyakFees = orders.filter(o => ['delivered','not_delivered'].includes(o.status))
+                                  .reduce((s, o) => s + (o.hayyak_fee || 25), 0)
+    const bankReceived    = remittances.reduce(  (s, r) => s + (r.bank_received || 0), 0)
+    const transferFees    = remittances.reduce(  (s, r) => s + (r.transfer_fee  || 0), 0)
+    const notDelivered    = orders.filter(o => o.status === 'not_delivered')
+    const totalLoss       = notDelivered.reduce((s, o) => s + Math.abs(o.gross_profit || 0), 0)
 
     return {
-      total: shipments.length, delivered: delivered.length,
-      returned: returned.length, lost: lost.length, pending: pending.length,
-      totalCOD, totalSettled, pendingCOD, totalShipping,
-      lostAmount, returnedLoss,
-      deliveryRate: shipments.length ? Math.round((delivered.length / shipments.length) * 100) : 0,
+      deliveredCount:  delivered.length,
+      pendingCount:    pendingOrders.length,
+      settledCount:    settledOrders.length,
+      totalCOD,
+      pendingCOD,
+      bankReceived,
+      transferFees,
+      totalHayyakFees,
+      totalLoss,
+      notDeliveredCount: notDelivered.length,
+      pendingOrders,
+      settledOrders,
+      deliveryRate: orders.length
+        ? Math.round((delivered.length / orders.filter(o => o.status !== 'cancelled').length) * 100)
+        : 0,
     }
-  }, [shipments, settlements])
+  }, [orders, remittances])
 
-  // ── Delete handlers ───────────────────────────────────────
-  async function handleDeleteShip() {
+  async function handleDeleteRemittance() {
+    if (!deleteId) return
     setDeleting(true)
     try {
-      await DB.delete('hayyak_shipments', deleteShip)
-      setShipments(p => p.filter(s => s.id !== deleteShip))
-      setDeleteShip(null); toast('تم الحذف')
+      // Unlink all orders attached to this remittance
+      const linked = orders.filter(o => o.hayyak_remittance_id === deleteId)
+      await Promise.all(linked.map(o => DB.update('orders', o.id, { hayyak_remittance_id: null })))
+      await DB.delete('hayyak_remittances', deleteId)
+      setOrders(prev => prev.map(o => o.hayyak_remittance_id === deleteId ? { ...o, hayyak_remittance_id: null } : o))
+      setRemittances(prev => prev.filter(r => r.id !== deleteId))
+      setDeleteId(null)
+      toast('تم حذف التحويل وإلغاء ربط الطلبات')
     } catch { toast('فشل الحذف', 'error') }
     finally { setDeleting(false) }
   }
 
-  async function handleDeleteSett() {
-    setDeleting(true)
-    try {
-      await DB.delete('hayyak_settlements', deleteSett)
-      setSettlements(p => p.filter(s => s.id !== deleteSett))
-      setDeleteSett(null); toast('تم الحذف')
-    } catch { toast('فشل الحذف', 'error') }
-    finally { setDeleting(false) }
-  }
-
-  // ── Filtered shipments ────────────────────────────────────
-  const filteredShips = shipments.filter(s => {
-    const order = orders.find(o => o.id === s.order_id)
-    const matchSearch = !search ||
-      s.tracking_number?.includes(search) ||
-      order?.customer_name?.includes(search) ||
-      order?.customer_phone?.includes(search) ||
-      order?.order_number?.includes(search)
-    const matchStatus = filterStatus === 'all' || s.status === filterStatus
-    return matchSearch && matchStatus
+  const filteredPending = stats.pendingOrders.filter(o => {
+    const q = search.toLowerCase()
+    return !q
+      || (o.customer_name  || '').includes(q)
+      || (o.order_number   || '').toLowerCase().includes(q)
+      || (o.customer_phone || '').includes(q)
   })
 
-  const filteredReturns = shipments.filter(s =>
-    s.status === 'returned' || s.status === 'lost'
-  )
-
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh' }}>
-      <Spinner size={36}/>
+    <div className="page">
+      <PageHeader title="حياك للشحن" subtitle="جاري التحميل..." />
+      <SkeletonStats count={4} />
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:16 }}>
+        {[1,2,3].map(i => <SkeletonCard key={i} rows={2}/>)}
+      </div>
     </div>
   )
 
@@ -131,466 +127,579 @@ export default function Hayyak() {
     <div className="page">
       <PageHeader
         title="حياك للشحن"
-        subtitle={`${shipments.length} شحنة • ${formatCurrency(stats.pendingCOD)} غير مسوّى`}
+        subtitle={`${stats.pendingCount} طلب معلق • ${formatCurrency(stats.pendingCOD)} COD`}
         actions={
-          <div style={{ display:'flex', gap:8 }}>
-            <Btn variant="secondary" onClick={() => { setEditSett(null); setShowSettForm(true) }}>
-              تسوية جديدة
-            </Btn>
-            <Btn onClick={() => { setEditShip(null); setShowShipForm(true) }}>
-              <IcPlus size={15}/> شحنة جديدة
-            </Btn>
-          </div>
+          <Btn onClick={() => { setEditRemit(null); setShowForm(true) }} style={{ gap:6 }}>
+            <IcPlus size={16}/> تحويل جديد
+          </Btn>
         }
       />
 
-      {/* ── Tabs ── */}
-      <div style={{ display:'flex', gap:4, marginBottom:20, background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', padding:4 }}>
+      {/* Pending COD alert — always visible if there's money waiting */}
+      {stats.pendingCOD > 0 && (
+        <div style={{
+          marginBottom:16, padding:'14px 16px',
+          background:'rgba(245,158,11,0.08)',
+          border:'1.5px solid rgba(245,158,11,0.3)',
+          borderRadius:'var(--r-md)',
+          display:'flex', alignItems:'center', gap:12,
+        }}>
+          <IcAlert size={20} style={{ color:'#f59e0b', flexShrink:0 }}/>
+          <div style={{ flex:1 }}>
+            <span style={{ fontWeight:800, color:'#f59e0b', fontSize:15 }}>{formatCurrency(stats.pendingCOD)}</span>
+            <span style={{ color:'var(--text-sec)', fontSize:13, marginRight:8 }}>
+              محصّلة من {stats.pendingCount} طلب — لم تُحوَّل بعد من حياك
+            </span>
+          </div>
+          <Btn size="sm" onClick={() => setTab('pending')} style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', border:'none' }}>
+            عرض الطلبات
+          </Btn>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div style={{ display:'flex', gap:4, marginBottom:20, background:'var(--bg-hover)', borderRadius:'var(--r-md)', padding:4 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'9px 8px', borderRadius:8, border:'none', cursor:'pointer',
-            background: tab===t.id ? 'linear-gradient(135deg,var(--teal),var(--violet))' : 'transparent',
-            color: tab===t.id ? '#050c1a' : 'var(--text-muted)',
-            fontWeight: tab===t.id ? 800 : 500, fontSize:13, fontFamily:'inherit',
-            transition:'all 0.2s ease', whiteSpace:'nowrap',
-          }}>{t.label}</button>
+            background: tab === t.id ? 'linear-gradient(135deg,var(--teal),var(--violet))' : 'transparent',
+            color: tab === t.id ? '#050c1a' : 'var(--text-muted)',
+            fontWeight: tab === t.id ? 800 : 500, fontSize:13,
+            fontFamily:'inherit', transition:'all 0.2s', whiteSpace:'nowrap',
+          }}>
+            {t.label}
+            {t.id === 'pending' && stats.pendingCount > 0 && (
+              <span style={{ marginRight:6, padding:'1px 6px', borderRadius:999, fontSize:10, fontWeight:900, background:'rgba(245,158,11,0.2)', color:'#f59e0b' }}>
+                {stats.pendingCount}
+              </span>
+            )}
+          </button>
         ))}
       </div>
 
-      {/* ══════════ OVERVIEW ══════════ */}
+      {/* ═══════════ OVERVIEW ═══════════ */}
       {tab === 'overview' && (
         <>
           {/* KPI grid */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))', gap:10, marginBottom:20 }}>
-            <StatCard label="إجمالي الشحنات"   value={stats.total}                       color="var(--violet)"/>
-            <StatCard label="تم التسليم"        value={stats.delivered}                   color="var(--teal)"/>
-            <StatCard label="معدل التسليم"      value={`${stats.deliveryRate}%`}          color="var(--teal)"/>
-            <StatCard label="مرتجعات"           value={stats.returned}                    color="var(--amber,#f59e0b)"/>
-            <StatCard label="مفقودة"            value={stats.lost}                        color="var(--red)"/>
-            <StatCard label="في الطريق"         value={stats.pending}                     color="var(--blue)"/>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))', gap:10, marginBottom:20 }}>
+            {[
+              { label:'طلبات مسلّمة',    value: stats.deliveredCount,           color:'var(--action)' },
+              { label:'معدل التسليم',     value: `${stats.deliveryRate}%`,       color: stats.deliveryRate >= 80 ? 'var(--action)' : '#f59e0b' },
+              { label:'لم يتم التسليم',  value: stats.notDeliveredCount,        color:'var(--danger)' },
+              { label:'إجمالي رسوم حياك',value: formatCurrency(stats.totalHayyakFees), color:'var(--danger)', small:true },
+            ].map(s => (
+              <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
+                <div style={{ fontSize: s.small ? 11 : 20, fontWeight:800, color:s.color, fontFamily:'Inter,sans-serif', lineHeight:1.2 }}>{s.value}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:4 }}>{s.label}</div>
+              </div>
+            ))}
           </div>
 
-          {/* COD reconciliation card */}
-          <Card glow style={{ marginBottom:16, padding:'20px' }}>
-            <div style={{ fontWeight:800, fontSize:16, marginBottom:16, color:'var(--text)' }}>
-              مطابقة COD
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:12 }}>
+          {/* COD Reconciliation */}
+          <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'16px', boxShadow:'var(--card-shadow)', marginBottom:16 }}>
+            <div style={{ fontWeight:800, fontSize:14, marginBottom:16, color:'var(--text)' }}>مطابقة COD</div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
               {[
-                { label:'إجمالي COD المحصّل',   value: formatCurrency(stats.totalCOD),    color:'var(--teal)',              icon:'' },
-                { label:'إجمالي التسويات',      value: formatCurrency(stats.totalSettled), color:'var(--green,#34d399)',     icon:'' },
-                { label:'المبلغ غير المسوّى',   value: formatCurrency(stats.pendingCOD),  color: stats.pendingCOD>0?'var(--amber,#f59e0b)':'var(--green,#34d399)', icon:'⏳' },
-                { label:'خسارة المرتجعات',      value: formatCurrency(stats.returnedLoss), color:'var(--red)',              icon:'↩' },
+                { label:'إجمالي COD المحصّل',  value: formatCurrency(stats.totalCOD),     color:'var(--text)',   bg:'var(--bg-hover)' },
+                { label:'تم استلامه من حياك',  value: formatCurrency(stats.bankReceived),  color:'var(--action)', bg:'rgba(0,228,184,0.06)' },
+                { label:'COD المعلق',           value: formatCurrency(stats.pendingCOD),   color: stats.pendingCOD > 0 ? '#f59e0b' : 'var(--action)', bg: stats.pendingCOD > 0 ? 'rgba(245,158,11,0.08)' : 'rgba(0,228,184,0.06)' },
+                { label:'رسوم تحويل بنكي',      value: formatCurrency(stats.transferFees), color:'var(--danger)', bg:'rgba(239,68,68,0.06)' },
               ].map(s => (
-                <div key={s.label} style={{ padding:'14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:6 }}>{s.icon} {s.label}</div>
-                  <div style={{ fontSize:20, fontWeight:900, color:s.color }}>{s.value}</div>
+                <div key={s.label} style={{ padding:'12px 14px', background:s.bg, borderRadius:'var(--r-md)' }}>
+                  <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:6 }}>{s.label}</div>
+                  <div style={{ fontSize:18, fontWeight:900, color:s.color, fontFamily:'Inter,sans-serif' }}>{s.value}</div>
                 </div>
               ))}
             </div>
-
-            {/* Pending COD warning */}
-            {stats.pendingCOD > 0 && (
-              <div style={{ marginTop:14, padding:'10px 14px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:'var(--r-md)', fontSize:13 }}>
-                ️ <span style={{ fontWeight:700, color:'var(--amber,#f59e0b)' }}>{formatCurrency(stats.pendingCOD)}</span>
-                <span style={{ color:'var(--text-sec)' }}> محصّلة من العملاء ولم تُحوَّل بعد من حياك</span>
-              </div>
-            )}
-          </Card>
-
-          {/* Recent settlements */}
-          <Card>
-            <div style={{ fontWeight:700, fontSize:14, marginBottom:12 }}>آخر التسويات</div>
-            {settlements.length === 0 ? (
-              <Empty title="لا يوجد تسويات بعد"/>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                {[...settlements].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5).map(s => (
-                  <div key={s.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
-                    <span style={{ fontSize:20 }}></span>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:700, fontSize:13 }}>{formatDate(s.date)}</div>
-                      {s.notes && <div style={{ fontSize:11, color:'var(--text-muted)' }}>{s.notes}</div>}
-                    </div>
-                    <div style={{ fontWeight:900, fontSize:16, color:'var(--green,#34d399)' }}>{formatCurrency(s.amount)}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        </>
-      )}
-
-      {/* ══════════ SHIPMENTS ══════════ */}
-      {tab === 'shipments' && (
-        <>
-          {/* Search + filter */}
-          <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
-            <div style={{ position:'relative', flex:1, minWidth:200 }}>
-              <IcSearch size={14} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث برقم التتبع أو اسم العميل..."
-                style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
-            </div>
-            <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-              style={{ padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer' }}>
-              <option value="all">كل الحالات</option>
-              {SHIP_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
           </div>
 
-          {filteredShips.length === 0 ? <Empty title="لا يوجد شحنات"/> : (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {filteredShips.map(ship => {
-                const order  = orders.find(o => o.id === ship.order_id)
-                const status = SHIP_STATUSES.find(s => s.id === ship.status) || SHIP_STATUSES[0]
-                return (
-                  <ShipmentRow
-                    key={ship.id}
-                    ship={ship} order={order} status={status}
-                    onEdit={() => { setEditShip(ship); setShowShipForm(true) }}
-                    onDelete={() => setDeleteShip(ship.id)}
-                  />
-                )
-              })}
+          {/* Recent remittances */}
+          <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'16px', boxShadow:'var(--card-shadow)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+              <div style={{ fontWeight:700, fontSize:14 }}>آخر التحويلات</div>
+              {remittances.length > 0 && (
+                <button onClick={() => setTab('remittances')} style={{ fontSize:12, color:'var(--action)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>
+                  عرض الكل
+                </button>
+              )}
             </div>
-          )}
+            {remittances.length === 0
+              ? <Empty title="لا يوجد تحويلات بعد" action={<Btn size="sm" onClick={() => { setEditRemit(null); setShowForm(true) }}><IcPlus size={13}/> تحويل جديد</Btn>}/>
+              : remittances.slice(0, 5).map(r => (
+                  <RemittanceRow
+                    key={r.id} remit={r}
+                    orderCount={orders.filter(o => o.hayyak_remittance_id === r.id).length}
+                    compact
+                  />
+                ))
+            }
+          </div>
         </>
       )}
 
-      {/* ══════════ SETTLEMENTS ══════════ */}
-      {tab === 'settlements' && (
+      {/* ═══════════ PENDING COD ═══════════ */}
+      {tab === 'pending' && (
         <>
-          {/* Running balance */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:16 }}>
             {[
-              { label:'إجمالي COD', value: formatCurrency(stats.totalCOD),    color:'var(--teal)' },
-              { label:'تم تسويته', value: formatCurrency(stats.totalSettled), color:'var(--green,#34d399)' },
-              { label:'المتبقي',   value: formatCurrency(stats.pendingCOD),  color: stats.pendingCOD>0?'var(--amber,#f59e0b)':'var(--teal)' },
+              { label:'طلبات معلقة',  value: stats.pendingCount,            color:'#f59e0b' },
+              { label:'COD المعلق',   value: formatCurrency(stats.pendingCOD), color:'#f59e0b', small:true },
+              { label:'رسوم حياك',    value: formatCurrency(stats.pendingOrders.reduce((s,o) => s + (o.hayyak_fee || 25), 0)), color:'var(--danger)', small:true },
             ].map(s => (
-              <div key={s.label} style={{ padding:'12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', textAlign:'center' }}>
-                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4 }}>{s.label}</div>
-                <div style={{ fontSize:16, fontWeight:900, color:s.color }}>{s.value}</div>
+              <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
+                <div style={{ fontSize: s.small ? 11 : 20, fontWeight:800, color:s.color, fontFamily:'Inter,sans-serif', lineHeight:1.2 }}>{s.value}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:3 }}>{s.label}</div>
               </div>
             ))}
           </div>
 
-          {settlements.length === 0 ? <Empty title="لا يوجد تسويات بعد" action={<Btn onClick={()=>{setEditSett(null);setShowSettForm(true)}}><IcPlus size={14}/> تسوية جديدة</Btn>}/> : (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {[...settlements].sort((a,b)=>new Date(b.date)-new Date(a.date)).map((sett, i, arr) => {
-                const runningTotal = arr.slice(i).reduce((s,t)=>s+t.amount,0)
-                return (
-                  <SettlementRow
-                    key={sett.id} sett={sett}
-                    onEdit={() => { setEditSett(sett); setShowSettForm(true) }}
-                    onDelete={() => setDeleteSett(sett.id)}
-                  />
-                )
-              })}
-            </div>
-          )}
+          {/* Search */}
+          <div style={{ position:'relative', marginBottom:14 }}>
+            <IcSearch size={14} style={{ position:'absolute', right:11, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="بحث باسم العميل أو رقم الطلب..."
+              style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', boxShadow:'var(--card-shadow)' }}
+            />
+          </div>
+
+          {filteredPending.length === 0
+            ? <Empty title="لا يوجد COD معلق 🎉" subtitle="كل التحويلات مكتملة"/>
+            : (
+              <>
+                {/* Create remittance from selection */}
+                <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(0,228,184,0.05)', border:'1px solid rgba(0,228,184,0.15)', borderRadius:'var(--r-md)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
+                  <span style={{ fontSize:12, color:'var(--text-sec)' }}>
+                    استلمت تحويلاً من حياك؟
+                  </span>
+                  <Btn size="sm" onClick={() => { setEditRemit(null); setShowForm(true) }}>
+                    <IcPlus size={13}/> سجّل تحويلاً جديداً
+                  </Btn>
+                </div>
+
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {filteredPending.map(order => (
+                    <PendingOrderRow key={order.id} order={order}/>
+                  ))}
+                </div>
+              </>
+            )
+          }
         </>
       )}
 
-      {/* ══════════ RETURNS & LOST ══════════ */}
-      {tab === 'returns' && (
+      {/* ═══════════ REMITTANCES ═══════════ */}
+      {tab === 'remittances' && (
         <>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:16 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:16 }}>
             {[
-              { label:'مرتجعات', value: stats.returned, sub: `خسارة شحن: ${formatCurrency(stats.returnedLoss)}`, color:'var(--amber,#f59e0b)', icon:'↩' },
-              { label:'مفقودة', value: stats.lost, sub: `قيمة مفقودة: ${formatCurrency(stats.lostAmount)}`, color:'var(--red)', icon:'' },
+              { label:'عدد التحويلات', value: remittances.length,               color:'var(--text-sec)' },
+              { label:'إجمالي استُلم', value: formatCurrency(stats.bankReceived), color:'var(--action)', small:true },
+              { label:'رسوم تحويل',    value: formatCurrency(stats.transferFees), color:'var(--danger)',  small:true },
             ].map(s => (
-              <div key={s.label} style={{ padding:'14px', background:'var(--bg-hover)', border:`1.5px solid ${s.color}30`, borderRadius:'var(--r-lg)' }}>
-                <div style={{ fontSize:22, marginBottom:6 }}>{s.icon}</div>
-                <div style={{ fontSize:24, fontWeight:900, color:s.color }}>{s.value}</div>
-                <div style={{ fontSize:12, fontWeight:700, color:'var(--text)', marginBottom:2 }}>{s.label}</div>
-                <div style={{ fontSize:11, color:'var(--text-muted)' }}>{s.sub}</div>
+              <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
+                <div style={{ fontSize: s.small ? 11 : 20, fontWeight:800, color:s.color, fontFamily:'Inter,sans-serif', lineHeight:1.2 }}>{s.value}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:3 }}>{s.label}</div>
               </div>
             ))}
           </div>
 
-          {filteredReturns.length === 0 ? <Empty title="لا يوجد مرتجعات أو مفقودات"/> : (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {filteredReturns.map(ship => {
-                const order  = orders.find(o => o.id === ship.order_id)
-                const status = SHIP_STATUSES.find(s => s.id === ship.status) || SHIP_STATUSES[0]
-                return (
-                  <ShipmentRow
-                    key={ship.id} ship={ship} order={order} status={status}
-                    onEdit={() => { setEditShip(ship); setShowShipForm(true) }}
-                    onDelete={() => setDeleteShip(ship.id)}
-                    showReason
+          {remittances.length === 0
+            ? <Empty title="لا يوجد تحويلات بعد" action={<Btn onClick={() => { setEditRemit(null); setShowForm(true) }}><IcPlus size={14}/> تحويل جديد</Btn>}/>
+            : (
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {remittances.map(r => (
+                  <RemittanceRow
+                    key={r.id} remit={r}
+                    orderCount={orders.filter(o => o.hayyak_remittance_id === r.id).length}
+                    onEdit={() => { setEditRemit(r); setShowForm(true) }}
+                    onDelete={() => setDeleteId(r.id)}
                   />
-                )
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            )
+          }
         </>
       )}
 
-      {/* ── Modals ── */}
-      <ShipmentForm
-        open={showShipForm}
-        onClose={() => { setShowShipForm(false); setEditShip(null) }}
-        ship={editShip}
-        orders={orders}
-        onSaved={ship => {
-          if (editShip) setShipments(p => p.map(s => s.id===ship.id ? ship : s))
-          else setShipments(p => [ship, ...p])
-          setShowShipForm(false); setEditShip(null)
-          toast(editShip ? 'تم التحديث' : 'تمت الإضافة ')
+      {/* Remittance form */}
+      <RemittanceForm
+        open={showForm}
+        onClose={() => { setShowForm(false); setEditRemit(null) }}
+        remit={editRemit}
+        pendingOrders={stats.pendingOrders}
+        onSaved={async (remit, selectedOrderIds) => {
+          if (editRemit) {
+            setRemittances(prev => prev.map(r => r.id === remit.id ? remit : r))
+          } else {
+            setRemittances(prev => [remit, ...prev])
+            // Update local orders state with remittance_id
+            setOrders(prev => prev.map(o =>
+              selectedOrderIds.includes(o.id)
+                ? { ...o, hayyak_remittance_id: remit.id }
+                : o
+            ))
+          }
+          setShowForm(false); setEditRemit(null)
+          toast(editRemit ? 'تم تحديث التحويل ✓' : `تم تسجيل التحويل — ${selectedOrderIds.length} طلب مسوّى ✓`)
         }}
       />
 
-      <SettlementForm
-        open={showSettForm}
-        onClose={() => { setShowSettForm(false); setEditSett(null) }}
-        sett={editSett}
-        onSaved={sett => {
-          if (editSett) setSettlements(p => p.map(s => s.id===sett.id ? sett : s))
-          else setSettlements(p => [sett, ...p])
-          setShowSettForm(false); setEditSett(null)
-          toast(editSett ? 'تم التحديث' : 'تمت إضافة التسوية ')
-        }}
+      <ConfirmModal
+        open={!!deleteId} onClose={() => setDeleteId(null)}
+        onConfirm={handleDeleteRemittance} loading={deleting}
+        message="سيتم حذف التحويل وإلغاء ربطه بالطلبات. لا يمكن التراجع."
       />
-
-      <ConfirmModal open={!!deleteShip} onClose={()=>setDeleteShip(null)} onConfirm={handleDeleteShip} loading={deleting} message="سيتم حذف الشحنة نهائياً."/>
-      <ConfirmModal open={!!deleteSett} onClose={()=>setDeleteSett(null)} onConfirm={handleDeleteSett} loading={deleting} message="سيتم حذف التسوية نهائياً."/>
     </div>
   )
 }
 
-/* ══════════════════════════════════════════════
-   SHIPMENT ROW
-══════════════════════════════════════════════ */
-function ShipmentRow({ ship, order, status, onEdit, onDelete, showReason }) {
+/* ═══════════════════════════════════════════
+   PENDING ORDER ROW
+═══════════════════════════════════════════ */
+function PendingOrderRow({ order }) {
   return (
-    <div className="list-row" style={{
+    <div style={{
       display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
-      background:'var(--bg-hover)', border:`1.5px solid ${status.color}22`,
-      borderRight:`3px solid ${status.color}`,
-      borderRadius:'var(--r-md)', flexWrap:'wrap',
+      background:'var(--bg-surface)', borderRadius:'var(--r-md)',
+      borderRight:'3px solid #f59e0b', boxShadow:'var(--card-shadow)',
+      flexWrap:'wrap',
     }}>
-      {/* Status dot */}
-      <span style={{ width:10, height:10, borderRadius:'50%', background:status.color, flexShrink:0, boxShadow:`0 0 6px ${status.color}` }}/>
-
-      {/* Main info */}
-      <div style={{ flex:1, minWidth:140 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
-          <span style={{ fontWeight:800, fontSize:13, color:'var(--text)', fontFamily:'monospace' }}>{ship.tracking_number || '—'}</span>
-          <span style={{ fontSize:10, padding:'2px 7px', borderRadius:999, background:`${status.color}18`, color:status.color, fontWeight:700 }}>{status.label}</span>
-        </div>
-        <div style={{ fontSize:12, color:'var(--text-muted)' }}>
-          {order ? `${order.customer_name} • ${order.order_number}` : 'غير مرتبط بطلب'}
-          {ship.sent_date && ` • ${formatDate(ship.sent_date)}`}
-        </div>
-        {showReason && ship.return_reason && (
-          <div style={{ fontSize:11, color:'var(--amber,#f59e0b)', marginTop:2 }}>↩ {ship.return_reason}</div>
-        )}
-      </div>
-
-      {/* COD */}
-      <div style={{ textAlign:'center', minWidth:80 }}>
-        <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:2 }}>COD</div>
-        <div style={{ fontWeight:900, fontSize:14, color:'var(--teal)' }}>{formatCurrency(ship.cod_amount||0)}</div>
-      </div>
-
-      {/* Shipping cost */}
-      <div style={{ textAlign:'center', minWidth:70 }}>
-        <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:2 }}>الشحن</div>
-        <div style={{ fontWeight:700, fontSize:13, color:'var(--text-sec)' }}>{formatCurrency(ship.shipping_cost||0)}</div>
-      </div>
-
-      {/* Settlement badge */}
-      <div style={{ flexShrink:0 }}>
-        {ship.settled ? (
-          <span style={{ fontSize:11, padding:'3px 10px', borderRadius:999, background:'rgba(52,211,153,0.12)', color:'var(--green,#34d399)', border:'1px solid rgba(52,211,153,0.25)', fontWeight:700 }}>مسوّى</span>
-        ) : ship.status==='delivered' ? (
-          <span style={{ fontSize:11, padding:'3px 10px', borderRadius:999, background:'rgba(245,158,11,0.1)', color:'var(--amber,#f59e0b)', border:'1px solid rgba(245,158,11,0.25)', fontWeight:700 }}>⏳ معلق</span>
-        ) : null}
-      </div>
-
-      {/* Actions */}
-      <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-        <Btn variant="ghost" size="sm" onClick={onEdit}><IcEdit size={13}/></Btn>
-        <Btn variant="danger" size="sm" onClick={onDelete}><IcDelete size={13}/></Btn>
-      </div>
-    </div>
-  )
-}
-
-/* ══════════════════════════════════════════════
-   SETTLEMENT ROW
-══════════════════════════════════════════════ */
-function SettlementRow({ sett, onEdit, onDelete }) {
-  return (
-    <div className="list-row" style={{
-      display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
-      background:'var(--bg-hover)', border:'none',
-      borderRight:'3px solid var(--green,#34d399)',
-      borderRadius:'var(--r-md)',
-    }}>
-      <span style={{ fontSize:22, flexShrink:0 }}></span>
       <div style={{ flex:1, minWidth:120 }}>
-        <div style={{ fontWeight:800, fontSize:14, color:'var(--text)' }}>{formatDate(sett.date)}</div>
-        {sett.reference && <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace' }}>ref: {sett.reference}</div>}
-        {sett.notes && <div style={{ fontSize:12, color:'var(--text-sec)', marginTop:2 }}>{sett.notes}</div>}
+        <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', marginBottom:2 }}>
+          {order.customer_name || 'عميل'}
+        </div>
+        <div style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr', display:'flex', gap:8 }}>
+          <span>{order.order_number}</span>
+          {order.customer_phone && <span>{order.customer_phone}</span>}
+          {order.delivery_date && <span>• {formatDate(order.delivery_date)}</span>}
+        </div>
       </div>
-      {sett.shipments_count > 0 && (
-        <div style={{ textAlign:'center', padding:'6px 12px', background:'rgba(167,139,250,0.1)', borderRadius:8 }}>
-          <div style={{ fontSize:10, color:'var(--text-muted)' }}>شحنات</div>
-          <div style={{ fontWeight:800, color:'var(--violet)' }}>{sett.shipments_count}</div>
+      <div style={{ textAlign:'center', minWidth:70 }}>
+        <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:2 }}>رسوم حياك</div>
+        <div style={{ fontWeight:700, color:'var(--danger)', fontSize:13, fontFamily:'Inter,sans-serif' }}>
+          {formatCurrency(order.hayyak_fee || 25)}
+        </div>
+      </div>
+      <div style={{ textAlign:'center', minWidth:80 }}>
+        <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:2 }}>COD للاستلام</div>
+        <div style={{ fontWeight:800, color:'#f59e0b', fontSize:15, fontFamily:'Inter,sans-serif' }}>
+          {formatCurrency(order.total || 0)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   REMITTANCE ROW
+═══════════════════════════════════════════ */
+function RemittanceRow({ remit, orderCount, onEdit, onDelete, compact }) {
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
+      background:'var(--bg-surface)', borderRadius:'var(--r-md)',
+      borderRight:'3px solid var(--action)', boxShadow:'var(--card-shadow)',
+      flexWrap:'wrap', marginBottom: compact ? 8 : 0,
+    }}>
+      <div style={{ flex:1, minWidth:120 }}>
+        <div style={{ fontWeight:800, fontSize:13, color:'var(--text)', marginBottom:2 }}>
+          {formatDate(remit.date)}
+        </div>
+        <div style={{ fontSize:11, color:'var(--text-muted)', display:'flex', gap:10, flexWrap:'wrap' }}>
+          {orderCount > 0 && <span>{orderCount} طلب مسوّى</span>}
+          {remit.transfer_fee > 0 && (
+            <span style={{ color:'var(--danger)' }}>رسوم بنكية: {formatCurrency(remit.transfer_fee)}</span>
+          )}
+          {remit.notes && <span>{remit.notes}</span>}
+        </div>
+      </div>
+
+      {remit.total_cod > 0 && (
+        <div style={{ textAlign:'center', minWidth:80 }}>
+          <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:2 }}>COD</div>
+          <div style={{ fontWeight:700, fontSize:13, color:'var(--text-sec)', fontFamily:'Inter,sans-serif' }}>
+            {formatCurrency(remit.total_cod)}
+          </div>
         </div>
       )}
-      <div style={{ fontWeight:900, fontSize:18, color:'var(--green,#34d399)', minWidth:100, textAlign:'left' }}>{formatCurrency(sett.amount)}</div>
-      <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-        <Btn variant="ghost" size="sm" onClick={onEdit}><IcEdit size={13}/></Btn>
-        <Btn variant="danger" size="sm" onClick={onDelete}><IcDelete size={13}/></Btn>
+
+      <div style={{ textAlign:'center', minWidth:90 }}>
+        <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:2 }}>استُلم فعلياً</div>
+        <div style={{ fontWeight:900, fontSize:16, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>
+          {formatCurrency(remit.bank_received)}
+        </div>
       </div>
+
+      {!compact && (
+        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+          <Btn variant="ghost"   size="sm" onClick={onEdit}  ><IcEdit   size={13}/></Btn>
+          <Btn variant="danger"  size="sm" onClick={onDelete}><IcDelete size={13}/></Btn>
+        </div>
+      )}
     </div>
   )
 }
 
-/* ══════════════════════════════════════════════
-   SHIPMENT FORM
-══════════════════════════════════════════════ */
-function ShipmentForm({ open, onClose, ship, orders, onSaved }) {
-  const [form, setForm] = useState({})
-  const [saving, setSaving] = useState(false)
-  function setField(k, v) { setForm(p => ({...p, [k]:v})) }
+/* ═══════════════════════════════════════════
+   REMITTANCE FORM
+   The main workflow:
+   1. Select which pending orders are included
+   2. Enter bank_received amount
+   3. Enter transfer_fee (auto-saved as expense)
+   4. System calculates difference for verification
+═══════════════════════════════════════════ */
+function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
+  const isEdit = !!remit
+  const [form,         setForm]         = useState({})
+  const [selectedIds,  setSelectedIds]  = useState([])
+  const [saving,       setSaving]       = useState(false)
 
   useEffect(() => {
-    if (open) setForm(ship ? {...ship} : {
-      status: 'pending', shipping_cost: 25, settled: false,
-      sent_date: new Date().toISOString().split('T')[0],
-    })
-  }, [open, ship])
-
-  // Auto-fill COD from linked order
-  useEffect(() => {
-    if (form.order_id && !ship) {
-      const order = orders.find(o => o.id === form.order_id)
-      if (order) {
-        setField('cod_amount', order.total || 0)
-        if (!form.tracking_number && order.tracking_number)
-          setField('tracking_number', order.tracking_number)
-      }
+    if (!open) return
+    if (remit) {
+      setForm({
+        date:          remit.date          || new Date().toISOString().split('T')[0],
+        bank_received: remit.bank_received || 0,
+        transfer_fee:  remit.transfer_fee  || 0,
+        notes:         remit.notes         || '',
+      })
+      setSelectedIds([]) // edit mode: just update metadata
+    } else {
+      setForm({
+        date:          new Date().toISOString().split('T')[0],
+        bank_received: '',
+        transfer_fee:  0,
+        notes:         '',
+      })
+      // Auto-select all pending orders
+      setSelectedIds(pendingOrders.map(o => o.id))
     }
-  }, [form.order_id])
+  }, [open, remit, pendingOrders])
+
+  const setField = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  function toggleOrder(id) {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  function selectAll() {
+    setSelectedIds(prev =>
+      prev.length === pendingOrders.length ? [] : pendingOrders.map(o => o.id)
+    )
+  }
+
+  // ── Calculated totals ──────────────────────────────────
+  const selectedOrders = pendingOrders.filter(o => selectedIds.includes(o.id))
+  const totalCOD       = selectedOrders.reduce((s, o) => s + (o.total || 0), 0)
+  const totalHayyakFee = selectedOrders.reduce((s, o) => s + (o.hayyak_fee || 25), 0)
+  const expectedNet    = totalCOD - totalHayyakFee          // what Hayyak should send
+  const bankReceived   = parseFloat(form.bank_received) || 0
+  const transferFee    = parseFloat(form.transfer_fee)  || 0
+  const difference     = bankReceived - (expectedNet - transferFee) // should be ~0
 
   async function handleSave() {
+    if (!form.date) { toast('اختر تاريخ التحويل', 'error'); return }
+    if (!form.bank_received || bankReceived <= 0) { toast('أدخل المبلغ المستلم من البنك', 'error'); return }
+    if (!isEdit && selectedIds.length === 0) { toast('اختر طلباً واحداً على الأقل', 'error'); return }
+
     setSaving(true)
     try {
       const payload = {
-        ...form,
-        shipping_cost: parseFloat(form.shipping_cost) || 0,
-        cod_amount:    parseFloat(form.cod_amount) || 0,
+        date:          form.date,
+        bank_received: bankReceived,
+        transfer_fee:  transferFee,
+        total_cod:     totalCOD,
+        hayyak_fees:   totalHayyakFee,
+        difference,
+        notes:         form.notes,
       }
+
       let saved
-      if (ship) saved = await DB.update('hayyak_shipments', ship.id, payload)
-      else saved = await DB.insert('hayyak_shipments', payload)
-      onSaved(saved)
-    } catch (err) { toast('فشل الحفظ: ' + (err.message||''), 'error') }
-    finally { setSaving(false) }
+      if (isEdit) {
+        saved = await DB.update('hayyak_remittances', remit.id, payload)
+        onSaved(saved, [])
+      } else {
+        saved = await DB.insert('hayyak_remittances', payload)
+
+        // Link all selected orders to this remittance
+        await Promise.all(
+          selectedIds.map(id => DB.update('orders', id, { hayyak_remittance_id: saved.id }))
+        )
+
+        // Auto-save transfer fee as operating expense (if any)
+        if (transferFee > 0) {
+          await DB.insert('expenses', {
+            date:        form.date,
+            amount:      transferFee,
+            category:    'رسوم تحويل حياك',
+            description: `رسوم التحويل البنكي — ${form.date}`,
+            paid_by:     'company',
+            reimbursed:  false,
+            created_at:  new Date().toISOString(),
+          }).catch(() => {}) // Non-critical — don't fail the whole save
+        }
+
+        onSaved(saved, selectedIds)
+      }
+    } catch (err) {
+      toast('فشل الحفظ: ' + err.message, 'error')
+    } finally { setSaving(false) }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={ship ? 'تعديل الشحنة' : 'شحنة جديدة'} width={520}
-      footer={<><Btn variant="ghost" onClick={onClose}>إلغاء</Btn><Btn loading={saving} onClick={handleSave}>{ship?'حفظ':'إضافة'}</Btn></>}
+    <Modal
+      open={open} onClose={onClose}
+      title={isEdit ? 'تعديل التحويل' : 'تسجيل تحويل جديد من حياك'}
+      width={620}
+      footer={<>
+        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn loading={saving} onClick={handleSave}>
+          <IcCheck size={15}/> {isEdit ? 'حفظ التعديلات' : `تأكيد التحويل${selectedIds.length > 0 ? ` (${selectedIds.length} طلب)` : ''}`}
+        </Btn>
+      </>}
     >
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-        {/* Link to order */}
-        <div style={{ gridColumn:'1/-1' }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>ربط بطلب</div>
-          <select value={form.order_id||''} onChange={e=>setField('order_id', e.target.value)}
-            style={{ width:'100%', padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
-            <option value="">— اختر طلب —</option>
-            {[...orders].reverse().map(o => (
-              <option key={o.id} value={o.id}>{o.order_number} — {o.customer_name} — {formatCurrency(o.total)}</option>
-            ))}
-          </select>
+      {/* Date + Bank received + Transfer fee */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))', gap:12, marginBottom:16 }}>
+        <Input label="تاريخ التحويل *" type="date" value={form.date || ''} onChange={e => setField('date', e.target.value)}/>
+        <Input
+          label="المبلغ المستلم من البنك (د.إ) *"
+          type="number" min="0"
+          value={form.bank_received || ''}
+          onChange={e => setField('bank_received', e.target.value)}
+          hint="الرقم الفعلي في كشف الحساب"
+        />
+        <Input
+          label="رسوم التحويل البنكي (د.إ)"
+          type="number" min="0"
+          value={form.transfer_fee || ''}
+          onChange={e => setField('transfer_fee', e.target.value)}
+          hint="تُسجَّل تلقائياً كمصروف"
+        />
+      </div>
+
+      {/* Order selection — only for new remittances */}
+      {!isEdit && (
+        <div style={{ marginBottom:16 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase' }}>
+              الطلبات المشمولة
+            </div>
+            {pendingOrders.length > 0 && (
+              <button onClick={selectAll} style={{ fontSize:11, color:'var(--action)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
+                {selectedIds.length === pendingOrders.length ? 'إلغاء الكل' : 'تحديد الكل'}
+              </button>
+            )}
+          </div>
+
+          {pendingOrders.length === 0
+            ? <div style={{ padding:'16px', background:'var(--bg-hover)', borderRadius:'var(--r-md)', textAlign:'center', fontSize:13, color:'var(--text-muted)' }}>لا يوجد طلبات مسلّمة معلقة</div>
+            : (
+              <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:260, overflowY:'auto', paddingLeft:2 }}>
+                {pendingOrders.map(order => {
+                  const selected = selectedIds.includes(order.id)
+                  return (
+                    <div
+                      key={order.id}
+                      onClick={() => toggleOrder(order.id)}
+                      style={{
+                        display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
+                        background: selected ? 'rgba(0,228,184,0.06)' : 'var(--bg-hover)',
+                        border:`1.5px solid ${selected ? 'rgba(0,228,184,0.25)' : 'var(--border)'}`,
+                        borderRadius:'var(--r-md)', cursor:'pointer', transition:'all 120ms',
+                      }}
+                    >
+                      {/* Checkbox */}
+                      <div style={{
+                        width:18, height:18, borderRadius:5, flexShrink:0,
+                        background: selected ? 'var(--action)' : 'transparent',
+                        border:`2px solid ${selected ? 'var(--action)' : 'var(--border)'}`,
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        transition:'all 120ms',
+                      }}>
+                        {selected && <IcCheck size={11} style={{ color:'#050c1a' }}/>}
+                      </div>
+
+                      {/* Order info */}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                          {order.customer_name || 'عميل'}
+                        </div>
+                        <div style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr', display:'flex', gap:8 }}>
+                          <span>{order.order_number}</span>
+                          {order.delivery_date && <span>• {formatDate(order.delivery_date)}</span>}
+                        </div>
+                      </div>
+
+                      {/* Hayyak fee */}
+                      <div style={{ textAlign:'center', minWidth:60 }}>
+                        <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>رسوم حياك</div>
+                        <div style={{ fontSize:12, fontWeight:700, color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>
+                          {formatCurrency(order.hayyak_fee || 25)}
+                        </div>
+                      </div>
+
+                      {/* COD */}
+                      <div style={{ textAlign:'center', minWidth:70 }}>
+                        <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>COD</div>
+                        <div style={{ fontSize:13, fontWeight:800, color: selected ? 'var(--action)' : 'var(--text-sec)', fontFamily:'Inter,sans-serif' }}>
+                          {formatCurrency(order.total || 0)}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
         </div>
+      )}
 
-        <Input label="رقم التتبع" value={form.tracking_number||''} onChange={e=>setField('tracking_number',e.target.value)} dir="ltr" placeholder="HAY-123456"/>
-
-        <div>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>الحالة</div>
-          <select value={form.status||'pending'} onChange={e=>setField('status',e.target.value)}
-            style={{ width:'100%', padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', cursor:'pointer' }}>
-            {SHIP_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-        </div>
-
-        <Input label="تاريخ الإرسال" type="date" value={form.sent_date||''} onChange={e=>setField('sent_date',e.target.value)}/>
-        <Input label="تاريخ التسليم" type="date" value={form.delivery_date||''} onChange={e=>setField('delivery_date',e.target.value)}/>
-
-        <Input label="مبلغ COD (د.إ)" type="number" value={form.cod_amount||''} onChange={e=>setField('cod_amount',e.target.value)}/>
-        <Input label="تكلفة الشحن (د.إ)" type="number" value={form.shipping_cost||''} onChange={e=>setField('shipping_cost',e.target.value)}/>
-
-        {(form.status==='returned'||form.status==='lost') && (
-          <Input label="سبب الإرجاع/الفقدان" value={form.return_reason||''} onChange={e=>setField('return_reason',e.target.value)} containerStyle={{gridColumn:'1/-1'}}/>
-        )}
-
-        {/* Settled toggle */}
-        <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
-          <span style={{ flex:1, fontSize:13, fontWeight:700 }}>تم تسوية هذه الشحنة </span>
-          <button onClick={() => setField('settled', !form.settled)} style={{
-            width:44, height:24, borderRadius:999, border:'none', cursor:'pointer',
-            background: form.settled ? 'var(--teal)' : 'var(--border)',
-            transition:'all 0.2s',
-            position:'relative',
-          }}>
+      {/* Live verification summary */}
+      {!isEdit && selectedIds.length > 0 && (
+        <div style={{
+          padding:'14px 16px', borderRadius:'var(--r-md)', marginBottom:14,
+          background: Math.abs(difference) < 5 ? 'rgba(0,228,184,0.06)' : 'rgba(245,158,11,0.08)',
+          border:`1.5px solid ${Math.abs(difference) < 5 ? 'rgba(0,228,184,0.2)' : 'rgba(245,158,11,0.3)'}`,
+        }}>
+          <div style={{ fontWeight:700, fontSize:12, color:'var(--text-muted)', marginBottom:10, letterSpacing:'0.05em', textTransform:'uppercase' }}>التحقق</div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 20px' }}>
+            <span style={{ fontSize:13, color:'var(--text-sec)' }}>
+              إجمالي COD: <b style={{ color:'var(--text)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(totalCOD)}</b>
+            </span>
+            <span style={{ fontSize:13, color:'var(--text-sec)' }}>
+              رسوم حياك: <b style={{ color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(totalHayyakFee)}</b>
+            </span>
+            <span style={{ fontSize:13, color:'var(--text-sec)' }}>
+              المتوقع: <b style={{ color:'var(--text)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(expectedNet)}</b>
+            </span>
+            <span style={{ fontSize:13, color:'var(--text-sec)' }}>
+              استُلم: <b style={{ color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(bankReceived)}</b>
+            </span>
+            {transferFee > 0 && (
+              <span style={{ fontSize:13, color:'var(--text-sec)' }}>
+                رسوم بنك: <b style={{ color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(transferFee)}</b>
+              </span>
+            )}
             <span style={{
-              position:'absolute', top:3, width:18, height:18, borderRadius:'50%', background:'#fff',
-              transition:'all 0.2s', right: form.settled ? 3 : 'auto', left: form.settled ? 'auto' : 3,
-            }}/>
-          </button>
+              fontSize:14, fontWeight:800, fontFamily:'Inter,sans-serif',
+              color: Math.abs(difference) < 5 ? 'var(--action)' : '#f59e0b',
+            }}>
+              فرق: {difference >= 0 ? '+' : ''}{formatCurrency(difference)}
+              {Math.abs(difference) < 5 && ' ✓'}
+            </span>
+          </div>
+          {Math.abs(difference) >= 5 && (
+            <div style={{ marginTop:8, fontSize:11, color:'#f59e0b' }}>
+              ⚠️ الفرق يزيد عن 5 د.إ — تحقق من المبلغ أو اختر طلبات مختلفة
+            </div>
+          )}
         </div>
+      )}
 
-        <Textarea label="ملاحظات" value={form.notes||''} onChange={e=>setField('notes',e.target.value)} containerStyle={{gridColumn:'1/-1'}}/>
-      </div>
-    </Modal>
-  )
-}
-
-/* ══════════════════════════════════════════════
-   SETTLEMENT FORM
-══════════════════════════════════════════════ */
-function SettlementForm({ open, onClose, sett, onSaved }) {
-  const [form, setForm] = useState({})
-  const [saving, setSaving] = useState(false)
-  function setField(k, v) { setForm(p => ({...p, [k]:v})) }
-
-  useEffect(() => {
-    if (open) setForm(sett ? {...sett} : {
-      date: new Date().toISOString().split('T')[0],
-      amount: 0, shipments_count: 0,
-    })
-  }, [open, sett])
-
-  async function handleSave() {
-    if (!form.amount || !form.date) { toast('أدخل التاريخ والمبلغ', 'error'); return }
-    setSaving(true)
-    try {
-      const payload = { ...form, amount: parseFloat(form.amount)||0, shipments_count: parseInt(form.shipments_count)||0 }
-      let saved
-      if (sett) saved = await DB.update('hayyak_settlements', sett.id, payload)
-      else saved = await DB.insert('hayyak_settlements', payload)
-      onSaved(saved)
-    } catch (err) { toast('فشل الحفظ: ' + (err.message||''), 'error') }
-    finally { setSaving(false) }
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title={sett ? 'تعديل التسوية' : 'تسوية جديدة'} width={460}
-      footer={<><Btn variant="ghost" onClick={onClose}>إلغاء</Btn><Btn loading={saving} onClick={handleSave}>{sett?'حفظ':'إضافة'}</Btn></>}
-    >
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-        <Input label="تاريخ التحويل *" type="date" value={form.date||''} onChange={e=>setField('date',e.target.value)}/>
-        <Input label="المبلغ المحوّل (د.إ) *" type="number" value={form.amount||''} onChange={e=>setField('amount',e.target.value)}/>
-        <Input label="عدد الشحنات المشمولة" type="number" value={form.shipments_count||''} onChange={e=>setField('shipments_count',e.target.value)}/>
-        <Input label="رقم المرجع / الإيصال" value={form.reference||''} onChange={e=>setField('reference',e.target.value)} dir="ltr" placeholder="TXN-xxxxx"/>
-        <Textarea label="ملاحظات" value={form.notes||''} onChange={e=>setField('notes',e.target.value)} containerStyle={{gridColumn:'1/-1'}}/>
-      </div>
+      <Textarea label="ملاحظات" value={form.notes || ''} onChange={e => setField('notes', e.target.value)} placeholder="رقم الإيصال أو أي ملاحظة..."/>
     </Modal>
   )
 }
