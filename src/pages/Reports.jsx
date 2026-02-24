@@ -5,7 +5,6 @@ import { Card, StatCard, Spinner, PageHeader, Btn } from '../components/ui'
 import { IcWhatsapp } from '../components/Icons'
 
 const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
-const SOURCE_LABELS = { instagram:'إنستغرام', tiktok:'تيك توك', website:'الموقع', walk_in:'زيارة', other:'أخرى' }
 
 function monthRange(year, month) {
   return { start: new Date(year, month, 1), end: new Date(year, month+1, 0, 23, 59, 59) }
@@ -35,10 +34,10 @@ export default function Reports() {
   const monthExpenses = expenses.filter(e => { const d=new Date(e.date); return d>=start && d<=end })
 
   const revenue        = monthOrders.reduce((s,o) => s+(o.total||0), 0)
-  const grossProfit    = monthOrders.reduce((s,o) => s+(o.profit||0), 0)
+  const grossProfit    = monthOrders.reduce((s,o) => s+(o.gross_profit||0), 0)
   const totalExp       = monthExpenses.reduce((s,e) => s+e.amount, 0)
-  const totalShipping  = monthOrders.reduce((s,o) => s+(o.delivery_cost||0), 0)
-  const productRevenue = monthOrders.reduce((s,o) => s+(o.subtotal||(o.total||0)-(o.delivery_cost||0)), 0)
+  const totalHayyak  = monthOrders.reduce((s,o) => s+0, 0)
+  const productRevenue = monthOrders.reduce((s,o) => s+(o.subtotal||(o.total||0)-0), 0)
   const netProfit      = grossProfit - totalExp
   const profitMargin   = revenue > 0 ? ((netProfit/revenue)*100).toFixed(1) : 0
 
@@ -57,12 +56,7 @@ export default function Reports() {
     count:   monthOrders.filter(o=>o.status===s.id).length,
     revenue: monthOrders.filter(o=>o.status===s.id).reduce((s,o)=>s+(o.total||0),0),
   }))
-  const sourceMap = {}
-  monthOrders.forEach(o => {
-    if (!sourceMap[o.source]) sourceMap[o.source] = { count:0, revenue:0 }
-    sourceMap[o.source].count++; sourceMap[o.source].revenue += o.total||0
-  })
-  const sourceBreakdown = Object.entries(sourceMap).sort((a,b)=>b[1].count-a[1].count)
+  const sourceBreakdown = []
 
   // ── P&L: last 6 months ──
   const pnlMonths = useMemo(() => {
@@ -74,9 +68,9 @@ export default function Reports() {
       const mOrds = orders.filter(o => { const d=new Date(o.created_at); return d>=start&&d<=end })
       const mExps = expenses.filter(e => { const d=new Date(e.date); return d>=start&&d<=end })
       const rev      = mOrds.reduce((s,o)=>s+(o.total||0),0)
-      const gp       = mOrds.reduce((s,o)=>s+(o.profit||0),0)
+      const gp       = mOrds.reduce((s,o)=>s+(o.gross_profit||0),0)
       const exp      = mExps.reduce((s,e)=>s+e.amount,0)
-      const shipping = mOrds.reduce((s,o)=>s+(o.delivery_cost||0),0)
+      const shipping = mOrds.reduce((s,o)=>s+0,0)
       result.push({ label: MONTHS[m].slice(0,3), month:m, year:y, revenue:rev, grossProfit:gp, expenses:exp, netProfit:gp-exp, orderCount:mOrds.length, shipping })
     }
     return result
@@ -88,7 +82,7 @@ export default function Reports() {
   const ytdOrders   = orders.filter(o => new Date(o.created_at).getFullYear() === selYear)
   const ytdExpenses = expenses.filter(e => new Date(e.date).getFullYear() === selYear)
   const ytdRevenue  = ytdOrders.reduce((s,o)=>s+(o.total||0),0)
-  const ytdProfit   = ytdOrders.reduce((s,o)=>s+(o.profit||0),0) - ytdExpenses.reduce((s,e)=>s+e.amount,0)
+  const ytdProfit   = ytdOrders.reduce((s,o)=>s+(o.gross_profit||0),0) - ytdExpenses.reduce((s,e)=>s+e.amount,0)
 
   // Expense categories
   const expCatMap = {}
@@ -185,7 +179,7 @@ export default function Reports() {
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(155px, 1fr))', gap:10, marginBottom:20 }}>
             <StatCard label="إجمالي المبيعات"  value={formatCurrency(revenue)}         color="var(--teal)"/>
             <StatCard label="مبيعات المنتجات"  value={formatCurrency(productRevenue)}   color="var(--violet)"/>
-            <StatCard label="إيرادات الشحن"    value={formatCurrency(totalShipping)}    color="var(--blue)"/>
+            <StatCard label="رسوم حياك"         value={formatCurrency(totalHayyak)}    color="var(--blue)"/>
             <StatCard label="إجمالي المصاريف"  value={formatCurrency(totalExp)}         color="var(--red)"/>
             <StatCard label="صافي الربح"       value={formatCurrency(netProfit)}        color={netProfit>=0?'var(--green,#34d399)':'var(--red)'}/>
             <StatCard label="هامش الربح"       value={`${profitMargin}%`}               color="var(--gold,#f59e0b)"/>
@@ -229,23 +223,31 @@ export default function Reports() {
                 ))
               }
             </Card>
-            {/* Source breakdown */}
+            {/* City breakdown */}
             <Card>
-              <div style={{ fontWeight:700, fontSize:14, marginBottom:12 }}>مصادر الطلبات</div>
-              {sourceBreakdown.length===0
-                ? <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'16px 0' }}>لا يوجد بيانات</div>
-                : sourceBreakdown.map(([src,data]) => (
-                  <div key={src} style={{ marginBottom:10 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4, fontSize:12 }}>
-                      <span>{SOURCE_LABELS[src]||src}</span>
-                      <span style={{ color:'var(--text-muted)' }}>{data.count}</span>
+              <div style={{ fontWeight:700, fontSize:14, marginBottom:12 }}>توزيع الإمارات</div>
+              {(() => {
+                const cityMap = {}
+                monthOrders.forEach(o => {
+                  if (!o.customer_city) return
+                  if (!cityMap[o.customer_city]) cityMap[o.customer_city] = 0
+                  cityMap[o.customer_city]++
+                })
+                const cities = Object.entries(cityMap).sort((a,b)=>b[1]-a[1])
+                return cities.length === 0
+                  ? <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'16px 0' }}>لا يوجد بيانات</div>
+                  : cities.map(([city, count]) => (
+                    <div key={city} style={{ marginBottom:10 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4, fontSize:12 }}>
+                        <span>{city}</span>
+                        <span style={{ color:'var(--text-muted)' }}>{count}</span>
+                      </div>
+                      <div style={{ height:4, background:'var(--border)', borderRadius:99 }}>
+                        <div style={{ width:`${(count/monthOrders.length)*100}%`, height:'100%', background:'var(--violet)', borderRadius:99 }}/>
+                      </div>
                     </div>
-                    <div style={{ height:4, background:'var(--border)', borderRadius:99 }}>
-                      <div style={{ width:`${(data.count/monthOrders.length)*100}%`, height:'100%', background:'var(--violet)', borderRadius:99 }}/>
-                    </div>
-                  </div>
-                ))
-              }
+                  ))
+              })()}
             </Card>
           </div>
         </>
@@ -314,7 +316,7 @@ export default function Reports() {
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
                 <thead>
                   <tr style={{ color:'var(--text-muted)', borderBottom:'none' }}>
-                    {['الشهر','الطلبات','المبيعات','الشحن','المصاريف','الربح الصافي','الهامش'].map(h => (
+                    {['الشهر','الطلبات','المبيعات','رسوم حياك','المصاريف','الربح الصافي','الهامش'].map(h => (
                       <th key={h} style={{ padding:'6px 8px', textAlign:'right', fontWeight:700, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -343,7 +345,7 @@ export default function Reports() {
           {/* Shipping breakdown */}
           {pnlMonths.some(m=>m.shipping>0) && (
             <Card style={{ marginBottom:16 }}>
-              <div style={{ fontWeight:700, fontSize:14, marginBottom:12 }}>إيرادات الشحن الشهرية</div>
+              <div style={{ fontWeight:700, fontSize:14, marginBottom:12 }}>رسوم حياك الشهرية</div>
               {pnlMonths.map((m,i) => (
                 <div key={i} style={{ marginBottom:10, opacity: m.shipping===0?0.4:1 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4, fontSize:13 }}>

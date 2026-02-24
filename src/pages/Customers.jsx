@@ -39,13 +39,13 @@ export default function Customers() {
         const key = o.customer_phone || o.customer_name || 'unknown'
         if (!map[key]) map[key] = {
           name: o.customer_name || '', phone: o.customer_phone || '',
-          city: o.customer_city || '', source: o.source || '',
+          city: o.customer_city || '',
           orders: [], totalSpent: 0, totalProfit: 0,
           firstOrderDate: o.created_at, lastOrderDate: o.created_at,
         }
         map[key].orders.push(o)
         map[key].totalSpent  += (o.total  || 0)
-        map[key].totalProfit += (o.profit || 0)
+        map[key].totalProfit += (o.gross_profit || 0)
         if (new Date(o.created_at) < new Date(map[key].firstOrderDate)) map[key].firstOrderDate = o.created_at
         if (new Date(o.created_at) > new Date(map[key].lastOrderDate))  map[key].lastOrderDate  = o.created_at
       })
