@@ -60,11 +60,7 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
-    const handler = (e) => {
-      e.preventDefault()
-      setPwaPrompt(e)
-      setShowPwaBanner(true)
-    }
+    const handler = (e) => { e.preventDefault(); setPwaPrompt(e); setShowPwaBanner(true) }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
@@ -158,7 +154,7 @@ export default function App() {
   async function handlePwaInstall() {
     if (!pwaPrompt) return
     pwaPrompt.prompt()
-    const { outcome } = await pwaPrompt.userChoice
+    await pwaPrompt.userChoice
     setPwaPrompt(null)
     setShowPwaBanner(false)
   }
@@ -336,7 +332,7 @@ export default function App() {
       {theme === 'dark' && <CursorSpotlight />}
       {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
 
-      {/* ── PWA INSTALL BANNER — compact corner ── */}
+      {/* ── PWA INSTALL — compact corner ── */}
       {showPwaBanner && (
         <div style={{
           position:'fixed', bottom:76, right:16, zIndex:800,
@@ -344,17 +340,11 @@ export default function App() {
           backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
           border:'1px solid rgba(0,228,184,0.22)',
           borderRadius:16, padding:'12px 14px',
-          boxShadow:'0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,228,184,0.08)',
+          boxShadow:'0 12px 40px rgba(0,0,0,0.5)',
           display:'flex', flexDirection:'column', gap:10,
           width:200, animation:'toastIn 0.3s cubic-bezier(0.4,0,0.2,1) both',
         }}>
-          {/* Close */}
-          <button onClick={() => setShowPwaBanner(false)} style={{
-            position:'absolute', top:8, left:8,
-            background:'none', border:'none', color:'var(--text-muted)',
-            cursor:'pointer', fontSize:14, lineHeight:1, padding:2,
-          }}>✕</button>
-          {/* Content */}
+          <button onClick={() => setShowPwaBanner(false)} style={{ position:'absolute', top:8, left:8, background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:14, lineHeight:1, padding:2 }}>✕</button>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <MawjLogo size={28} color="#00e4b8" animated />
             <div>
@@ -362,12 +352,7 @@ export default function App() {
               <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>تثبيت كتطبيق</div>
             </div>
           </div>
-          <button onClick={handlePwaInstall} style={{
-            background:'linear-gradient(135deg,var(--teal),var(--violet))',
-            border:'none', borderRadius:10, padding:'8px 0',
-            color:'#fff', fontWeight:700, fontSize:12,
-            cursor:'pointer', fontFamily:'inherit', width:'100%',
-          }}>
+          <button onClick={handlePwaInstall} style={{ background:'linear-gradient(135deg,var(--teal),var(--violet))', border:'none', borderRadius:10, padding:'8px 0', color:'#fff', fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit', width:'100%' }}>
             تثبيت الآن
           </button>
         </div>

@@ -95,38 +95,26 @@ export default function Dashboard({ onNavigate }) {
       {/* ── Quick Actions ── */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginBottom:20 }}>
         {[
-          { label:'طلب جديد',    icon:'📦', page:'orders',    color:'var(--teal)' },
-          { label:'مصروف جديد',  icon:'💸', page:'expenses',  color:'var(--red)' },
-          { label:'مخزون جديد',  icon:'🗃️', page:'inventory', color:'var(--amber)' },
-          { label:'العملاء',      icon:'👥', page:'customers', color:'var(--blue)' },
-        ].map(({ label, icon, page: dest, color }) => (
-          <button
-            key={dest}
-            onClick={() => onNavigate(dest)}
-            className="mawj-btn mawj-btn-secondary"
+          { label:'طلب جديد',   icon:'📦', dest:'orders',    color:'var(--teal)' },
+          { label:'مصروف جديد', icon:'💸', dest:'expenses',  color:'var(--red)' },
+          { label:'مخزون جديد', icon:'🗃️', dest:'inventory', color:'var(--amber)' },
+          { label:'العملاء',     icon:'👥', dest:'customers', color:'var(--blue)' },
+        ].map(({ label, icon, dest, color }) => (
+          <button key={dest} onClick={() => onNavigate(dest)}
             style={{
               display:'flex', alignItems:'center', gap:7,
               background:'var(--bg-glass)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
-              border:`1px solid rgba(255,255,255,0.09)`,
+              border:'1px solid rgba(255,255,255,0.09)',
               borderRadius:'var(--radius-sm)', padding:'9px 14px',
               color:'var(--text)', fontSize:13, fontWeight:600,
               cursor:'pointer', fontFamily:'inherit',
               boxShadow:'0 2px 12px rgba(0,0,0,0.25)',
-              transition:'all 0.18s ease',
+              transition:'border-color 0.15s ease, color 0.15s ease, background 0.15s ease',
             }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = color
-              e.currentTarget.style.color = color
-              e.currentTarget.style.background = 'var(--bg-glass-hover)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'
-              e.currentTarget.style.color = 'var(--text)'
-              e.currentTarget.style.background = 'var(--bg-glass)'
-            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor=color; e.currentTarget.style.color=color; e.currentTarget.style.background='var(--bg-glass-hover)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.09)'; e.currentTarget.style.color='var(--text)'; e.currentTarget.style.background='var(--bg-glass)' }}
           >
-            <span style={{ fontSize:15 }}>{icon}</span>
-            {label}
+            <span style={{ fontSize:15 }}>{icon}</span>{label}
           </button>
         ))}
       </div>
