@@ -197,7 +197,6 @@ export default function ImportTool() {
           hayyak_remittance_id: real_remit_id,
           order_date:           order.order_date           || null,
           delivery_date:        order.delivery_date        || null,
-          source:               order.source               || 'تيك توك',
           notes:                order.notes                || '',
           internal_notes:       order.internal_notes       || [],
           created_at:           order.created_at,

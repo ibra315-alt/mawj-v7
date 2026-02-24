@@ -389,7 +389,6 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
         hayyak_fee:         order.hayyak_fee        ?? 25,
         discount:           order.discount          || 0,
         status:             order.status            || 'new',
-        source:             order.source            || 'instagram',
         notes:              order.notes             || '',
         order_date:         order.created_at ? order.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
         is_replacement:     order.is_replacement    || false,
@@ -405,7 +404,6 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
         hayyak_fee:         25,
         discount:           0,
         status:             'with_hayyak',
-        source:             replacementFor.source           || 'instagram',
         notes:              `استبدال للطلب ${replacementFor.order_number}`,
         order_date:         new Date().toISOString().split('T')[0],
         is_replacement:     true,
@@ -415,7 +413,7 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
     } else {
       setForm({
         customer_name:'', customer_phone:'', customer_city:'', customer_address:'',
-        hayyak_fee:25, discount:0, status:'new', source:'instagram', notes:'',
+        hayyak_fee:25, discount:0, status:'new', notes:'',
         order_date: new Date().toISOString().split('T')[0],
         is_replacement:false, replacement_for_id:null,
       })
@@ -455,7 +453,6 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
         customer_city:      form.customer_city,
         customer_address:   form.customer_address,
         status:             form.status,
-        source:             form.source,
         notes:              form.notes,
         hayyak_fee:         calc.hayyak_fee,
         discount:           parseFloat(form.discount) || 0,
@@ -641,9 +638,6 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
         <Input label="خصم (د.إ)" type="number" min="0" value={form.discount || ''} onChange={e => setField('discount', e.target.value)}/>
         {!isEdit && <Input label="تاريخ الطلب" type="date" value={form.order_date || ''} onChange={e => setField('order_date', e.target.value)}/>}
         {!isEdit && (
-          <Select label="المصدر" value={form.source || 'instagram'} onChange={e => setField('source', e.target.value)}>
-            {Object.entries(SOURCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
-          </Select>
         )}
       </div>
 
