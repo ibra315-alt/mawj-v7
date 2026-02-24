@@ -176,38 +176,46 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PWA install banner ── */}
+      {/* ── PWA install — compact square, bottom-left above AI btn ── */}
       {installPrompt && (
         <div style={{
-          position: 'fixed', bottom: 80, left: 12, right: 12, zIndex: 9999,
+          position: 'fixed', bottom: 136, left: 16, zIndex: 9999,
+          width: 174,
           background: 'var(--bg-surface)',
           boxShadow: 'var(--float-shadow)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--r-lg)',
-          padding: '14px 16px',
-          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px',
+          display: 'flex', flexDirection: 'column', gap: 10,
           animation: 'slideUp 0.3s var(--ease-out) both',
+          direction: 'rtl',
         }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 'var(--r-sm)',
-            background: 'var(--action-soft)', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <MawjLogo size={26} color="var(--action)" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 13 }}>تثبيت موج على شاشتك</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>وصول أسرع · يعمل بدون إنترنت</div>
+          <button onClick={() => setInstallPrompt(null)} style={{
+            position: 'absolute', top: 6, left: 6,
+            background: 'none', border: 'none', color: 'var(--text-muted)',
+            cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 3,
+            borderRadius: 'var(--r-sm)', WebkitTapHighlightColor: 'transparent',
+          }}>×</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 'var(--r-sm)', flexShrink: 0,
+              background: 'var(--action-soft)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <MawjLogo size={20} color="var(--action)" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 12, lineHeight: 1.2 }}>تثبيت موج</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>أسرع · يعمل بدون نت</div>
+            </div>
           </div>
           <button onClick={handleInstall} style={{
             background: 'var(--action)', border: 'none',
-            borderRadius: 'var(--r-sm)', color: '#031a13',
-            padding: '8px 14px', fontSize: 12, fontWeight: 800,
-            cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-          }}>تثبيت</button>
-          <button onClick={() => setInstallPrompt(null)} style={{
-            background: 'none', border: 'none', color: 'var(--text-muted)',
-            cursor: 'pointer', fontSize: 20, flexShrink: 0, padding: 4, lineHeight: 1,
-          }}>×</button>
+            borderRadius: 'var(--r-md)', color: '#031a13',
+            padding: '8px 0', fontSize: 12, fontWeight: 800,
+            cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+            WebkitTapHighlightColor: 'transparent',
+          }}>تثبيت الآن</button>
         </div>
       )}
 
