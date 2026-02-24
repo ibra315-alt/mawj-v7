@@ -16,6 +16,7 @@ export default function Dashboard({ onNavigate }) {
   const [recentOrders, setRecentOrders] = useState([])
   const [loading,      setLoading]      = useState(true)
   const [sparkData,    setSparkData]    = useState({ revenue:[], orders:[], profit:[] })
+  const [todayFull,    setTodayFull]    = useState([])
 
   useEffect(() => {
     loadData()
@@ -83,6 +84,10 @@ export default function Dashboard({ onNavigate }) {
         profByDay.push(dayOrds.reduce((s, o) => s + (o.gross_profit  || 0), 0))
       }
       setSparkData({ revenue: revByDay, orders: ordByDay, profit: profByDay })
+      // Today's orders
+      const todayFull = orders.filter(o => new Date(o.created_at) >= todayStart)
+        .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+      setTodayFull(todayFull)
       setRecentOrders(orders.slice(-8).reverse())
 
     } catch (err) { console.error(err) }
@@ -253,61 +258,133 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
-      {/* Recent orders */}
-      <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-lg)', padding:'16px', boxShadow:'var(--card-shadow)' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <span style={{ fontWeight:700, fontSize:15 }}>آخر الطلبات</span>
+      {/* Today's orders */}
+      <TodaySection orders={todayFull} onNavigate={onNavigate}/>
+
+      {/* In-progress orders */}
+      <InProgressSection orders={recentOrders} onNavigate={onNavigate}/>
+    </div>
+  )
+}
+
+/* ── Today's orders section ── */
+const STATUS_COLORS = {
+  new:'#7c3aed', ready:'#f59e0b', with_hayyak:'#3b82f6',
+  delivered:'#10b981', not_delivered:'#ef4444', cancelled:'#6b7280',
+}
+const STATUS_LABELS = {
+  new:'جديد', ready:'جاهز', with_hayyak:'مع حياك',
+  delivered:'مسلّم', not_delivered:'لم يتم', cancelled:'ملغي',
+}
+
+function OrderRow({ order }) {
+  const color = STATUS_COLORS[order.status] || '#6b7280'
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      padding:'10px 14px', background:'var(--bg-hover)',
+      borderRadius:'var(--r-md)', gap:12, flexWrap:'wrap',
+      borderRight:`3px solid ${color}`,
+    }}>
+      <div style={{ flex:1, minWidth:100 }}>
+        <div style={{ fontWeight:700, fontSize:13 }}>{order.customer_name || 'عميل'}</div>
+        <div style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr', display:'flex', gap:8 }}>
+          <span>{order.order_number}</span>
+          {order.customer_city && <span>• {order.customer_city}</span>}
+        </div>
+      </div>
+      <span style={{ padding:'3px 9px', borderRadius:999, fontSize:11, fontWeight:700, background:`${color}18`, color, flexShrink:0 }}>
+        {STATUS_LABELS[order.status] || order.status}
+      </span>
+      <div style={{ fontWeight:800, color:'var(--action)', fontSize:13, minWidth:68, textAlign:'left', fontFamily:'Inter,sans-serif', flexShrink:0 }}>
+        {formatCurrency(order.total || 0)}
+      </div>
+    </div>
+  )
+}
+
+function TodaySection({ orders, onNavigate }) {
+  const [expanded, setExpanded] = useState(true)
+  const delivered = orders.filter(o => o.status === 'delivered').length
+  const todayRev  = orders.reduce((s,o) => s+(o.total||0), 0)
+
+  return (
+    <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-lg)', marginBottom:14, boxShadow:'var(--card-shadow)', overflow:'hidden' }}>
+      {/* Header — always visible, tap to expand/collapse */}
+      <div
+        onClick={() => setExpanded(p=>!p)}
+        style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', cursor:'pointer' }}
+      >
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontWeight:800, fontSize:15 }}>📋 طلبات اليوم</span>
+          {orders.length > 0 && (
+            <span style={{ padding:'2px 9px', borderRadius:999, fontSize:11, fontWeight:800, background:'rgba(0,228,184,0.12)', color:'var(--action)' }}>
+              {orders.length}
+            </span>
+          )}
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          {orders.length > 0 && (
+            <span style={{ fontSize:12, color:'var(--text-muted)' }}>
+              {delivered > 0 && `${delivered} مسلّم · `}{formatCurrency(todayRev)}
+            </span>
+          )}
+          <span style={{ color:'var(--text-muted)', fontSize:14 }}>{expanded ? '▲' : '▼'}</span>
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ padding:'0 14px 14px' }}>
+          {orders.length === 0 ? (
+            <div style={{ textAlign:'center', padding:'20px 0', color:'var(--text-muted)', fontSize:13 }}>
+              لا يوجد طلبات اليوم بعد
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {orders.map(o => <OrderRow key={o.id} order={o}/>)}
+            </div>
+          )}
           <button onClick={() => onNavigate('orders')} style={{
-            display:'flex', alignItems:'center', gap:4,
-            background:'none', border:'none', color:'var(--action)',
-            cursor:'pointer', fontSize:12, fontFamily:'inherit', fontWeight:600,
+            marginTop:10, width:'100%', padding:'9px', background:'none',
+            border:'1.5px dashed var(--border)', borderRadius:'var(--r-md)',
+            color:'var(--text-muted)', fontSize:12, cursor:'pointer',
+            fontFamily:'inherit', fontWeight:600,
           }}>
-            عرض الكل <IcArrowLeft size={14}/>
+            + طلب جديد
           </button>
         </div>
+      )}
+    </div>
+  )
+}
 
-        {recentOrders.length === 0
-          ? <Empty title="لا يوجد طلبات بعد"/>
-          : (
-            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-              {recentOrders.map(order => {
-                const statusColors = {
-                  new:           '#7c3aed',
-                  ready:         '#f59e0b',
-                  with_hayyak:   '#3b82f6',
-                  delivered:     '#10b981',
-                  not_delivered: '#ef4444',
-                  cancelled:     '#6b7280',
-                }
-                const statusLabels = {
-                  new:'جديد', ready:'جاهز', with_hayyak:'مع حياك',
-                  delivered:'مسلّم', not_delivered:'لم يتم', cancelled:'ملغي',
-                }
-                const color = statusColors[order.status] || '#6b7280'
-                return (
-                  <div key={order.id} style={{
-                    display:'flex', alignItems:'center', justifyContent:'space-between',
-                    padding:'10px 14px', background:'var(--bg-hover)',
-                    borderRadius:'var(--r-md)', gap:12, flexWrap:'wrap',
-                    borderRight:`3px solid ${color}`,
-                  }}>
-                    <div style={{ flex:1, minWidth:100 }}>
-                      <div style={{ fontWeight:700, fontSize:13 }}>{order.customer_name || 'عميل'}</div>
-                      <div style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr' }}>{order.order_number}</div>
-                    </div>
-                    <span style={{ padding:'2px 8px', borderRadius:999, fontSize:11, fontWeight:700, background:`${color}18`, color }}>
-                      {statusLabels[order.status] || order.status}
-                    </span>
-                    <div style={{ fontWeight:700, color:'var(--action)', fontSize:13, minWidth:70, textAlign:'left', fontFamily:'Inter,sans-serif' }}>
-                      {formatCurrency(order.total || 0)}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )
-        }
+function InProgressSection({ orders, onNavigate }) {
+  const inProgress = orders.filter(o => ['new','ready','with_hayyak'].includes(o.status))
+  const [expanded, setExpanded] = useState(true)
+  if (inProgress.length === 0) return null
+  return (
+    <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-lg)', marginBottom:14, boxShadow:'var(--card-shadow)', overflow:'hidden' }}>
+      <div onClick={() => setExpanded(p=>!p)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', cursor:'pointer' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontWeight:800, fontSize:15 }}>⏳ قيد المعالجة</span>
+          <span style={{ padding:'2px 9px', borderRadius:999, fontSize:11, fontWeight:800, background:'rgba(245,158,11,0.12)', color:'#f59e0b' }}>
+            {inProgress.length}
+          </span>
+        </div>
+        <span style={{ color:'var(--text-muted)', fontSize:14 }}>{expanded ? '▲' : '▼'}</span>
       </div>
+      {expanded && (
+        <div style={{ padding:'0 14px 14px', display:'flex', flexDirection:'column', gap:6 }}>
+          {inProgress.map(o => <OrderRow key={o.id} order={o}/>)}
+          <button onClick={() => onNavigate('orders')} style={{
+            marginTop:4, display:'flex', alignItems:'center', justifyContent:'flex-end', gap:4,
+            background:'none', border:'none', color:'var(--action)',
+            cursor:'pointer', fontSize:12, fontFamily:'inherit', fontWeight:600, padding:'6px 0',
+          }}>
+            عرض كل الطلبات <IcArrowLeft size={13}/>
+          </button>
+        </div>
+      )}
     </div>
   )
 }

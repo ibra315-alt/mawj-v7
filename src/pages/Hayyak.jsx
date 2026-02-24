@@ -36,6 +36,9 @@ export default function Hayyak() {
   const [loading,      setLoading]      = useState(true)
   const [tab,          setTab]          = useState('overview')
   const [search,       setSearch]       = useState('')
+  const [dateFrom,     setDateFrom]     = useState('')
+  const [dateTo,       setDateTo]       = useState('')
+  const [groupBy,      setGroupBy]      = useState('none')  // 'none' | 'city' | 'date'
   const [showForm,     setShowForm]     = useState(false)
   const [editRemit,    setEditRemit]    = useState(null)
   const [deleteId,     setDeleteId]     = useState(null)
@@ -107,11 +110,39 @@ export default function Hayyak() {
 
   const filteredPending = stats.pendingOrders.filter(o => {
     const q = search.toLowerCase()
-    return !q
+    const matchQ = !q
       || (o.customer_name  || '').includes(q)
       || (o.order_number   || '').toLowerCase().includes(q)
       || (o.customer_phone || '').includes(q)
+    const oDate = o.delivery_date || o.order_date || o.created_at?.split('T')[0] || ''
+    const matchFrom = !dateFrom || oDate >= dateFrom
+    const matchTo   = !dateTo   || oDate <= dateTo
+    return matchQ && matchFrom && matchTo
   })
+
+  // Grouped pending
+  function groupOrders(list) {
+    if (groupBy === 'city') {
+      const map = {}
+      list.forEach(o => {
+        const k = o.customer_city || 'غير محدد'
+        if (!map[k]) map[k] = []
+        map[k].push(o)
+      })
+      return Object.entries(map).sort((a,b) => b[1].length - a[1].length)
+    }
+    if (groupBy === 'date') {
+      const map = {}
+      list.forEach(o => {
+        const k = o.delivery_date || o.order_date || o.created_at?.split('T')[0] || 'غير محدد'
+        if (!map[k]) map[k] = []
+        map[k].push(o)
+      })
+      return Object.entries(map).sort((a,b) => b[0].localeCompare(a[0]))
+    }
+    return [['all', list]]
+  }
+  const groupedPending = groupOrders(filteredPending)
 
   if (loading) return (
     <div className="page">
@@ -253,14 +284,36 @@ export default function Hayyak() {
             ))}
           </div>
 
-          {/* Search */}
-          <div style={{ position:'relative', marginBottom:14 }}>
-            <IcSearch size={14} style={{ position:'absolute', right:11, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
-            <input
-              value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="بحث باسم العميل أو رقم الطلب..."
-              style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', boxShadow:'var(--card-shadow)' }}
+          {/* Filters */}
+          <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
+            <div style={{ position:'relative', flex:1, minWidth:140 }}>
+              <IcSearch size={14} style={{ position:'absolute', right:11, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
+              <input
+                value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="بحث..."
+                style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', boxShadow:'var(--card-shadow)' }}
+              />
+            </div>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              style={{ padding:'9px 10px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color: dateFrom?'var(--text)':'var(--text-muted)', fontSize:12, fontFamily:'inherit', cursor:'pointer', boxShadow:'var(--card-shadow)' }}
+              title="من تاريخ"
             />
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              style={{ padding:'9px 10px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color: dateTo?'var(--text)':'var(--text-muted)', fontSize:12, fontFamily:'inherit', cursor:'pointer', boxShadow:'var(--card-shadow)' }}
+              title="حتى تاريخ"
+            />
+            <select value={groupBy} onChange={e => setGroupBy(e.target.value)}
+              style={{ padding:'9px 10px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer', boxShadow:'var(--card-shadow)' }}>
+              <option value="none">بدون تجميع</option>
+              <option value="city">حسب الإمارة</option>
+              <option value="date">حسب التاريخ</option>
+            </select>
+            {(search||dateFrom||dateTo) && (
+              <button onClick={() => { setSearch(''); setDateFrom(''); setDateTo('') }}
+                style={{ padding:'9px 12px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text-muted)', fontSize:12, fontFamily:'inherit', cursor:'pointer' }}>
+                ✕ مسح
+              </button>
+            )}
           </div>
 
           {filteredPending.length === 0
@@ -277,9 +330,33 @@ export default function Hayyak() {
                   </Btn>
                 </div>
 
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  {filteredPending.map(order => (
-                    <PendingOrderRow key={order.id} order={order}/>
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {groupedPending.map(([groupKey, groupOrders]) => (
+                    <div key={groupKey}>
+                      {groupBy !== 'none' && (
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+                          <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase' }}>
+                            {groupKey}
+                          </div>
+                          <div style={{ display:'flex', gap:12, fontSize:11, color:'var(--text-muted)' }}>
+                            <span>{groupOrders.length} طلب</span>
+                            <span style={{ color:'#f59e0b', fontWeight:700 }}>
+                              COD: {formatCurrency(groupOrders.reduce((s,o) => s+(o.total||0), 0))}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                        {groupOrders.map(order => (
+                          <PendingOrderRow key={order.id} order={order}
+                            onQuickLink={() => {
+                              setEditRemit(null)
+                              setShowForm(true)
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </>
@@ -357,34 +434,43 @@ export default function Hayyak() {
 /* ═══════════════════════════════════════════
    PENDING ORDER ROW
 ═══════════════════════════════════════════ */
-function PendingOrderRow({ order }) {
+function PendingOrderRow({ order, onQuickLink }) {
+  const net = (order.total || 0) - (order.hayyak_fee || 25)
   return (
     <div style={{
-      display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
+      display:'flex', alignItems:'center', gap:10, padding:'11px 14px',
       background:'var(--bg-surface)', borderRadius:'var(--r-md)',
       borderRight:'3px solid #f59e0b', boxShadow:'var(--card-shadow)',
       flexWrap:'wrap',
     }}>
-      <div style={{ flex:1, minWidth:120 }}>
+      <div style={{ flex:1, minWidth:100 }}>
         <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', marginBottom:2 }}>
           {order.customer_name || 'عميل'}
         </div>
-        <div style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr', display:'flex', gap:8 }}>
+        <div style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr', display:'flex', gap:8, flexWrap:'wrap' }}>
           <span>{order.order_number}</span>
-          {order.customer_phone && <span>{order.customer_phone}</span>}
-          {order.delivery_date && <span>• {formatDate(order.delivery_date)}</span>}
+          {order.customer_city  && <span style={{ direction:'rtl' }}>• {order.customer_city}</span>}
+          {order.delivery_date  && <span>• {formatDate(order.delivery_date)}</span>}
         </div>
       </div>
-      <div style={{ textAlign:'center', minWidth:70 }}>
-        <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:2 }}>رسوم حياك</div>
-        <div style={{ fontWeight:700, color:'var(--danger)', fontSize:13, fontFamily:'Inter,sans-serif' }}>
-          {formatCurrency(order.hayyak_fee || 25)}
+      <div style={{ display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
+        <div style={{ textAlign:'center', minWidth:56 }}>
+          <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>رسوم</div>
+          <div style={{ fontWeight:700, color:'var(--danger)', fontSize:12, fontFamily:'Inter,sans-serif' }}>
+            −{formatCurrency(order.hayyak_fee || 25)}
+          </div>
         </div>
-      </div>
-      <div style={{ textAlign:'center', minWidth:80 }}>
-        <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:2 }}>COD للاستلام</div>
-        <div style={{ fontWeight:800, color:'#f59e0b', fontSize:15, fontFamily:'Inter,sans-serif' }}>
-          {formatCurrency(order.total || 0)}
+        <div style={{ textAlign:'center', minWidth:64 }}>
+          <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>COD</div>
+          <div style={{ fontWeight:800, color:'#f59e0b', fontSize:14, fontFamily:'Inter,sans-serif' }}>
+            {formatCurrency(order.total || 0)}
+          </div>
+        </div>
+        <div style={{ textAlign:'center', minWidth:60 }}>
+          <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>صافي</div>
+          <div style={{ fontWeight:800, color:'var(--action)', fontSize:14, fontFamily:'Inter,sans-serif' }}>
+            {formatCurrency(net)}
+          </div>
         </div>
       </div>
     </div>
@@ -588,9 +674,28 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
               الطلبات المشمولة
             </div>
             {pendingOrders.length > 0 && (
-              <button onClick={selectAll} style={{ fontSize:11, color:'var(--action)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
-                {selectedIds.length === pendingOrders.length ? 'إلغاء الكل' : 'تحديد الكل'}
-              </button>
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <button onClick={selectAll} style={{ fontSize:11, color:'var(--action)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
+                  {selectedIds.length === pendingOrders.length ? 'إلغاء الكل' : 'تحديد الكل'}
+                </button>
+                {form.date && (
+                  <button
+                    onClick={() => {
+                      // Select orders delivered on or before remittance date
+                      const ids = pendingOrders
+                        .filter(o => {
+                          const d = o.delivery_date || o.order_date || o.created_at?.split('T')[0] || ''
+                          return d <= form.date
+                        })
+                        .map(o => o.id)
+                      setSelectedIds(ids)
+                    }}
+                    style={{ fontSize:11, color:'#f59e0b', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:999, padding:'3px 10px', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}
+                  >
+                    ≤ تاريخ التحويل فقط
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
