@@ -78,7 +78,7 @@ export default function Suppliers() {
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>مشتريات</div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold)' }}>{formatCurrency(totalPurchases)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--amber)' }}>{formatCurrency(totalPurchases)}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>إجمالي</div>
                   </div>
                 </div>
@@ -86,7 +86,7 @@ export default function Suppliers() {
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {sup.phone && (
                     <>
-                      <a href={`tel:${sup.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: 6, color: 'var(--text-sec)', fontSize: 12 }}>
+                      <a href={`tel:${sup.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'var(--bg-surface)', border: 'none', borderRadius: 6, color: 'var(--text-sec)', fontSize: 12 }}>
                         <IcPhone size={12} /> {sup.phone}
                       </a>
                       <a href={`https://wa.me/${sup.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 6, color: '#25d166', fontSize: 12 }}>

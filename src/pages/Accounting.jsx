@@ -99,7 +99,7 @@ function PnLTab({ orders, expenses }) {
         <StatCard label="إجمالي الإيرادات" value={formatCurrency(totRevenue)} color="var(--teal)" />
         <StatCard label="إجمالي المصاريف" value={formatCurrency(totExp)} color="var(--red)" />
         <StatCard label="صافي الربح" value={formatCurrency(totNet)} color={totNet >= 0 ? 'var(--green)' : 'var(--red)'} />
-        <StatCard label="هامش الربح" value={`${totRevenue > 0 ? ((totNet / totRevenue) * 100).toFixed(1) : 0}%`} color="var(--gold)" />
+        <StatCard label="هامش الربح" value={`${totRevenue > 0 ? ((totNet / totRevenue) * 100).toFixed(1) : 0}%`} color="var(--amber)" />
       </div>
 
       <Card>
@@ -107,7 +107,7 @@ function PnLTab({ orders, expenses }) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 500 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--bg-border)' }}>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['الشهر', 'الإيرادات', 'الربح الإجمالي', 'المصاريف', 'صافي الربح'].map(h => (
                   <th key={h} style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--text-sec)', fontWeight: 600 }}>{h}</th>
                 ))}
@@ -115,7 +115,7 @@ function PnLTab({ orders, expenses }) {
             </thead>
             <tbody>
               {months.map((m, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid var(--bg-border)' }}>
+                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '10px 12px', fontWeight: 600 }}>{m.label}</td>
                   <td style={{ padding: '10px 12px', color: 'var(--teal)' }}>{formatCurrency(m.revenue)}</td>
                   <td style={{ padding: '10px 12px', color: 'var(--green)' }}>{formatCurrency(m.grossProfit)}</td>
@@ -183,7 +183,7 @@ function CashFlowTab({ orders, expenses }) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--bg-border)' }}>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['الشهر', 'الدخل', 'الصرف', 'الصافي'].map(h => (
                   <th key={h} style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--text-sec)', fontWeight: 600 }}>{h}</th>
                 ))}
@@ -191,7 +191,7 @@ function CashFlowTab({ orders, expenses }) {
             </thead>
             <tbody>
               {months.map((m, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid var(--bg-border)' }}>
+                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '10px 12px', fontWeight: 600 }}>{m.label}</td>
                   <td style={{ padding: '10px 12px', color: 'var(--teal)' }}>{formatCurrency(m.inflow)}</td>
                   <td style={{ padding: '10px 12px', color: 'var(--red)' }}>{formatCurrency(m.outflow)}</td>
@@ -231,7 +231,7 @@ function CapitalTab({ capital, partners }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {partnerCap.slice(-5).map(c => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--bg-border)' }}>
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ color: 'var(--text-sec)' }}>{new Date(c.date).toLocaleDateString('ar-AE')}</span>
                     <span style={{ color: 'var(--text-muted)' }}>{c.notes || (c.type === 'deposit' ? 'إيداع' : 'سحب')}</span>
                     <span style={{ fontWeight: 700, color: c.type === 'deposit' ? 'var(--green)' : 'var(--red)' }}>
@@ -263,7 +263,7 @@ function SalariesTab({ withdrawals, partners }) {
         <StatCard label="إجمالي المسحوبات" value={formatCurrency(totalWithdrawals)} color="var(--red)" />
         <StatCard label="رواتب" value={formatCurrency(byType.salary)} color="var(--amber)" />
         <StatCard label="مسحوبات شخصية" value={formatCurrency(byType.personal)} color="var(--violet)" />
-        <StatCard label="أرباح موزعة" value={formatCurrency(byType.dividend)} color="var(--gold)" />
+        <StatCard label="أرباح موزعة" value={formatCurrency(byType.dividend)} color="var(--amber)" />
       </div>
 
       {partners.map(name => {
@@ -280,7 +280,7 @@ function SalariesTab({ withdrawals, partners }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {pw.slice(-5).map(w => (
-                  <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--bg-border)' }}>
+                  <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ color: 'var(--text-sec)' }}>{new Date(w.date).toLocaleDateString('ar-AE')}</span>
                     <span style={{ color: 'var(--text-muted)' }}>{w.type === 'salary' ? 'راتب' : w.type === 'dividend' ? 'أرباح' : 'شخصي'}</span>
                     <span style={{ fontWeight: 700, color: 'var(--red)' }}>{formatCurrency(w.amount)}</span>
@@ -319,7 +319,7 @@ function BalanceTab({ orders, expenses, capital, withdrawals }) {
               { label: 'إجمالي الإيرادات', value: totalRevenue },
               { label: 'رأس المال', value: totalCapital },
             ].map(row => (
-              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bg-border)', fontSize: 14 }}>
+              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 14 }}>
                 <span>{row.label}</span>
                 <span style={{ fontWeight: 700, color: 'var(--teal)' }}>{formatCurrency(row.value)}</span>
               </div>
@@ -339,7 +339,7 @@ function BalanceTab({ orders, expenses, capital, withdrawals }) {
               { label: 'المصاريف التشغيلية', value: totalExpenses },
               { label: 'المسحوبات', value: totalWithdrawals },
             ].map(row => (
-              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bg-border)', fontSize: 14 }}>
+              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 14 }}>
                 <span>{row.label}</span>
                 <span style={{ fontWeight: 700, color: 'var(--red)' }}>{formatCurrency(row.value)}</span>
               </div>
