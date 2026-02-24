@@ -523,16 +523,18 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
         {/* Product name buttons */}
         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom: selectedProduct ? 10 : 0 }}>
           {products.map(p => {
-            const isSingle   = p.sizes.length === 1
+            // Support old flat {id,name,cost,price,size} and new grouped {id,name,sizes:[]}
+            const sizes      = p.sizes?.length > 0 ? p.sizes : [{ id: p.id, size: p.size || '', cost: p.cost || 0, price: p.price || 0, category: p.category || 'small' }]
+            const isSingle   = sizes.length === 1
             const isSelected = selectedProduct?.id === p.id
             return (
               <button
                 key={p.id}
                 onClick={() => {
                   if (isSingle) {
-                    addItem(p.name, p.sizes[0])  // direct add
+                    addItem(p.name, sizes[0])
                   } else {
-                    setSelectedProduct(isSelected ? null : p)
+                    setSelectedProduct(isSelected ? null : { ...p, sizes })
                   }
                 }}
                 style={{
@@ -563,7 +565,7 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
               {selectedProduct.name} — اختر الحجم:
             </div>
             <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-              {selectedProduct.sizes.map(sv => (
+              {(selectedProduct.sizes || []).map(sv => (
                 <button
                   key={sv.id}
                   onClick={() => addItem(selectedProduct.name, sv)}
