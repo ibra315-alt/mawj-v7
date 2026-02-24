@@ -67,9 +67,34 @@ export default function Expenses() {
 
   async function toggleReimbursed(exp) {
     try {
-      const updated = await DB.update('expenses', exp.id, { reimbursed: !exp.reimbursed })
-      setExpenses(p => p.map(e => e.id === exp.id ? { ...e, reimbursed: updated.reimbursed } : e))
-      toast(updated.reimbursed ? 'تم تسجيل الاسترداد ✓' : 'تم إلغاء الاسترداد')
+      const nowDate = new Date().toISOString().split('T')[0]
+      const markingReimbursed = !exp.reimbursed
+
+      const updated = await DB.update('expenses', exp.id, {
+        reimbursed:           markingReimbursed,
+        reimbursement_date:   markingReimbursed ? nowDate : null,
+      })
+      setExpenses(p => p.map(e => e.id === exp.id ? { ...e, ...updated } : e))
+
+      if (markingReimbursed) {
+        // Auto-create a withdrawal entry so Accounting cash-flow is closed
+        // Partner paid out of pocket → company owes them → paying back = withdrawal
+        const partnerName = exp.paid_by === 'ibrahim' ? 'إبراهيم'
+                          : exp.paid_by === 'ihsan'   ? 'إحسان'
+                          : null
+        if (partnerName) {
+          await DB.insert('withdrawals', {
+            partner_name: partnerName,
+            type:         'reimbursement',
+            amount:       exp.amount,
+            date:         nowDate,
+            notes:        `استرداد مصروف: ${exp.description || exp.category || ''}`,
+          }).catch(() => {}) // non-critical — don't block the UI
+        }
+        toast('تم تسجيل الاسترداد ✓ — قيد سحب تلقائي في المحاسبة')
+      } else {
+        toast('تم إلغاء الاسترداد')
+      }
     } catch { toast('فشل التحديث', 'error') }
   }
 
@@ -301,7 +326,7 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
             background: exp.reimbursed ? 'rgba(0,228,184,0.12)' : 'rgba(245,158,11,0.1)',
             color: exp.reimbursed ? 'var(--action)' : '#f59e0b',
           }}
-          title={exp.reimbursed ? 'انقر لإلغاء الاسترداد' : 'انقر لتسجيل الاسترداد'}
+          title={exp.reimbursed ? `استُرجع ${exp.reimbursement_date ? 'بتاريخ ' + exp.reimbursement_date : ''} — انقر لإلغاء` : 'انقر لتسجيل الاسترداد'}
         >
           {exp.reimbursed ? '✓ مسترجع' : '⏳ غير مسترجع'}
         </button>

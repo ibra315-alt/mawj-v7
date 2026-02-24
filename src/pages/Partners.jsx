@@ -23,9 +23,10 @@ const CAPITAL_TYPES = [
 ]
 
 const WITHDRAWAL_TYPES = [
-  { value: 'salary',   label: 'راتب' },
-  { value: 'dividend', label: 'توزيع أرباح' },
-  { value: 'personal', label: 'سحب شخصي' },
+  { value: 'salary',        label: 'راتب' },
+  { value: 'dividend',      label: 'توزيع أرباح' },
+  { value: 'personal',      label: 'سحب شخصي' },
+  { value: 'reimbursement', label: 'استرداد مصروف' },
 ]
 
 function typeLabel(type) {
