@@ -57,6 +57,16 @@ export default function Settings({ theme, toggleTheme }) {
         partners = partners.map((n,i) => ({ id:'p'+i, name:n, share: Math.floor(100/partners.length) }))
         SettingsDB.set('partners', partners).catch(()=>{})
       }
+      // Migrate stale Gemini model IDs to current stable names
+      const GEMINI_REMAP = {
+        'gemini-2.5-flash-preview-05-20': 'gemini-2.5-flash',
+        'gemini-2.5-pro-preview-06-05':   'gemini-2.5-pro',
+        'gemini-2.0-flash-exp':           'gemini-2.0-flash',
+      }
+      if (aiSettings?.model && GEMINI_REMAP[aiSettings.model]) {
+        aiSettings = { ...aiSettings, model: GEMINI_REMAP[aiSettings.model] }
+        SettingsDB.set('ai_settings', aiSettings).catch(()=>{})
+      }
       setData({ business:business||{}, statuses:statuses||[], products:products||[], templates:templates||{}, partners, ai_settings:aiSettings||{} })
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
