@@ -15,7 +15,11 @@ import { formatCurrency } from '../data/constants'
 
 const DEFAULT_SYSTEM = `أنت مساعد ذكي متخصص لشركة موج للهدايا الكريستالية في الإمارات.
 تحليل البيانات، تقديم التوصيات، والإجابة عن أسئلة المبيعات والعمليات.
-أجب دائماً بالعربية. كن مختصراً، دقيقاً، وعملياً.`
+أجب دائماً بالعربية. كن مختصراً، دقيقاً، وعملياً.
+قواعد مهمة:
+- لا تُظهر تفكيرك الداخلي أبداً. لا تكتب "THOUGHT:" أو "أفكر:" أو أي تعليق داخلي في ردودك.
+- ابدأ مباشرة بالإجابة دون مقدمات أو تبريرات للمنهجية.
+- إذا كانت البيانات غير كافية للمقارنة، قل ذلك في جملة واحدة مباشرة.`
 
 const DEFAULT_QUICK = [
   { id:'q1', label:'📊 ملخص اليوم',       text:'كيف كانت المبيعات اليوم مقارنة بالأمس؟' },
@@ -86,8 +90,20 @@ async function buildContext(cfg={}) {
     let ctx = `=== موج للهدايا — ${now.toLocaleDateString('ar-AE')} ===\n`
 
     if (always) {
-      ctx += `\n── اليوم ──\nطلبات: ${todayOrds.length} | إيرادات: ${formatCurrency(tRev)}`
-      if (yRev>0) ctx += ` | مقارنة بالأمس: ${((tRev-yRev)/yRev*100).toFixed(0)}%`
+      ctx += `\n── اليوم (${now.toLocaleDateString('ar-AE')}) ──`
+      ctx += `\nطلبات: ${todayOrds.length} | إيرادات: ${formatCurrency(tRev)} | ربح إجمالي: ${formatCurrency(todayOrds.reduce((s,o)=>s+(o.gross_profit||0),0))}`
+
+      const yDate = new Date(yestStart)
+      ctx += `\n\n── أمس (${yDate.toLocaleDateString('ar-AE')}) ──`
+      ctx += `\nطلبات: ${yestOrds.length} | إيرادات: ${formatCurrency(yRev)} | ربح إجمالي: ${formatCurrency(yestOrds.reduce((s,o)=>s+(o.gross_profit||0),0))}`
+
+      if (yRev > 0) {
+        const chg = ((tRev-yRev)/yRev*100).toFixed(0)
+        ctx += `\nتغير الإيرادات: ${chg >= 0 ? '+' : ''}${chg}%`
+      } else {
+        ctx += `\n(لا يوجد مبيعات أمس للمقارنة)`
+      }
+
       ctx += `\n\n── هذا الشهر ──\nالطلبات: ${monthOrds.length} | الإيرادات: ${formatCurrency(mRev)}\nربح إجمالي: ${formatCurrency(mGP)} | رسوم حياك: ${formatCurrency(mHayyak)}`
     }
 
@@ -181,7 +197,7 @@ async function executeAction(action, params, onNavigate) {
 
 // ── System prompt with actions ────────────────────────────
 function buildSystemPrompt(baseCfg, actionsEnabled) {
-  let prompt = (baseCfg?.system_prompt || DEFAULT_SYSTEM) + '\n\n'
+  let prompt = (baseCfg?.system_prompt || DEFAULT_SYSTEM) + '\n\nلا تُظهر تفكيرك الداخلي أبداً. ابدأ مباشرة بالإجابة.\n\n'
 
   const enabledActions = Object.entries(actionsEnabled||{}).filter(([,v])=>v).map(([k])=>k)
 
