@@ -1109,7 +1109,7 @@ const AI_MODELS = [
   },
   // ── Google Gemini ──
   {
-    id: 'gemini-2.5-flash-preview-05-20', provider: 'google', providerLabel: 'Google',
+    id: 'gemini-2.5-flash', provider: 'google', providerLabel: 'Google',
     name: 'Gemini 2.5 Flash',
     tag: 'الأرخص', tagBg: 'rgba(16,185,129,0.12)', tagColor: '#10b981',
     priceIn: 0.15, priceOut: 0.60, estimate: '~0.003 د.إ / رسالة',
@@ -1122,7 +1122,7 @@ const AI_MODELS = [
     workflow: 'وجّهه بوضوح: "اعطني رقم فقط" أو "الخص في جملة واحدة". أداؤه بالعربية جيد لكن أقل دقة من Claude.',
   },
   {
-    id: 'gemini-2.5-pro-preview-06-05', provider: 'google', providerLabel: 'Google',
+    id: 'gemini-2.5-pro', provider: 'google', providerLabel: 'Google',
     name: 'Gemini 2.5 Pro',
     tag: 'قوي', tagBg: 'rgba(59,130,246,0.12)', tagColor: '#3b82f6',
     priceIn: 1.25, priceOut: 10.00, estimate: '~0.02 د.إ / رسالة',
