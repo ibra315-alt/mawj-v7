@@ -30,23 +30,99 @@ const DEFAULT_QUICK = [
   { id:'q6', label:'💡 توصية',             text:'بناءً على البيانات، ما أهم شيء يجب التركيز عليه الآن؟' },
 ]
 
-// ── API proxy ─────────────────────────────────────────────
-async function callAI(messages, systemPrompt, model='claude-sonnet-4-20250514', maxTokens=1500) {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('غير مسجّل الدخول')
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`, {
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'Authorization':`Bearer ${session.access_token}`,
-      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ model, max_tokens:maxTokens, system:systemPrompt, messages }),
-  })
-  if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error||`خطأ ${res.status}`) }
-  const data = await res.json()
-  if (data.error) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error))
-  return data
+// ── Multi-provider AI router ─────────────────────────────
+// Claude models → Supabase Edge Function proxy (no key needed)
+// Google/OpenAI/DeepSeek → direct API with user-supplied key
+
+function detectProvider(model) {
+  if (model.startsWith('claude'))    return 'anthropic'
+  if (model.startsWith('gemini'))    return 'google'
+  if (model.startsWith('gpt') || model.startsWith('o1') || model.startsWith('o3')) return 'openai'
+  if (model.startsWith('deepseek'))  return 'deepseek'
+  return 'anthropic'
+}
+
+async function callAI(messages, systemPrompt, model='claude-sonnet-4-20250514', maxTokens=1500, apiKeys={}) {
+  const provider = detectProvider(model)
+
+  // ── Anthropic via Supabase proxy ──────────────────────
+  if (provider === 'anthropic') {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('غير مسجّل الدخول')
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ model, max_tokens:maxTokens, system:systemPrompt, messages }),
+    })
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error||`خطأ ${res.status}`) }
+    const data = await res.json()
+    if (data.error) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error))
+    return data
+  }
+
+  // ── Google Gemini ─────────────────────────────────────
+  if (provider === 'google') {
+    const key = apiKeys.google_api_key
+    if (!key) throw new Error('مفتاح Google AI غير موجود — أضفه في الإعدادات → الذكاء الاصطناعي')
+    const geminiMessages = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }))
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts:[{ text: systemPrompt }] },
+        contents: geminiMessages,
+        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
+      }),
+    })
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||`خطأ Gemini ${res.status}`) }
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!text) throw new Error('لم يُرجع Gemini رداً')
+    return { content:[{ text }] }
+  }
+
+  // ── OpenAI ────────────────────────────────────────────
+  if (provider === 'openai') {
+    const key = apiKeys.openai_api_key
+    if (!key) throw new Error('مفتاح OpenAI غير موجود — أضفه في الإعدادات → الذكاء الاصطناعي')
+    const oaiMessages = [{ role:'system', content:systemPrompt }, ...messages.map(m=>({ role:m.role, content:m.content }))]
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+      body: JSON.stringify({ model, max_tokens:maxTokens, messages:oaiMessages, temperature:0.7 }),
+    })
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||`خطأ OpenAI ${res.status}`) }
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content
+    if (!text) throw new Error('لم يُرجع GPT رداً')
+    return { content:[{ text }] }
+  }
+
+  // ── DeepSeek (OpenAI-compatible) ──────────────────────
+  if (provider === 'deepseek') {
+    const key = apiKeys.deepseek_api_key
+    if (!key) throw new Error('مفتاح DeepSeek غير موجود — أضفه في الإعدادات → الذكاء الاصطناعي')
+    const dsMessages = [{ role:'system', content:systemPrompt }, ...messages.map(m=>({ role:m.role, content:m.content }))]
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+      body: JSON.stringify({ model, max_tokens:maxTokens, messages:dsMessages, temperature:0.7 }),
+    })
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||`خطأ DeepSeek ${res.status}`) }
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content
+    if (!text) throw new Error('لم يُرجع DeepSeek رداً')
+    return { content:[{ text }] }
+  }
+
+  throw new Error(`مزود غير معروف: ${provider}`)
 }
 
 // ── Context builder ───────────────────────────────────────
@@ -256,7 +332,7 @@ export default function AIAssistant({ onClose, onNavigate }) {
     try {
       const ctx     = context || await buildContext(aiCfg||{})
       const history = [...messages, userMsg].map(m => ({ role:m.role, content:m.content }))
-      const data    = await callAI(history, sysPrompt + '\n\n' + ctx, model, maxTokens)
+      const data    = await callAI(history, sysPrompt + '\n\n' + ctx, model, maxTokens, aiCfg?.api_keys||{})
       const reply   = data.content?.[0]?.text || 'عذراً، لم أتمكن من الإجابة.'
 
       // Parse action commands from reply
@@ -321,6 +397,9 @@ export default function AIAssistant({ onClose, onNavigate }) {
             <div style={{fontSize:9,color:context?'var(--teal)':'#f59e0b',marginTop:1}}>
               {context ? '● بيانات محمّلة' : '○ جارٍ التحميل...'}
               {hasActions && <span style={{color:'#f59e0b',marginRight:6}}>· إجراءات مفعّلة</span>}
+            </div>
+            <div style={{fontSize:8,color:'var(--text-muted)',marginTop:1,direction:'ltr',textAlign:'left'}}>
+              {model.startsWith('claude')?'Anthropic':model.startsWith('gemini')?'Google':model.startsWith('gpt')?'OpenAI':model.startsWith('deepseek')?'DeepSeek':'AI'} · {model.split('-').slice(0,3).join('-')}
             </div>
           </div>
         </div>

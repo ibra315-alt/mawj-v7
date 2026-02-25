@@ -1074,11 +1074,115 @@ const DEFAULT_AI_SETTINGS = {
   panel_position: 'bottom-left',
 }
 
+/* ── All supported AI models ── */
+const AI_MODELS = [
+  // ── Anthropic (Claude) — via Supabase proxy, no extra key ──
+  {
+    id: 'claude-haiku-4-5-20251001', provider: 'anthropic', providerLabel: 'Anthropic',
+    name: 'Claude Haiku 4.5',
+    tag: 'اقتصادي', tagBg: 'rgba(0,228,184,0.12)', tagColor: 'var(--teal)',
+    priceIn: 0.80, priceOut: 4.00, estimate: '~0.01 د.إ / رسالة',
+    speed: 'سريع جداً', quality: '★★★☆☆',
+    via: 'supabase_proxy',
+    note: 'مثالي للأسئلة اليومية السريعة: أرقام اليوم، مقارنة بالأمس، عدد الطلبات. لا يحتاج مفتاح إضافي.',
+    workflow: 'اسأله: "كم طلب اليوم؟" أو "قارن هذا الشهر بالماضي". تجنّب التحليلات المعقدة.',
+  },
+  {
+    id: 'claude-sonnet-4-20250514', provider: 'anthropic', providerLabel: 'Anthropic',
+    name: 'Claude Sonnet 4',
+    tag: 'موصى به', tagBg: 'rgba(124,58,237,0.12)', tagColor: 'var(--violet-light)',
+    priceIn: 3.00, priceOut: 15.00, estimate: '~0.05 د.إ / رسالة',
+    speed: 'سريع', quality: '★★★★☆',
+    via: 'supabase_proxy',
+    note: 'التوازن المثالي بين السرعة والذكاء. مناسب للتحليلات اليومية، التوصيات، وتفسير الأرقام. لا يحتاج مفتاح إضافي.',
+    workflow: 'اسأله: "لماذا انخفضت المبيعات؟" أو "ما أكثر منتج مربح؟" أو "أعطني توصية هذا الأسبوع".',
+  },
+  {
+    id: 'claude-opus-4-6', provider: 'anthropic', providerLabel: 'Anthropic',
+    name: 'Claude Opus 4.6',
+    tag: 'متميز', tagBg: 'rgba(236,72,153,0.12)', tagColor: 'var(--pink)',
+    priceIn: 15.00, priceOut: 75.00, estimate: '~0.25 د.إ / رسالة',
+    speed: 'متوسط', quality: '★★★★★',
+    via: 'supabase_proxy',
+    note: 'أذكى نموذج لأنثروبيك. للتحليلات الاستراتيجية العميقة وقرارات العمل الكبيرة. لا يحتاج مفتاح إضافي.',
+    workflow: 'استخدمه للقرارات الكبيرة فقط: "هل أغير استراتيجية التسعير؟" أو "حلّل أداء الربع الأخير بالتفصيل".',
+  },
+  // ── Google Gemini ──
+  {
+    id: 'gemini-2.5-flash-preview-05-20', provider: 'google', providerLabel: 'Google',
+    name: 'Gemini 2.5 Flash',
+    tag: 'الأرخص', tagBg: 'rgba(16,185,129,0.12)', tagColor: '#10b981',
+    priceIn: 0.15, priceOut: 0.60, estimate: '~0.003 د.إ / رسالة',
+    speed: 'سريع جداً', quality: '★★★☆☆',
+    via: 'google_api', keyField: 'google_api_key',
+    keyLabel: 'Google AI API Key', keyPlaceholder: 'AIzaSy...',
+    keyUrl: 'https://aistudio.google.com/app/apikey',
+    keyHint: 'مجاني حتى حد معين • aistudio.google.com',
+    note: 'الخيار الأرخص بفارق كبير. جيد للأسئلة البسيطة والتلخيص السريع. يتطلب مفتاح Google AI.',
+    workflow: 'وجّهه بوضوح: "اعطني رقم فقط" أو "الخص في جملة واحدة". أداؤه بالعربية جيد لكن أقل دقة من Claude.',
+  },
+  {
+    id: 'gemini-2.5-pro-preview-06-05', provider: 'google', providerLabel: 'Google',
+    name: 'Gemini 2.5 Pro',
+    tag: 'قوي', tagBg: 'rgba(59,130,246,0.12)', tagColor: '#3b82f6',
+    priceIn: 1.25, priceOut: 10.00, estimate: '~0.02 د.إ / رسالة',
+    speed: 'متوسط', quality: '★★★★☆',
+    via: 'google_api', keyField: 'google_api_key',
+    keyLabel: 'Google AI API Key', keyPlaceholder: 'AIzaSy...',
+    keyUrl: 'https://aistudio.google.com/app/apikey',
+    keyHint: 'مجاني حتى حد معين • aistudio.google.com',
+    note: 'نموذج Gemini الأقوى. قدرات تحليل ممتازة مع سياق طويل جداً. مناسب لتحليل بيانات كبيرة.',
+    workflow: 'مناسب لتحليل الاتجاهات الشهرية والتنبؤ. اسأله: "حلّل أداء الـ 3 أشهر الماضية وأعطني تنبؤاً".',
+  },
+  // ── OpenAI ──
+  {
+    id: 'gpt-4o-mini', provider: 'openai', providerLabel: 'OpenAI',
+    name: 'GPT-4o Mini',
+    tag: 'اقتصادي', tagBg: 'rgba(0,228,184,0.12)', tagColor: 'var(--teal)',
+    priceIn: 0.15, priceOut: 0.60, estimate: '~0.003 د.إ / رسالة',
+    speed: 'سريع جداً', quality: '★★★☆☆',
+    via: 'openai_api', keyField: 'openai_api_key',
+    keyLabel: 'OpenAI API Key', keyPlaceholder: 'sk-proj-...',
+    keyUrl: 'https://platform.openai.com/api-keys',
+    keyHint: 'platform.openai.com/api-keys',
+    note: 'سريع وخفيف من OpenAI. للأسئلة السريعة والتحقق من الأرقام. يتطلب رصيد في OpenAI.',
+    workflow: 'مناسب للمهام البسيطة: "كم طلب مع حياك الآن؟" أو "ما إجمالي الإيرادات اليوم؟".',
+  },
+  {
+    id: 'gpt-4o', provider: 'openai', providerLabel: 'OpenAI',
+    name: 'GPT-4o',
+    tag: 'متوازن', tagBg: 'rgba(124,58,237,0.12)', tagColor: 'var(--violet-light)',
+    priceIn: 2.50, priceOut: 10.00, estimate: '~0.04 د.إ / رسالة',
+    speed: 'سريع', quality: '★★★★☆',
+    via: 'openai_api', keyField: 'openai_api_key',
+    keyLabel: 'OpenAI API Key', keyPlaceholder: 'sk-proj-...',
+    keyUrl: 'https://platform.openai.com/api-keys',
+    keyHint: 'platform.openai.com/api-keys',
+    note: 'نموذج OpenAI الرئيسي. تحليل ممتاز ويفهم العربية والسياق التجاري جيداً.',
+    workflow: 'اسأله بصياغة تجارية واضحة: "أنا أبيع هدايا في الإمارات، حلّل لي..." — السياق يساعده كثيراً.',
+  },
+  // ── DeepSeek ──
+  {
+    id: 'deepseek-chat', provider: 'deepseek', providerLabel: 'DeepSeek',
+    name: 'DeepSeek V3',
+    tag: 'أرخص خيار', tagBg: 'rgba(245,158,11,0.12)', tagColor: '#f59e0b',
+    priceIn: 0.27, priceOut: 1.10, estimate: '~0.005 د.إ / رسالة',
+    speed: 'سريع', quality: '★★★☆☆',
+    via: 'deepseek_api', keyField: 'deepseek_api_key',
+    keyLabel: 'DeepSeek API Key', keyPlaceholder: 'sk-...',
+    keyUrl: 'https://platform.deepseek.com/api_keys',
+    keyHint: 'platform.deepseek.com • رخيص جداً',
+    note: 'أرخص نموذج متاح مع قدرات معقولة. يحتاج صياغة أوضح بالعربية للحصول على نتائج جيدة.',
+    workflow: 'اكتب بالعربية الواضحة وضع الأرقام مباشرة: "المبيعات اليوم 500 درهم، أمس 800. حلّل السبب."',
+  },
+]
+
 function AITab({ ai_settings, updateData }) {
   const cfg = { ...DEFAULT_AI_SETTINGS, ...ai_settings }
-  const [form, setForm]     = useState(cfg)
+  const [form, setForm]         = useState(cfg)
   const [newPrompt, setNewPrompt] = useState({ label:'', text:'' })
-  const [dirty, setDirty]   = useState(false)
+  const [dirty, setDirty]       = useState(false)
+  const [showKeys, setShowKeys] = useState({})
 
   function set(path, value) {
     setForm(prev => {
@@ -1112,16 +1216,19 @@ function AITab({ ai_settings, updateData }) {
     set('quick_prompts', (form.quick_prompts||[]).map(p=>p.id===id?{...p,[field]:value}:p))
   }
 
-  const MODELS = [
-    { value:'claude-sonnet-4-20250514', label:'Claude Sonnet 4 (موصى به)' },
-    { value:'claude-haiku-4-5-20251001', label:'Claude Haiku 4.5 (أسرع، أرخص)' },
-    { value:'claude-opus-4-6', label:'Claude Opus 4.6 (أذكى، أبطأ)' },
-  ]
+  const selectedModel = AI_MODELS.find(m=>m.id===form.model) || AI_MODELS[1]
+  const needsKey = selectedModel?.via !== 'supabase_proxy'
+  const apiKeys = form.api_keys || {}
 
   const POSITIONS = [
     { value:'bottom-left',  label:'أسفل اليسار' },
     { value:'bottom-right', label:'أسفل اليمين' },
   ]
+
+  // Group models by provider
+  const PROVIDER_ORDER = ['anthropic','google','openai','deepseek']
+  const PROVIDER_LABELS = { anthropic:'Anthropic (Claude)', google:'Google (Gemini)', openai:'OpenAI (GPT)', deepseek:'DeepSeek' }
+  const grouped = PROVIDER_ORDER.map(p => ({ provider:p, label:PROVIDER_LABELS[p], models:AI_MODELS.filter(m=>m.provider===p) }))
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
@@ -1134,21 +1241,102 @@ function AITab({ ai_settings, updateData }) {
         </div>
       )}
 
-      {/* Model & Tokens */}
+      {/* Model Picker */}
       <Card>
-        <SectionTitle icon="⚙️">النموذج والأداء</SectionTitle>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
-          <Select label="نموذج الذكاء الاصطناعي" value={form.model} onChange={e=>set('model',e.target.value)}>
-            {MODELS.map(m=><option key={m.value} value={m.value}>{m.label}</option>)}
-          </Select>
+        <SectionTitle icon="🤖">اختيار النموذج</SectionTitle>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:16}}>الأسعار تقريبية لكل رسالة (~500 رمز سياق + ~200 رمز رد). Claude لا يحتاج مفتاح إضافي.</div>
+        {grouped.map(group => (
+          <div key={group.provider} style={{marginBottom:18}}>
+            <div style={{fontSize:10,fontWeight:800,color:'var(--text-muted)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:8,padding:'0 2px'}}>{group.label}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {group.models.map(m => {
+                const isActive = form.model === m.id
+                return (
+                  <button key={m.id} onClick={()=>set('model', m.id)} style={{
+                    width:'100%', textAlign:'right', padding:'12px 14px',
+                    background: isActive ? 'linear-gradient(135deg,rgba(0,228,184,0.10),rgba(124,58,237,0.08))' : 'var(--bg-hover)',
+                    border: isActive ? '1.5px solid rgba(0,228,184,0.35)' : '1.5px solid transparent',
+                    borderRadius:'var(--r-md)', cursor:'pointer', fontFamily:'inherit',
+                    transition:'all 0.15s ease',
+                  }}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <span style={{fontWeight:800,fontSize:13,color: isActive?'var(--teal)':'var(--text)'}}>{m.name}</span>
+                        <span style={{fontSize:10,padding:'2px 7px',borderRadius:999,background:m.tagBg,color:m.tagColor,fontWeight:700}}>{m.tag}</span>
+                        {m.via==='supabase_proxy' && <span style={{fontSize:9,padding:'1px 5px',borderRadius:999,background:'rgba(0,228,184,0.08)',color:'var(--teal)',fontWeight:700}}>بدون مفتاح</span>}
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <span style={{fontSize:10,color:'var(--text-muted)'}}>{m.speed}</span>
+                        <span style={{fontSize:11,color:'var(--text-sec)',letterSpacing:1}}>{m.quality}</span>
+                        <span style={{fontSize:11,fontWeight:800,color:'var(--teal)',minWidth:90,textAlign:'left', direction:'ltr'}}>{m.estimate}</span>
+                        {isActive && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--teal)',boxShadow:'0 0 8px var(--teal)',flexShrink:0}}/>}
+                      </div>
+                    </div>
+                    <div style={{fontSize:11,color:'var(--text-muted)',lineHeight:1.5,marginBottom:3}}>{m.note}</div>
+                    <div style={{fontSize:11,color:'var(--text-sec)',lineHeight:1.5,borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:4,marginTop:2}}>
+                      <span style={{color:'var(--violet-light)',fontWeight:700}}>طريقة الاستخدام: </span>{m.workflow}
+                    </div>
+                    <div style={{display:'flex',gap:16,marginTop:4}}>
+                      <span style={{fontSize:10,color:'var(--text-muted)',direction:'ltr'}}>Input: ${m.priceIn}/M tokens</span>
+                      <span style={{fontSize:10,color:'var(--text-muted)',direction:'ltr'}}>Output: ${m.priceOut}/M tokens</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      {/* API Keys */}
+      <Card>
+        <SectionTitle icon="🔑">مفاتيح API</SectionTitle>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:14}}>نماذج Claude تعمل تلقائياً عبر الخادم. باقي النماذج تحتاج مفتاحك الخاص.</div>
+        {[
+          { field:'google_api_key',   label:'Google AI (Gemini)', placeholder:'AIzaSy...', url:'https://aistudio.google.com/app/apikey',   hint:'مجاني حتى حد معين', icon:'🔵', models:'Gemini Flash & Pro' },
+          { field:'openai_api_key',   label:'OpenAI (GPT-4o)',    placeholder:'sk-proj-...', url:'https://platform.openai.com/api-keys',    hint:'يحتاج رصيد مدفوع', icon:'🟢', models:'GPT-4o & Mini' },
+          { field:'deepseek_api_key', label:'DeepSeek',           placeholder:'sk-...',     url:'https://platform.deepseek.com/api_keys',  hint:'رخيص جداً', icon:'🟠', models:'DeepSeek V3' },
+        ].map(k => (
+          <div key={k.field} style={{marginBottom:14,padding:'12px 14px',background:'var(--bg-hover)',borderRadius:'var(--r-md)',border:'1px solid var(--bg-border)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <span style={{fontSize:15}}>{k.icon}</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13,color:'var(--text)'}}>{k.label}</div>
+                  <div style={{fontSize:10,color:'var(--text-muted)'}}>{k.models} — {k.hint}</div>
+                </div>
+              </div>
+              <a href={k.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:'var(--teal)',fontWeight:700,textDecoration:'none'}}>احصل على المفتاح ↗</a>
+            </div>
+            <div style={{display:'flex',gap:6,alignItems:'center'}}>
+              <input
+                type={showKeys[k.field] ? 'text' : 'password'}
+                value={apiKeys[k.field]||''}
+                onChange={e=>set('api_keys', {...apiKeys,[k.field]:e.target.value})}
+                placeholder={k.placeholder}
+                dir="ltr"
+                style={{flex:1,padding:'8px 11px',background:'var(--bg-surface)',border:'1.5px solid var(--input-border)',borderRadius:'var(--r-sm)',color:'var(--text)',fontSize:12,fontFamily:'monospace',outline:'none'}}
+              />
+              <button onClick={()=>setShowKeys(p=>({...p,[k.field]:!p[k.field]}))} style={{width:32,height:32,borderRadius:'var(--r-sm)',background:'var(--bg-glass)',border:'1px solid var(--bg-border)',cursor:'pointer',fontSize:13,color:'var(--text-muted)',flexShrink:0}}>
+                {showKeys[k.field] ? '🙈' : '👁'}
+              </button>
+              {apiKeys[k.field] && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--teal)',flexShrink:0,boxShadow:'0 0 6px var(--teal)'}}/>}
+            </div>
+          </div>
+        ))}
+        <InfoBox icon="🔒">المفاتيح محفوظة في Supabase مع بياناتك. لا تُشارك هذه المفاتيح مع أحد.</InfoBox>
+      </Card>
+
+      {/* Max Tokens + Position */}
+      <Card>
+        <SectionTitle icon="⚙️">إعدادات الأداء</SectionTitle>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
           <Input label="أقصى رموز للرد" type="number" min="500" max="4000"
-            value={form.max_tokens} onChange={e=>set('max_tokens',parseInt(e.target.value)||1500)}
-            hint="500–4000. أعلى = ردود أطول"/>
+            value={form.max_tokens} onChange={e=>set('max_tokens',parseInt(e.target.value)||1500)}/>
           <Select label="موضع اللوحة" value={form.panel_position} onChange={e=>set('panel_position',e.target.value)}>
             {POSITIONS.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}
           </Select>
         </div>
-        <InfoBox icon="💡">Sonnet 4 هو الأفضل للتحليل اليومي. استخدم Haiku إذا أردت سرعة أكثر وتكلفة أقل.</InfoBox>
       </Card>
 
       {/* System Prompt */}
