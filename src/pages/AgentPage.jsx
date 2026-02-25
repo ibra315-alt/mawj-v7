@@ -117,11 +117,22 @@ function parseToolCall(text) {
 }
 
 function stripToolCall(text) {
-  const idx = text.indexOf('[TOOL:')
-  if (idx === -1) return text.trim()
-  const end = text.indexOf(']', idx)
-  if (end === -1) return text.trim()
-  return (text.slice(0, idx) + text.slice(end + 1)).trim()
+  // Strip ALL [TOOL:{...}] blocks from text
+  let result = text
+  let safety = 0
+  while (result.includes('[TOOL:') && safety++ < 10) {
+    const idx = result.indexOf('[TOOL:')
+    // Find matching closing ] by tracking brace depth
+    let depth = 0
+    let end = -1
+    for (let i = idx + 6; i < result.length; i++) {
+      if (result[i] === '{') depth++
+      else if (result[i] === '}') { depth--; if (depth === 0) { end = i + 1; break } }
+    }
+    if (end === -1 || result[end] !== ']') break
+    result = (result.slice(0, idx) + result.slice(end + 1)).trim()
+  }
+  return result.trim()
 }
 
 // ── Mutation tools (need confirmation) ───────────────────────
