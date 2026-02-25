@@ -390,14 +390,16 @@ async function executeTool(name, params, undoStack, dryRun = false) {
 
     case 'save_memory': {
       if (!params.key || !params.value) return { ok: false, error: 'المفتاح والقيمة مطلوبان' }
-      await supabase.from('agent_memory').upsert({
+      const { error: memErr } = await supabase.from('agent_memory').upsert({
         key: params.key, value: params.value,
         category: params.category || 'general',
         importance: params.importance || 5,
         tags: params.tags || [],
+        access_count: 0,
         updated_at: new Date().toISOString(),
         last_accessed: new Date().toISOString(),
       }, { onConflict: 'key' })
+      if (memErr) return { ok: false, error: memErr.message }
       return { ok: true, key: params.key, saved: true }
     }
 
@@ -716,6 +718,27 @@ export default function AgentPage({ user, onNavigate }) {
       try {
         result = await executeTool(toolCall.name, toolCall.params, undoStack, dryRun)
         setSteps(prev => prev.map(s => s.id === stepId ? { ...s, status: 'done', result } : s))
+
+        // ── Auto-save key findings to memory ──────────────────
+        if (!dryRun && toolCall.name === 'analyze_system' && result.issues) {
+          const high = result.issues.filter(i => i.severity === 'high').map(i => i.msg).join(' | ')
+          const impr = result.improvements?.map(i => i.msg).join(' | ') || ''
+          if (high) await supabase.from('agent_memory').upsert({ key: 'system_issues_latest', value: high, category: 'alert', importance: 8, access_count: 0, tags: ['system_analysis'], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
+          if (impr) await supabase.from('agent_memory').upsert({ key: 'system_improvements_latest', value: impr, category: 'improvement', importance: 6, tags: ['system_analysis'], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
+          await supabase.from('agent_memory').upsert({ key: 'last_system_scan', value: `فُحص في ${new Date().toLocaleDateString('ar-AE')} — ${result.summary?.total_issues || 0} مشكلة، ${result.summary?.total_improvements || 0} فرصة`, category: 'observation', importance: 5, access_count: 0, tags: ['system_analysis'], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
+        }
+        if (!dryRun && toolCall.name === 'detect_anomalies' && result.anomalies?.length) {
+          const msg = result.anomalies.map(a => a.msg).join(' | ')
+          await supabase.from('agent_memory').upsert({ key: 'latest_anomalies', value: msg, category: 'alert', importance: 8, tags: ['anomaly'], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
+        }
+        if (!dryRun && toolCall.name === 'get_summary' && result.month) {
+          const val = `إيرادات الشهر ${result.month.revenue?.toFixed(0)} د.إ | صافي ${result.month.net?.toFixed(0)} د.إ | طلبات ${result.month.orders} | استبدال ${result.month.replacements}`
+          await supabase.from('agent_memory').upsert({ key: 'last_monthly_summary', value: val, category: 'observation', importance: 6, tags: ['summary'], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
+        }
+        if (!dryRun && toolCall.name === 'calculate_partner_split' && result.partners) {
+          const val = result.partners.map(p => `${p.name}: صافي ${p.net_share?.toFixed(0)} د.إ (${p.share_pct}%)`).join(' | ')
+          await supabase.from('agent_memory').upsert({ key: 'last_partner_split', value: val, category: 'decision', importance: 7, tags: ['partners','finance'], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
+        }
       } catch (err) {
         result = { ok: false, error: err.message }
         setSteps(prev => prev.map(s => s.id === stepId ? { ...s, status: 'error', result } : s))
@@ -991,6 +1014,11 @@ export default function AgentPage({ user, onNavigate }) {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input value={memSearch} onChange={e => setMemSearch(e.target.value)} placeholder="ابحث في الذاكرة..." style={{ ...S.input, flex: 1 }} />
             <button onClick={loadMemories} style={{ ...S.btn(''), fontSize: 12, padding: '8px 14px' }}>تحديث</button>
+          <button onClick={async () => {
+            const { error } = await supabase.from('agent_memory').upsert({ key: 'memory_test', value: `اختبار ${new Date().toLocaleString('ar-AE')}`, category: 'general', importance: 1, access_count: 0, tags: [], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
+            if (error) alert('خطأ: ' + error.message)
+            else { await loadMemories(); alert('تم الحفظ ✓') }
+          }} style={{ ...S.btn(''), fontSize: 12, padding: '8px 14px', background: 'rgba(0,228,184,0.1)', color: 'var(--teal)' }}>🧪 اختبار الحفظ</button>
           </div>
           {memLoading && <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>جاري التحميل...</div>}
           {!memLoading && filteredMems.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>لا توجد ذاكرة بعد. شغّل الوكيل وسيحفظ ملاحظاته تلقائياً.</div>}
