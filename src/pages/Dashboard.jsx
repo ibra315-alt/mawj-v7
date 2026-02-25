@@ -36,10 +36,10 @@ export default function Dashboard({ onNavigate }) {
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1)
 
-      const monthOrders    = orders.filter(o => new Date(o.created_at) >= monthStart && o.status !== 'cancelled')
+      const monthOrders    = orders.filter(o => new Date(o.order_date||o.created_at) >= monthStart && o.status !== 'cancelled')
       const monthExpenses  = expenses.filter(e => new Date(e.date) >= monthStart)
-      const todayOrders    = orders.filter(o => new Date(o.created_at) >= todayStart)
-      const yestOrders     = orders.filter(o => { const d = new Date(o.created_at); return d >= yestStart && d < todayStart })
+      const todayOrders    = orders.filter(o => new Date(o.order_date||o.created_at) >= todayStart)
+      const yestOrders     = orders.filter(o => { const d = new Date(o.order_date||o.created_at); return d >= yestStart && d < todayStart })
 
       // Revenue = only delivered (non-replacement) orders
       const revenue         = monthOrders.filter(o => !o.is_replacement && o.status !== 'not_delivered').reduce((s, o) => s + (o.total || 0), 0)
@@ -78,15 +78,15 @@ export default function Dashboard({ onNavigate }) {
       for (let i = 13; i >= 0; i--) {
         const d  = new Date(); d.setDate(d.getDate() - i)
         const ds = d.toDateString()
-        const dayOrds = orders.filter(o => new Date(o.created_at).toDateString() === ds && o.status !== 'cancelled')
+        const dayOrds = orders.filter(o => new Date(o.order_date||o.created_at).toDateString() === ds && o.status !== 'cancelled')
         revByDay.push( dayOrds.reduce((s, o) => s + (o.total         || 0), 0))
         ordByDay.push( dayOrds.length)
         profByDay.push(dayOrds.reduce((s, o) => s + (o.gross_profit  || 0), 0))
       }
       setSparkData({ revenue: revByDay, orders: ordByDay, profit: profByDay })
       // Today's orders
-      const todayFull = orders.filter(o => new Date(o.created_at) >= todayStart)
-        .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+      const todayFull = orders.filter(o => new Date(o.order_date||o.created_at) >= todayStart)
+        .sort((a,b) => new Date(b.order_date||b.created_at) - new Date(a.order_date||a.created_at))
       setTodayFull(todayFull)
       setRecentOrders(orders.slice(-8).reverse())
 

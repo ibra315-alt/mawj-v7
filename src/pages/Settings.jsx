@@ -12,36 +12,52 @@ import { IcPlus, IcSave, IcDownload } from '../components/Icons'
 ══════════════════════════════════════════════════ */
 
 const SECTIONS = [
-  { id:'business',      label:'المتجر',           desc:'معلومات المتجر والمنتجات' },
-  { id:'statuses',      label:'الحالات',          desc:'حالات الطلبات وألوانها'  },
-  { id:'team',          label:'الفريق',           desc:'أعضاء وصلاحيات'         },
-  { id:'whatsapp',      label:'واتساب',           desc:'قوالب الرسائل'           },
-  { id:'appearance',    label:'المظهر',           desc:'الوضع الداكن والفاتح'    },
-  { id:'delivery',      label:'التوصيل',          desc:'مناطق وتكاليف'           },
-  { id:'discounts',     label:'الخصومات',         desc:'أكواد وعروض'             },
-  { id:'notifications', label:'الإشعارات',        desc:'تنبيهات وتذكيرات'        },
-  { id:'security',      label:'الأمان',           desc:'كلمة المرور والجلسة'     },
-  { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد'          },
+  { id:'business',      label:'المتجر',           desc:'معلومات المتجر والمنتجات', icon:'🏪' },
+  { id:'partners',      label:'الشركاء',          desc:'إبراهيم وإحسان والحصص',   icon:'🤝' },
+  { id:'statuses',      label:'الحالات',          desc:'حالات الطلبات وألوانها',  icon:'🔖' },
+  { id:'team',          label:'الفريق',           desc:'أعضاء وصلاحيات',          icon:'👥' },
+  { id:'whatsapp',      label:'واتساب',           desc:'قوالب الرسائل',           icon:'💬' },
+  { id:'ai',            label:'الذكاء الاصطناعي', desc:'المساعد والإجراءات',      icon:'🤖' },
+  { id:'appearance',    label:'المظهر',           desc:'الوضع الداكن والفاتح',    icon:'🎨' },
+  { id:'delivery',      label:'التوصيل',          desc:'مناطق وتكاليف',           icon:'🚚' },
+  { id:'notifications', label:'الإشعارات',        desc:'تنبيهات وتذكيرات',        icon:'🔔' },
+  { id:'security',      label:'الأمان',           desc:'كلمة المرور والجلسة',     icon:'🔐' },
+  { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد',          icon:'💾' },
 ]
 
 export default function Settings({ theme, toggleTheme }) {
   const [section, setSection] = useState('business')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState({ business:{}, statuses:[], products:[], templates:{} })
+  const [data, setData] = useState({ business:{}, statuses:[], products:[], templates:{}, partners:[], ai_settings:{} })
 
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
     try {
-      const [business, statuses, products, templates, partners] = await Promise.all([
+      const [business, statuses, products, templates, rawPartners, aiSettings] = await Promise.all([
         SettingsDB.get('business'),
         SettingsDB.get('statuses'),
         SettingsDB.get('products'),
         SettingsDB.get('whatsapp_templates'),
         SettingsDB.get('partners'),
+        SettingsDB.get('ai_settings'),
       ])
-      setData({ business:business||{}, statuses:statuses||[], products:products||[], templates:templates||{}, partners:partners||[] })
+      // Auto-seed partners if empty
+      let partners = rawPartners
+      if (!partners || partners.length === 0) {
+        partners = [
+          { id:'ibrahim', name:'إبراهيم', share:50 },
+          { id:'ihsan',   name:'إحسان',   share:50 },
+        ]
+        SettingsDB.set('partners', partners).catch(()=>{})
+      }
+      // Migrate string partners to objects
+      if (partners && partners.length > 0 && typeof partners[0] === 'string') {
+        partners = partners.map((n,i) => ({ id:'p'+i, name:n, share: Math.floor(100/partners.length) }))
+        SettingsDB.set('partners', partners).catch(()=>{})
+      }
+      setData({ business:business||{}, statuses:statuses||[], products:products||[], templates:templates||{}, partners, ai_settings:aiSettings||{} })
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }
@@ -66,18 +82,21 @@ export default function Settings({ theme, toggleTheme }) {
 
   const contentProps = {
     data, updateData, theme, toggleTheme,
-    statuses: data.statuses,
-    products: data.products,
-    templates: data.templates,
-    business: data.business,
-    partners: data.partners || [],
+    statuses:    data.statuses,
+    products:    data.products,
+    templates:   data.templates,
+    business:    data.business,
+    partners:    data.partners || [],
+    ai_settings: data.ai_settings || {},
   }
 
   function renderSection() {
     switch(section) {
       case 'business':      return <BusinessTab      {...contentProps} />
+      case 'partners':      return <PartnersTab      {...contentProps} />
       case 'statuses':      return <StatusesTab      {...contentProps} />
       case 'team':          return <TeamTab />
+      case 'ai':            return <AITab            {...contentProps} />
       case 'whatsapp':      return <WhatsAppTab      {...contentProps} />
       case 'appearance':    return <AppearanceTab    {...contentProps} />
       case 'delivery':      return <DeliveryTab      {...contentProps} />
@@ -325,7 +344,8 @@ function BusinessTab({ data, products, partners, updateData }) {
 
   function addPartner() {
     if (!partnerName.trim()) return
-    updateData('partners', [...(partners||[]), partnerName.trim()])
+    const newPartner = { id: 'p'+Date.now(), name: partnerName.trim(), share: 50 }
+    updateData('partners', [...(partners||[]), newPartner])
     setPartnerName('')
   }
 
@@ -942,6 +962,319 @@ function SecurityTab() {
       </Card>
 
       <InfoBox icon="">كلمة المرور تُدار عبر Supabase Authentication. لتغييرها اذهب إلى إعدادات حسابك.</InfoBox>
+    </div>
+  )
+}
+
+
+/* ══════════════════════════════════════════════════
+   PARTNERS TAB
+══════════════════════════════════════════════════ */
+function PartnersTab({ partners, updateData }) {
+  const [list, setList] = useState(partners || [])
+  const [form, setForm] = useState({ name:'', share:50 })
+
+  useEffect(() => { setList(partners || []) }, [partners])
+
+  function add() {
+    if (!form.name.trim()) return
+    const updated = [...list, { id:'p'+Date.now(), name:form.name.trim(), share:parseInt(form.share)||50 }]
+    setList(updated); updateData('partners', updated)
+    setForm({ name:'', share:50 })
+  }
+
+  function remove(id) {
+    const updated = list.filter(p => p.id !== id)
+    setList(updated); updateData('partners', updated)
+  }
+
+  function updateShare(id, share) {
+    const updated = list.map(p => p.id === id ? {...p, share:parseInt(share)||50} : p)
+    setList(updated); updateData('partners', updated)
+  }
+
+  const totalShare = list.reduce((s,p) => s+(p.share||0), 0)
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <Card>
+        <SectionTitle icon="🤝">الشركاء</SectionTitle>
+        <InfoBox icon="ℹ️">الشركاء هنا يؤثرون على صفحات المحاسبة والشركاء. نسبة الحصة تُستخدم لتوزيع الأرباح.</InfoBox>
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:14,marginBottom:18}}>
+          {list.length === 0 && <div style={{color:'var(--text-muted)',fontSize:13,padding:'12px 0',textAlign:'center'}}>لا يوجد شركاء — أضف إبراهيم وإحسان</div>}
+          {list.map(p => (
+            <GlassRow key={p.id}>
+              <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--teal),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#050c1a',flexShrink:0}}>
+                {p.name?.[0]}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:14}}>{p.name}</div>
+                <div style={{fontSize:11,color:'var(--text-muted)'}}>ID: {p.id}</div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <input
+                  type="number" min="0" max="100" value={p.share}
+                  onChange={e=>updateShare(p.id, e.target.value)}
+                  style={{width:56,padding:'6px 8px',background:'var(--bg-hover)',border:'1.5px solid var(--input-border)',borderRadius:'var(--r-sm)',color:'var(--text)',fontSize:13,fontFamily:'inherit',textAlign:'center'}}
+                />
+                <span style={{fontSize:12,color:'var(--text-muted)'}}>%</span>
+              </div>
+              <button onClick={()=>remove(p.id)} style={{background:'none',border:'none',color:'var(--danger)',cursor:'pointer',fontSize:16,padding:4,flexShrink:0}}>✕</button>
+            </GlassRow>
+          ))}
+        </div>
+        {totalShare !== 100 && list.length > 0 && (
+          <div style={{padding:'8px 12px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.25)',borderRadius:'var(--r-md)',fontSize:12,color:'#f59e0b',marginBottom:12}}>
+            ⚠️ مجموع الحصص {totalShare}% — يجب أن يساوي 100%
+          </div>
+        )}
+        <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+          <Input label="اسم الشريك" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="إبراهيم"/>
+          <Input label="الحصة %" type="number" value={form.share} onChange={e=>setForm(p=>({...p,share:e.target.value}))} style={{width:80}}/>
+          <Btn onClick={add} style={{flexShrink:0}}><IcPlus size={14}/> إضافة</Btn>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+
+/* ══════════════════════════════════════════════════
+   AI TAB — Full AI assistant settings
+══════════════════════════════════════════════════ */
+const DEFAULT_AI_SETTINGS = {
+  system_prompt: `أنت مساعد ذكي متخصص لشركة موج للهدايا الكريستالية في الإمارات.
+تحليل البيانات، تقديم التوصيات، والإجابة عن أسئلة المبيعات والعمليات.
+أجب دائماً بالعربية. كن مختصراً، دقيقاً، وعملياً.
+إذا طُلب منك تحليل رقم، قدّم السبب والتوصية.`,
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 1500,
+  quick_prompts: [
+    { id:'q1', label:'📊 ملخص اليوم',         text:'كيف كانت المبيعات اليوم مقارنة بالأمس؟' },
+    { id:'q2', label:'📈 أداء هذا الشهر',     text:'ما أبرز مؤشرات الأداء هذا الشهر؟' },
+    { id:'q3', label:'🔄 تحليل الاستبدالات',  text:'ما نسبة الاستبدالات وما سببها المرجح؟' },
+    { id:'q4', label:'🏆 أفضل المنتجات',      text:'ما المنتجات الأكثر مبيعاً وربحاً؟' },
+    { id:'q5', label:'🌆 أفضل المناطق',       text:'أي الإمارات تحقق أعلى مبيعات؟' },
+    { id:'q6', label:'💡 توصية الأسبوع',      text:'بناءً على البيانات، ما أهم شيء يجب التركيز عليه الآن؟' },
+  ],
+  context_includes: {
+    orders_summary: true,
+    expenses_summary: true,
+    products_breakdown: true,
+    cities_breakdown: true,
+    pending_cod: true,
+    replacements: true,
+  },
+  actions_enabled: {
+    navigate: true,
+    mark_delivered: false,
+    add_expense: false,
+    update_status: false,
+  },
+  panel_position: 'bottom-left',
+}
+
+function AITab({ ai_settings, updateData }) {
+  const cfg = { ...DEFAULT_AI_SETTINGS, ...ai_settings }
+  const [form, setForm]     = useState(cfg)
+  const [newPrompt, setNewPrompt] = useState({ label:'', text:'' })
+  const [dirty, setDirty]   = useState(false)
+
+  function set(path, value) {
+    setForm(prev => {
+      const parts = path.split('.')
+      const next = { ...prev }
+      let cur = next
+      for (let i=0; i<parts.length-1; i++) { cur[parts[i]] = { ...cur[parts[i]] }; cur = cur[parts[i]] }
+      cur[parts[parts.length-1]] = value
+      return next
+    })
+    setDirty(true)
+  }
+
+  function save() {
+    updateData('ai_settings', form)
+    setDirty(false)
+  }
+
+  function addQuickPrompt() {
+    if (!newPrompt.label.trim() || !newPrompt.text.trim()) return
+    const updated = [...(form.quick_prompts||[]), { id:'q'+Date.now(), ...newPrompt }]
+    set('quick_prompts', updated)
+    setNewPrompt({ label:'', text:'' })
+  }
+
+  function removePrompt(id) {
+    set('quick_prompts', (form.quick_prompts||[]).filter(p=>p.id!==id))
+  }
+
+  function updatePrompt(id, field, value) {
+    set('quick_prompts', (form.quick_prompts||[]).map(p=>p.id===id?{...p,[field]:value}:p))
+  }
+
+  const MODELS = [
+    { value:'claude-sonnet-4-20250514', label:'Claude Sonnet 4 (موصى به)' },
+    { value:'claude-haiku-4-5-20251001', label:'Claude Haiku 4.5 (أسرع، أرخص)' },
+    { value:'claude-opus-4-6', label:'Claude Opus 4.6 (أذكى، أبطأ)' },
+  ]
+
+  const POSITIONS = [
+    { value:'bottom-left',  label:'أسفل اليسار' },
+    { value:'bottom-right', label:'أسفل اليمين' },
+  ]
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+
+      {/* Save banner */}
+      {dirty && (
+        <div style={{padding:'12px 16px',background:'rgba(0,228,184,0.08)',border:'1.5px solid rgba(0,228,184,0.3)',borderRadius:'var(--r-md)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontSize:13,color:'var(--text-sec)'}}>لديك تغييرات غير محفوظة</span>
+          <Btn size="sm" onClick={save}><IcSave size={13}/> حفظ الإعدادات</Btn>
+        </div>
+      )}
+
+      {/* Model & Tokens */}
+      <Card>
+        <SectionTitle icon="⚙️">النموذج والأداء</SectionTitle>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
+          <Select label="نموذج الذكاء الاصطناعي" value={form.model} onChange={e=>set('model',e.target.value)}>
+            {MODELS.map(m=><option key={m.value} value={m.value}>{m.label}</option>)}
+          </Select>
+          <Input label="أقصى رموز للرد" type="number" min="500" max="4000"
+            value={form.max_tokens} onChange={e=>set('max_tokens',parseInt(e.target.value)||1500)}
+            hint="500–4000. أعلى = ردود أطول"/>
+          <Select label="موضع اللوحة" value={form.panel_position} onChange={e=>set('panel_position',e.target.value)}>
+            {POSITIONS.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}
+          </Select>
+        </div>
+        <InfoBox icon="💡">Sonnet 4 هو الأفضل للتحليل اليومي. استخدم Haiku إذا أردت سرعة أكثر وتكلفة أقل.</InfoBox>
+      </Card>
+
+      {/* System Prompt */}
+      <Card>
+        <SectionTitle icon="📝">موجّه النظام</SectionTitle>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:10}}>هذا النص يُرسل مع كل رسالة ليحدد شخصية المساعد وأسلوبه</div>
+        <textarea
+          value={form.system_prompt}
+          onChange={e=>set('system_prompt',e.target.value)}
+          rows={6}
+          style={{width:'100%',padding:'12px',background:'var(--bg-hover)',border:'1.5px solid var(--input-border)',borderRadius:'var(--r-md)',color:'var(--text)',fontSize:13,fontFamily:'inherit',resize:'vertical',outline:'none',boxSizing:'border-box',lineHeight:1.6}}
+        />
+        <button
+          onClick={()=>set('system_prompt',DEFAULT_AI_SETTINGS.system_prompt)}
+          style={{marginTop:8,fontSize:11,color:'var(--text-muted)',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}
+        >↩ استعادة الافتراضي</button>
+      </Card>
+
+      {/* Context */}
+      <Card>
+        <SectionTitle icon="📊">بيانات السياق</SectionTitle>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:14}}>اختر ما يُرسل للمساعد من بيانات مع كل سؤال</div>
+        {[
+          { key:'orders_summary',     label:'ملخص الطلبات',      desc:'اليوم، الشهر، الشهر الماضي' },
+          { key:'expenses_summary',   label:'ملخص المصاريف',     desc:'هذا الشهر وغير المستردة' },
+          { key:'products_breakdown', label:'تفصيل المنتجات',    desc:'أفضل 5 منتجات بالكمية والربح' },
+          { key:'cities_breakdown',   label:'توزيع الإمارات',    desc:'أفضل 5 مناطق بالطلبات والإيراد' },
+          { key:'pending_cod',        label:'COD المعلق',        desc:'طلبات مسلّمة لم تُحوَّل من حياك' },
+          { key:'replacements',       label:'الاستبدالات',       desc:'العدد، النسبة، التكلفة' },
+        ].map(item => (
+          <div key={item.key} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{item.label}</div>
+              <div style={{fontSize:11,color:'var(--text-muted)'}}>{item.desc}</div>
+            </div>
+            <button
+              onClick={()=>set('context_includes.'+item.key, !form.context_includes?.[item.key])}
+              style={{
+                width:44,height:24,borderRadius:999,border:'none',cursor:'pointer',flexShrink:0,
+                background: form.context_includes?.[item.key] ? 'var(--action)' : 'var(--bg-hover)',
+                transition:'background 150ms',position:'relative',
+              }}
+            >
+              <div style={{
+                width:18,height:18,borderRadius:'50%',background:'#fff',
+                position:'absolute',top:3,
+                left: form.context_includes?.[item.key] ? 3 : 'auto',
+                right: form.context_includes?.[item.key] ? 'auto' : 3,
+                transition:'all 150ms',
+              }}/>
+            </button>
+          </div>
+        ))}
+      </Card>
+
+      {/* Actions */}
+      <Card>
+        <SectionTitle icon="⚡">الإجراءات التلقائية</SectionTitle>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:14}}>السماح للمساعد بتنفيذ إجراءات مباشرة داخل النظام</div>
+        {[
+          { key:'navigate',       label:'التنقل بين الصفحات',   desc:'يفتح الصفحات المطلوبة تلقائياً',    safe:true  },
+          { key:'update_status',  label:'تغيير حالة الطلب',     desc:'مثل: تغيير "جديد" إلى "جاهز"',      safe:false },
+          { key:'mark_delivered', label:'تسجيل التسليم',        desc:'يضع حالة الطلب "مسلّم" مباشرة',     safe:false },
+          { key:'add_expense',    label:'إضافة مصروف',          desc:'يحفظ مصروف جديد بناءً على طلبك',    safe:false },
+        ].map(item => (
+          <div key={item.key} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+            <div>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <span style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{item.label}</span>
+                {!item.safe && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(239,68,68,0.1)',color:'var(--danger)',fontWeight:700}}>يعدّل البيانات</span>}
+                {item.safe  && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(0,228,184,0.1)',color:'var(--action)',fontWeight:700}}>آمن</span>}
+              </div>
+              <div style={{fontSize:11,color:'var(--text-muted)'}}>{item.desc}</div>
+            </div>
+            <button
+              onClick={()=>set('actions_enabled.'+item.key, !form.actions_enabled?.[item.key])}
+              style={{
+                width:44,height:24,borderRadius:999,border:'none',cursor:'pointer',flexShrink:0,
+                background: form.actions_enabled?.[item.key] ? (item.safe?'var(--action)':'#f59e0b') : 'var(--bg-hover)',
+                transition:'background 150ms',position:'relative',
+              }}
+            >
+              <div style={{
+                width:18,height:18,borderRadius:'50%',background:'#fff',
+                position:'absolute',top:3,
+                left: form.actions_enabled?.[item.key] ? 3 : 'auto',
+                right: form.actions_enabled?.[item.key] ? 'auto' : 3,
+                transition:'all 150ms',
+              }}/>
+            </button>
+          </div>
+        ))}
+        <InfoBox icon="⚠️" color="var(--pink)" style={{marginTop:12}}>الإجراءات التي تعدّل البيانات لا رجعة فيها. فعّلها فقط إذا كنت واثقاً من المساعد.</InfoBox>
+      </Card>
+
+      {/* Quick Prompts */}
+      <Card>
+        <SectionTitle icon="⚡">الأسئلة السريعة</SectionTitle>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:12}}>تظهر كأزرار في لوحة المساعد عند فتحها لأول مرة</div>
+        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
+          {(form.quick_prompts||[]).map(p => (
+            <GlassRow key={p.id}>
+              <input
+                value={p.label} onChange={e=>updatePrompt(p.id,'label',e.target.value)}
+                style={{width:160,padding:'6px 10px',background:'var(--bg-hover)',border:'1.5px solid var(--input-border)',borderRadius:'var(--r-sm)',color:'var(--text)',fontSize:12,fontFamily:'inherit'}}
+                placeholder="الزر (مثال: 📊 ملخص)"
+              />
+              <input
+                value={p.text} onChange={e=>updatePrompt(p.id,'text',e.target.value)}
+                style={{flex:1,padding:'6px 10px',background:'var(--bg-hover)',border:'1.5px solid var(--input-border)',borderRadius:'var(--r-sm)',color:'var(--text)',fontSize:12,fontFamily:'inherit'}}
+                placeholder="نص السؤال..."
+              />
+              <button onClick={()=>removePrompt(p.id)} style={{background:'none',border:'none',color:'var(--danger)',cursor:'pointer',fontSize:15,padding:'4px 6px',flexShrink:0}}>✕</button>
+            </GlassRow>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+          <Input label="نص الزر" value={newPrompt.label} onChange={e=>setNewPrompt(p=>({...p,label:e.target.value}))} placeholder="📊 ملخص اليوم" style={{width:200}}/>
+          <Input label="نص السؤال" value={newPrompt.text} onChange={e=>setNewPrompt(p=>({...p,text:e.target.value}))} placeholder="اعطني ملخص..."/>
+          <Btn onClick={addQuickPrompt} style={{flexShrink:0,alignSelf:'flex-end'}}><IcPlus size={14}/></Btn>
+        </div>
+      </Card>
+
+      {!dirty && (
+        <Btn onClick={save}><IcSave size={14}/> حفظ جميع الإعدادات</Btn>
+      )}
     </div>
   )
 }

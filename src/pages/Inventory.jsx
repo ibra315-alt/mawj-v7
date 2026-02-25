@@ -74,7 +74,8 @@ export default function Inventory() {
     return matchSearch && matchLow && i.active
   })
 
-  const lowStockCount = items.filter(i => i.active && i.stock_qty <= i.low_stock_threshold).length
+  const lowStockCount  = items.filter(i => i.active && i.stock_qty <= i.low_stock_threshold).length
+  const zeroStockItems = items.filter(i => i.active && (i.stock_qty === 0 || i.stock_qty == null))
   const totalValue = items.filter(i => i.active).reduce((s, i) => s + i.stock_qty * (i.cost_price || 0), 0)
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><Spinner size={36} /></div>
@@ -101,6 +102,31 @@ export default function Inventory() {
         <StatCard label="قيمة المخزون" value={formatCurrency(totalValue)} color="var(--amber)" />
         <StatCard label="مخزون منخفض" value={lowStockCount} color={lowStockCount > 0 ? 'var(--amber)' : 'var(--green)'} />
       </div>
+
+      {/* Zero stock banner */}
+      {zeroStockItems.length > 0 && (
+        <div style={{ marginBottom:14, padding:'14px 16px', background:'rgba(239,68,68,0.08)', border:'1.5px solid rgba(239,68,68,0.25)', borderRadius:'var(--r-md)' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:18 }}>⚠️</span>
+              <div>
+                <div style={{ fontWeight:800, fontSize:13, color:'var(--danger)' }}>
+                  {zeroStockItems.length} منتج بمخزون صفر
+                </div>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+                  {zeroStockItems.slice(0,4).map(i=>i.name).join(' · ')}{zeroStockItems.length > 4 ? ` +${zeroStockItems.length-4}` : ''}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setFilterLow(true)}
+              style={{ fontSize:12, fontWeight:700, color:'var(--danger)', background:'rgba(239,68,68,0.12)', border:'1.5px solid rgba(239,68,68,0.25)', borderRadius:999, padding:'6px 14px', cursor:'pointer', fontFamily:'inherit' }}
+            >
+              تحديث المخزون
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Reorder suggestions */}
       {items.filter(i=>i.active && i.stock_qty <= i.low_stock_threshold).length > 0 && (

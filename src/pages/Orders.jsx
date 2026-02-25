@@ -433,6 +433,7 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
     }
   }, [open, order, replacementFor])
 
+  const [phoneWarning, setPhoneWarning] = useState(null)
   const setField = (k, v) => setForm(p => ({ ...p, [k]:v }))
 
   function addItem(productName, sizeVariant) {
@@ -511,6 +512,19 @@ function OrderForm({ open, onClose, order, replacementFor, products, onSaved, us
       {isRepl && (
         <div style={{ marginBottom:16, padding:'10px 14px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.3)', borderRadius:'var(--r-md)', fontSize:13, color:'#f59e0b', fontWeight:700 }}>
           ⚠️ طلب استبدال مجاني — الربح سيكون سالباً (تكلفة + رسوم التوصيل)
+        </div>
+      )}
+
+      {/* Duplicate phone warning */}
+      {phoneWarning && (
+        <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.35)', borderRadius:'var(--r-md)', fontSize:12, color:'#f59e0b', display:'flex', alignItems:'flex-start', gap:8 }}>
+          <span style={{ fontSize:15, flexShrink:0 }}>⚠️</span>
+          <div>
+            <div style={{ fontWeight:800, marginBottom:2 }}>رقم الهاتف موجود في طلب مفتوح</div>
+            <div style={{ color:'var(--text-sec)' }}>
+              {phoneWarning.customer_name || 'عميل'} — {phoneWarning.order_number} — حالة: {phoneWarning.status}
+            </div>
+          </div>
         </div>
       )}
 
