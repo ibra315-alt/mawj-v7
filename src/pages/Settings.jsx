@@ -63,11 +63,12 @@ export default function Settings({ theme, toggleTheme }) {
         'gemini-2.5-pro-preview-06-05':   'gemini-2.5-pro',
         'gemini-2.0-flash-exp':           'gemini-2.0-flash',
       }
-      if (aiSettings?.model && GEMINI_REMAP[aiSettings.model]) {
-        aiSettings = { ...aiSettings, model: GEMINI_REMAP[aiSettings.model] }
-        SettingsDB.set('ai_settings', aiSettings).catch(()=>{})
+      let aiSettingsMutable = aiSettings || {}
+      if (aiSettingsMutable?.model && GEMINI_REMAP[aiSettingsMutable.model]) {
+        aiSettingsMutable = { ...aiSettingsMutable, model: GEMINI_REMAP[aiSettingsMutable.model] }
+        SettingsDB.set('ai_settings', aiSettingsMutable).catch(()=>{})
       }
-      setData({ business:business||{}, statuses:statuses||[], products:products||[], templates:templates||{}, partners, ai_settings:aiSettings||{} })
+      setData({ business:business||{}, statuses:statuses||[], products:products||[], templates:templates||{}, partners, ai_settings:aiSettingsMutable||{} })
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }
