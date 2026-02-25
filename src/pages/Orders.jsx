@@ -74,7 +74,10 @@ export default function Orders({ user }) {
         Settings.get('products'),
       ])
       setOrders(ords.reverse())
-      setProducts((prods || []).filter(p => p.active))
+      const allProds = prods || []
+      // Fall back to all products if none have active:true (migration safety)
+      const activeProds = allProds.filter(p => p.active)
+      setProducts(activeProds.length > 0 ? activeProds : allProds)
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }

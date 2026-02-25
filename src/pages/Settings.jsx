@@ -382,17 +382,30 @@ function BusinessTab({ data, products, partners, updateData }) {
         <SectionTitle>المنتجات</SectionTitle>
         <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:14}}>
           {(products||[]).length === 0 && <div style={{color:'var(--text-muted)',fontSize:13,padding:'12px 0',textAlign:'center'}}>لا توجد منتجات بعد</div>}
-          {(products||[]).map(p => (
-            <GlassRow key={p.id}>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:600,fontSize:13,color:'var(--text)'}}>{p.name}</div>
-                {p.sku && <div style={{fontSize:11,color:'var(--text-muted)',fontFamily:'monospace'}}>{p.sku}</div>}
-              </div>
-              <span style={{fontSize:11,color:'var(--text-sec)'}}>تكلفة: {p.cost}</span>
-              <span style={{fontSize:13,fontWeight:800,color:'var(--teal)'}}>{p.price} د.إ</span>
-              <button onClick={()=>removeProduct(p.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16,padding:4}}></button>
-            </GlassRow>
-          ))}
+          {(products||[]).map(p => {
+            // Support both flat {cost,price} and new grouped {sizes:[{size,cost,price}]}
+            const sizes = p.sizes?.length > 0 ? p.sizes : [{ size: p.size||'', cost: p.cost||0, price: p.price||0 }]
+            return (
+              <GlassRow key={p.id} style={{flexDirection:'column',alignItems:'stretch',gap:6}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:13,color:'var(--text)'}}>{p.name}</div>
+                    {p.sku && <div style={{fontSize:11,color:'var(--text-muted)',fontFamily:'monospace'}}>{p.sku}</div>}
+                  </div>
+                  <button onClick={()=>removeProduct(p.id)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16,padding:4}}></button>
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                  {sizes.map((sv,si) => (
+                    <div key={si} style={{fontSize:11,background:'var(--bg-hover)',border:'1px solid var(--border)',borderRadius:6,padding:'3px 8px',color:'var(--text-sec)'}}>
+                      {sv.size && <span style={{fontWeight:700,marginLeft:4}}>{sv.size}</span>}
+                      <span style={{color:'var(--teal)',fontWeight:700}}>{sv.price} د.إ</span>
+                      <span style={{color:'var(--text-muted)',marginRight:4}}> · تكلفة: {sv.cost}</span>
+                    </div>
+                  ))}
+                </div>
+              </GlassRow>
+            )
+          })}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 80px 80px 70px auto',gap:8,alignItems:'flex-end'}} className="form-grid-2">
           <Input label="اسم المنتج" value={pForm.name} onChange={e=>setPForm(p=>({...p,name:e.target.value}))} placeholder="مثال: طقم كريستال" />
