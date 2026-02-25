@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { DB, supabase, SettingsDB } from '../data/db'
+import { DB, supabase, Settings as SettingsDB } from '../data/db'
 import { formatCurrency } from '../data/constants'
 
 /* ══════════════════════════════════════════════════════════
