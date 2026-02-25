@@ -17,6 +17,7 @@ import Accounting from './pages/Accounting'
 import SettingsPage from './pages/Settings'
 import Import from './pages/Import'
 import Hayyak from './pages/Hayyak'
+import AgentPage from './pages/AgentPage'
 import MawjLogo from './components/Logo'
 import CursorSpotlight from './components/CursorSpotlight'
 import AIAssistant from './components/AIAssistant'
@@ -156,6 +157,7 @@ export default function App() {
       case 'settings':    return <SettingsPage key={pageKey} {...props} />
       case 'import':      return <Import       key={pageKey} {...props} />
       case 'hayyak':      return <Hayyak       key={pageKey} {...props} />
+      case 'agent':       return <AgentPage    key={pageKey} {...props} />
       default:            return <Dashboard    key={pageKey} {...props} />
     }
   }

@@ -7,6 +7,19 @@ import {
   IcSuppliers, IcPartners, IcAccounting, IcUpload,
 } from './Icons'
 
+// Inline agent icon (not in Icons.jsx yet)
+const IcAgent = (p) => (
+  <svg {...p} width={p.size||20} height={p.size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="4"/>
+    <circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="15" cy="9" r="1.5" fill="currentColor" stroke="none"/>
+    <path d="M8 15s1.5 2 4 2 4-2 4-2"/>
+    <line x1="12" y1="3" x2="12" y2="1"/>
+    <line x1="8" y1="3" x2="7" y2="1"/>
+    <line x1="16" y1="3" x2="17" y2="1"/>
+  </svg>
+)
+
 /* ══════════════════════════════════════════════════
    LAYOUT v9.0
    Desktop : Collapsed sidebar (64px) → expands on hover (224px)
@@ -29,6 +42,7 @@ const MORE_NAV = [
   { id: 'accounting',  label: 'المحاسبة', icon: IcAccounting  },
   { id: 'import',      label: 'استيراد البيانات', icon: IcUpload  },
   { id: 'partners',    label: 'الشركاء',  icon: IcPartners     },
+  { id: 'agent',      label: 'الوكيل',    icon: IcAgent       },
   { id: 'settings',   label: 'الإعدادات', icon: IcSettings    },
 ]
 
