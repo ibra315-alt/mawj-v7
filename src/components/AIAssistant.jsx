@@ -390,20 +390,32 @@ export default function AIAssistant({ onClose, onNavigate }) {
   const showQuick  = messages.length === 1 && tab==='chat'
   const posRight   = aiCfg?.panel_position === 'bottom-right'
 
+  const isMobile = window.innerWidth < 640
   return (
     <div style={{
       position:'fixed',
-      bottom:80,
-      [posRight?'right':'left']: 20,
-      zIndex:800,
-      width:380, height:560,
+      ...(isMobile ? {
+        bottom: 60, left: 0, right: 0, top: 'auto',
+        width: '100%', maxWidth: '100%',
+        height: '72vh',
+        borderRadius: '20px 20px 0 0',
+        direction: 'rtl',
+      } : {
+        bottom: 80,
+        [posRight ? 'right' : 'left']: 20,
+        width: 380,
+        height: 560,
+        borderRadius: 24,
+        direction: 'rtl',
+      }),
+      zIndex: 800,
       background:'var(--modal-bg)', backdropFilter:'blur(40px)', WebkitBackdropFilter:'blur(40px)',
       border:'1.5px solid var(--glass-border-teal)',
-      borderRadius:'var(--radius-xl, 24px)',
       boxShadow:'var(--shadow-float)',
       display:'flex', flexDirection:'column',
       animation:'modalIn 0.28s ease both',
       overflow:'hidden',
+      boxSizing: 'border-box',
     }}>
       {/* Header */}
       <div style={{padding:'10px 14px', borderBottom:'1px solid var(--bg-border)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,228,184,0.04)', flexShrink:0}}>

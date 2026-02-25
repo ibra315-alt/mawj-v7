@@ -91,10 +91,8 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
       {/* ── DESKTOP SIDEBAR ──────────────────────────── */}
       <aside
         className="desktop-only"
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
         style={{
-          width: expanded ? 224 : 64,
+          width: 224,
           background: 'var(--sidebar-bg)',
           boxShadow: '0 0 0 1px var(--border)',
           display: 'flex',
@@ -104,12 +102,11 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
           zIndex: 100,
           overflowY: 'auto',
           overflowX: 'hidden',
-          transition: 'width 220ms cubic-bezier(0.4,0,0.2,1)',
         }}
       >
         <DesktopSidebar
           page={page} onNavigate={navigate} user={user} onLogout={onLogout}
-          expanded={expanded} dark={dark} toggleTheme={toggleTheme}
+          expanded={true} dark={dark} toggleTheme={toggleTheme}
         />
       </aside>
 
@@ -119,14 +116,13 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
         style={{
           position: 'relative',
           zIndex: 1,
-          marginRight: expanded ? 224 : 64,
-          width: expanded ? 'calc(100vw - 224px)' : 'calc(100vw - 64px)',
+          marginRight: 224,
+          width: 'calc(100vw - 224px)',
           minWidth: 0,
           minHeight: '100vh',
           paddingRight: 32,
           paddingTop: 32,
           paddingLeft: 32,
-          transition: 'margin-right 220ms cubic-bezier(0.4,0,0.2,1), width 220ms cubic-bezier(0.4,0,0.2,1)',
           animation: 'pageSlideIn var(--dur-page) var(--ease-out) both',
         }}
       >
