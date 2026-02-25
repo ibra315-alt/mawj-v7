@@ -139,7 +139,8 @@ function stripToolCall(text) {
 const MUTATION_TOOLS = new Set([
   'update_orders_status', 'create_order', 'add_expense',
   'link_remittance', 'update_inventory', 'create_remittance',
-  'send_whatsapp', 'save_memory', 'delete_memory',
+  'send_whatsapp', 'delete_memory',
+  // save_memory is intentionally excluded — agent saves automatically without confirmation
 ])
 
 // ── Tool executor ─────────────────────────────────────────────
@@ -512,7 +513,9 @@ const AGENT_SYSTEM = `أنت وكيل ذكي متكامل لشركة موج لل
 - بعد كل [RESULT:...] حلّل البيانات وقدّم ردّاً واضحاً بالعربية — لا تعرض JSON خاماً أبداً.
 - اعرض الأرقام والنتائج بتنسيق قابل للقراءة مع رموز تعبيرية.
 - إذا وجدت مشاكل أو فرص، اذكرها بوضوح مع التوصيات.
-- استخدم save_memory تلقائياً لحفظ الأنماط والملاحظات المهمة.
+- استخدم save_memory تلقائياً بعد كل تحليل لحفظ الأنماط والملاحظات — بدون انتظار طلب من المستخدم.
+- كل نتيجة من analyze_system أو detect_anomalies يجب أن تُحفظ في الذاكرة فوراً.
+- المفاتيح المقترحة: "stock_issues", "replacement_rate", "top_city", "cod_pending", "system_health".
 ${TOOL_DEFS}`
 
 // ── Styling ───────────────────────────────────────────────────
