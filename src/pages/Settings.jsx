@@ -396,10 +396,11 @@ function BusinessTab({ data, products, partners, updateData }) {
                 </div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                   {sizes.map((sv,si) => (
-                    <div key={si} style={{fontSize:11,background:'var(--bg-hover)',border:'1px solid var(--border)',borderRadius:6,padding:'3px 8px',color:'var(--text-sec)'}}>
-                      {sv.size && <span style={{fontWeight:700,marginLeft:4}}>{sv.size}</span>}
+                    <div key={si} style={{fontSize:11,background:'var(--bg-hover)',border:'1px solid var(--border)',borderRadius:6,padding:'4px 10px',color:'var(--text-sec)',display:'flex',alignItems:'center',gap:6,direction:'rtl'}}>
+                      {sv.size && <span style={{fontWeight:700,color:'var(--text)'}}>{sv.size}</span>}
+                      {sv.size && <span style={{color:'var(--bg-border)'}}>|</span>}
                       <span style={{color:'var(--teal)',fontWeight:700}}>{sv.price} د.إ</span>
-                      <span style={{color:'var(--text-muted)',marginRight:4}}> · تكلفة: {sv.cost}</span>
+                      <span style={{color:'var(--text-muted)'}}>· تكلفة: {sv.cost}</span>
                     </div>
                   ))}
                 </div>
