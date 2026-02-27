@@ -152,15 +152,15 @@ export default function Dashboard({ onNavigate }) {
         onClick={() => onNavigate('orders')}
         style={{
           position:'relative', overflow:'hidden', cursor:'pointer',
-          background:'linear-gradient(135deg, rgba(0,228,184,0.08) 0%, rgba(99,102,241,0.06) 50%, rgba(236,72,153,0.04) 100%)',
-          border:'1px solid rgba(0,228,184,0.15)',
+          background:'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(59,130,246,0.06) 50%, rgba(139,92,246,0.04) 100%)',
+          border:'1px solid rgba(56,189,248,0.15)',
           borderRadius:'var(--r-xl)',
           padding:'28px 24px 20px',
           marginBottom:20,
           transition:'border-color 200ms ease',
         }}
-        onMouseEnter={e => e.currentTarget.style.borderColor='rgba(0,228,184,0.35)'}
-        onMouseLeave={e => e.currentTarget.style.borderColor='rgba(0,228,184,0.15)'}
+        onMouseEnter={e => e.currentTarget.style.borderColor='rgba(56,189,248,0.35)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor='rgba(56,189,248,0.15)'}
       >
         {/* Wave SVG background */}
         <svg
@@ -181,9 +181,9 @@ export default function Dashboard({ onNavigate }) {
           />
           <defs>
             <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#00e4b8"/>
-              <stop offset="50%" stopColor="#6366f1"/>
-              <stop offset="100%" stopColor="#ec4899"/>
+              <stop offset="0%" stopColor="#38BDF8"/>
+              <stop offset="50%" stopColor="#3B82F6"/>
+              <stop offset="100%" stopColor="#8B5CF6"/>
             </linearGradient>
           </defs>
         </svg>
@@ -218,7 +218,7 @@ export default function Dashboard({ onNavigate }) {
         {/* 14-day sparkline in the hero */}
         {sparkData.revenue.length > 1 && (
           <div style={{ position:'relative', zIndex:1, marginTop:16, opacity:0.8 }}>
-            <Sparkline data={sparkData.revenue} color="#00e4b8" width={340} height={40}/>
+            <Sparkline data={sparkData.revenue} color="#38BDF8" width={340} height={40}/>
           </div>
         )}
       </div>
@@ -233,19 +233,19 @@ export default function Dashboard({ onNavigate }) {
           label="إيرادات الشهر"
           value={formatCurrency(data?.revenue || 0)}
           pct={Math.min(100, data?.revenueProgress || 0)}
-          color="#00e4b8"
+          color="#38BDF8"
           sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% مقارنة بالشهر السابق` : 'أول شهر'}
           sparkData={sparkData.revenue}
-          sparkColor="#00e4b8"
+          sparkColor="#38BDF8"
         />
         <RingCard
           label="معدل التسليم"
           value={`${data?.deliveryRate || 0}%`}
           pct={data?.deliveryRate || 0}
-          color="#6366f1"
+          color="#3B82F6"
           sub={`${data?.delivered || 0} مسلّم من ${data?.totalOrders || 0}`}
           sparkData={sparkData.orders}
-          sparkColor="#6366f1"
+          sparkColor="#3B82F6"
         />
         <RingCard
           label="هامش الربح"

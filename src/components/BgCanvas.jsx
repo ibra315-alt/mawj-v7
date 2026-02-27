@@ -6,7 +6,7 @@ const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
   delay: `${(i * 0.4) % 7}s`,
   duration: `${6 + (i % 5)}s`,
   size: i % 3 === 0 ? 3 : i % 3 === 1 ? 2 : 4,
-  color: i % 2 === 0 ? 'rgba(20,184,166,0.7)' : 'rgba(99,102,241,0.6)',
+  color: i % 2 === 0 ? 'rgba(56,189,248,0.7)' : 'rgba(59,130,246,0.6)',
 }))
 
 export default function BgCanvas() {
@@ -45,21 +45,21 @@ export default function BgCanvas() {
         <rect width="100%" height="100%" filter="url(#mawj-noise)"/>
       </svg>
 
-      {/* Orb 1 — teal, top-right */}
+      {/* Orb 1 — sky blue, top-right */}
       <div style={{
         position:'absolute', top:'-15%', right:'-10%',
         width:'min(70vw,700px)', height:'min(70vw,700px)', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(20,184,166,1), transparent 65%)',
-        filter:'blur(130px)', opacity:0.16, willChange:'transform',
+        background:'radial-gradient(circle, rgba(56,189,248,1), transparent 65%)',
+        filter:'blur(130px)', opacity:0.14, willChange:'transform',
         animation:'auroraA 18s ease-in-out infinite alternate',
       }}/>
 
-      {/* Orb 2 — violet, bottom-left */}
+      {/* Orb 2 — blue, bottom-left */}
       <div style={{
         position:'absolute', bottom:'-15%', left:'-10%',
         width:'min(65vw,650px)', height:'min(65vw,650px)', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(99,102,241,1), transparent 65%)',
-        filter:'blur(130px)', opacity:0.14, willChange:'transform',
+        background:'radial-gradient(circle, rgba(59,130,246,1), transparent 65%)',
+        filter:'blur(130px)', opacity:0.12, willChange:'transform',
         animation:'auroraB 22s ease-in-out infinite alternate',
         animationDelay:'-8s',
       }}/>
@@ -68,8 +68,8 @@ export default function BgCanvas() {
       <div style={{
         position:'absolute', top:'35%', left:'35%',
         width:'min(40vw,400px)', height:'min(40vw,400px)', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(99,102,241,0.5), transparent 65%)',
-        filter:'blur(110px)', opacity:0.12, willChange:'transform',
+        background:'radial-gradient(circle, rgba(56,189,248,0.5), transparent 65%)',
+        filter:'blur(110px)', opacity:0.10, willChange:'transform',
         animation:'auroraC 28s ease-in-out infinite alternate',
         animationDelay:'-14s',
       }}/>

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
 /* ══════════════════════════════════════════════════
-   موج UI v8.5 — Indigo · Violet · Teal glassmorphism
-   Teal = PRIMARY action only · Violet = atmosphere
-   Pink = warm accent · Never use raw hex in JSX
+   موج UI v10 — Maison · Sky Blue · Premium
+   Sky Blue = PRIMARY action · Blue = info accent
+   Light mode default · Role-aware
 ══════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════
@@ -18,7 +18,7 @@ export function Btn({ children, variant='primary', size='md', loading, onClick, 
   }[size] || { padding:'9px 18px', fontSize:13, gap:6 }
 
   const va = {
-    primary:    { bg:'var(--action)',      color:'#031a13',          fw:800, shadow:'none', border:'none' },
+    primary:    { bg:'var(--action)',      color:'#ffffff',          fw:800, shadow:'none', border:'none' },
     secondary:  { bg:'var(--bg-surface)',  color:'var(--text)',      fw:600, shadow:'var(--card-shadow)', border:'none' },
     danger:     { bg:'rgba(239,68,68,0.08)', color:'var(--danger)', fw:700, shadow:'none', border:'none' },
     ghost:      { bg:'transparent',        color:'var(--text-sec)',  fw:600, shadow:'none', border:'none' },
@@ -221,14 +221,15 @@ export function StatCard({ label, value, color, trend, sub, icon }) {
     : value
 
   const glowColor = {
-    'var(--teal)': 'rgba(0,228,184,0.12)',
-    'var(--violet)': 'rgba(124,58,237,0.12)',
-    'var(--violet-light)': 'rgba(167,139,250,0.12)',
+    'var(--teal)': 'rgba(56,189,248,0.12)',
+    'var(--action)': 'rgba(56,189,248,0.12)',
+    'var(--violet)': 'rgba(59,130,246,0.12)',
+    'var(--violet-light)': 'rgba(96,165,250,0.12)',
     'var(--pink)': 'rgba(236,72,153,0.10)',
-    'var(--red)': 'rgba(255,71,87,0.10)',
+    'var(--red)': 'rgba(239,68,68,0.10)',
     'var(--green)': 'rgba(16,185,129,0.10)',
     'var(--amber)': 'rgba(245,158,11,0.10)',
-  }[c] || 'rgba(167,139,250,0.08)'
+  }[c] || 'rgba(56,189,248,0.08)'
 
   return (
     <div className="hover-lift" style={{
@@ -406,9 +407,9 @@ export function PageLoader() {
         <svg width="64" height="64" viewBox="0 0 64 64" style={{position:'absolute',animation:'spin 1s linear infinite'}}>
           <defs>
             <linearGradient id="spinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%"   stopColor="#00e4b8"/>
-              <stop offset="50%"  stopColor="#a78bfa"/>
-              <stop offset="100%" stopColor="#ec4899"/>
+              <stop offset="0%"   stopColor="#38BDF8"/>
+              <stop offset="50%"  stopColor="#3B82F6"/>
+              <stop offset="100%" stopColor="#0EA5E9"/>
             </linearGradient>
           </defs>
           <circle cx="32" cy="32" r="28" fill="none" stroke="url(#spinGrad)" strokeWidth="2.5" strokeDasharray="44 132" strokeLinecap="round"/>
@@ -417,7 +418,7 @@ export function PageLoader() {
         <div style={{
           position:'absolute',inset:'50%',transform:'translate(-50%,-50%)',
           width:8,height:8,borderRadius:'50%',
-          background:'var(--teal)',boxShadow:'0 0 12px var(--teal-glow)',
+          background:'var(--action)',boxShadow:'0 0 12px var(--action-glow)',
         }} />
       </div>
       <span style={{fontSize:'var(--t-sm)',color:'var(--text-muted)',letterSpacing:'0.05em'}}>جاري التحميل...</span>
@@ -581,10 +582,10 @@ export function ToastContainer() {
   if (!toasts.length) return null
 
   const palette = {
-    success: { bg:'linear-gradient(135deg,#00e4b8,#00c49f)', color:'#07051c', icon:'' },
-    error:   { bg:'linear-gradient(135deg,#ff4757,#cc1020)', color:'#fff',    icon:'' },
-    warning: { bg:'linear-gradient(135deg,#f59e0b,#d97706)', color:'#07051c', icon:'' },
-    info:    { bg:'linear-gradient(135deg,#7c3aed,#6d28d9)', color:'#e8e0ff', icon:'ℹ' },
+    success: { bg:'linear-gradient(135deg,#10B981,#059669)', color:'#fff',    icon:'' },
+    error:   { bg:'linear-gradient(135deg,#EF4444,#DC2626)', color:'#fff',    icon:'' },
+    warning: { bg:'linear-gradient(135deg,#F59E0B,#D97706)', color:'#fff',    icon:'' },
+    info:    { bg:'linear-gradient(135deg,#38BDF8,#0EA5E9)', color:'#fff',    icon:'ℹ' },
   }
   return (
     <div style={{
@@ -659,11 +660,11 @@ export function PageHeader({ title, subtitle, actions }) {
           </div>
         )}
       </div>
-      {/* Violet-teal-pink accent underline */}
+      {/* Accent underline */}
       <div style={{
         height:1.5,
-        background:'linear-gradient(90deg,transparent,var(--violet-light),var(--teal),rgba(236,72,153,0.5),transparent)',
-        marginTop:'var(--s4)',opacity:0.5,borderRadius:999,
+        background:'linear-gradient(90deg,transparent,var(--action),var(--info-light),transparent)',
+        marginTop:'var(--s4)',opacity:0.4,borderRadius:999,
       }} />
     </div>
   )
@@ -684,11 +685,11 @@ export function Tabs({ tabs, active, onChange }) {
         {tabs.map(t => (
           <button key={t.id} onClick={()=>onChange(t.id)} style={{
             padding:'7px 14px',borderRadius:999,border:'none',
-            background: active===t.id ? 'linear-gradient(135deg,var(--teal),var(--teal-deep))' : 'transparent',
-            color: active===t.id ? '#07051c' : 'var(--text-sec)',
+            background: active===t.id ? 'linear-gradient(135deg,var(--action),var(--action-deep))' : 'transparent',
+            color: active===t.id ? '#ffffff' : 'var(--text-sec)',
             fontWeight: active===t.id ? 800 : 500, fontSize:'var(--t-sm)',
             cursor:'pointer', transition:'all 0.18s ease',
-            boxShadow: active===t.id ? '0 2px 12px rgba(0,228,184,0.35)' : 'none',
+            boxShadow: active===t.id ? '0 2px 12px var(--action-glow)' : 'none',
             whiteSpace:'nowrap',flexShrink:0,
             WebkitTapHighlightColor:'transparent',
           }}>{t.label}</button>
@@ -707,17 +708,17 @@ export function Toggle({ checked, onChange }) {
       onClick={()=>onChange(!checked)}
       style={{
         width:44,height:24,borderRadius:999,
-        background:checked?'var(--teal)':'var(--border)',
+        background:checked?'var(--action)':'var(--border)',
         position:'relative',cursor:'pointer',
         transition:'background 0.22s ease',flexShrink:0,
-        boxShadow:checked?'0 0 12px var(--teal-glow)':'none',
+        boxShadow:checked?'0 0 12px var(--action-glow)':'none',
         WebkitTapHighlightColor:'transparent',
       }}
     >
       <div style={{
         position:'absolute',top:3,right:checked?3:22,
         width:18,height:18,borderRadius:'50%',
-        background:checked?'#07051c':'var(--text-muted)',
+        background:checked?'#ffffff':'var(--text-muted)',
         transition:'right 0.22s var(--ease-io)',
         boxShadow:'0 1px 4px rgba(0,0,0,0.4)',
       }} />
@@ -792,7 +793,7 @@ export function Divider({ label, style }) {
 ══════════════════════════════════════════════════ */
 export function ProgressBar({ value=0, max=100, color, height=6, showLabel=false, style }) {
   const pct = Math.min(100, Math.max(0, (value/max)*100))
-  const fillColor = color || 'linear-gradient(90deg,var(--violet-light),var(--teal))'
+  const fillColor = color || 'linear-gradient(90deg,var(--info-light),var(--action))'
   return (
     <div style={{display:'flex',flexDirection:'column',gap:4,...style}}>
       {showLabel && (

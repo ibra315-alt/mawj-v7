@@ -2,7 +2,7 @@ import React from 'react'
 
 // Mawj logo — traced from the uploaded brand asset
 // Animated version with draw-on effect
-export default function MawjLogo({ size = 48, animated = false, color = 'var(--teal)' }) {
+export default function MawjLogo({ size = 48, animated = false, color = 'var(--action)' }) {
   const style = animated ? {
     strokeDasharray: 1000,
     strokeDashoffset: 1000,
@@ -111,7 +111,7 @@ export default function MawjLogo({ size = 48, animated = false, color = 'var(--t
 }
 
 // Inline SVG string version for use in Login background etc.
-export function MawjLogoImg({ size = 48, color = '#00e4b8' }) {
+export function MawjLogoImg({ size = 48, color = '#38BDF8' }) {
   return (
     <img
       src="/logo.png"

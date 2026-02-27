@@ -2,9 +2,9 @@ import React, { useState } from 'react'
 import { Auth } from '../data/db'
 
 /* ══════════════════════════════════════════════════
-   LOGIN v9.0
-   Clean · RTL-first · Almarai+Inter · No glass
-   Deep navy dark · Warm white light
+   LOGIN v10 — Maison
+   Clean · RTL-first · Sky blue accent
+   Light default · Premium warm
 ══════════════════════════════════════════════════ */
 export default function Login({ theme, toggleTheme }) {
   const [email, setEmail]       = useState('')
@@ -111,7 +111,7 @@ export default function Login({ theme, toggleTheme }) {
               <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
                 <defs>
                   <linearGradient id="llg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#00e4b8"/>
+                    <stop stopColor="#38BDF8"/>
                     <stop offset="1" stopColor="#3b82f6"/>
                   </linearGradient>
                 </defs>
@@ -259,7 +259,7 @@ export default function Login({ theme, toggleTheme }) {
                 width: '100%', padding: '13px',
                 background: loading ? 'var(--bg-hover)' : 'var(--action)',
                 border: 'none', borderRadius: 'var(--r-sm)',
-                color: loading ? 'var(--text-muted)' : '#031a13',
+                color: loading ? 'var(--text-muted)' : '#ffffff',
                 fontSize: 14, fontWeight: 900,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit',
