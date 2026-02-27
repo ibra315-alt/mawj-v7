@@ -75,10 +75,11 @@ export async function loadAndApplyAppearance(userId) {
     let prefs=await Settings.get(userKey)
     if(!prefs) prefs=await Settings.get('global_appearance')
 
-    // Force-migrate old teal design: if saved accent is old teal,
-    // replace entire prefs with new defaults and save back to DB
-    if (prefs && (prefs.accent === '#00e4b8' || prefs.accent === '#00E4B8')) {
-      prefs = { ...DEFAULT_PREFS }
+    // Force-migrate v1: detect any old design prefs and reset to new defaults.
+    // Old prefs had accent=#00e4b8, or mode=dark with no _v2 marker.
+    // After migration, we set _v2=true so this only runs once.
+    if (prefs && !prefs._v2) {
+      prefs = { ...DEFAULT_PREFS, _v2: true }
       const key = userId ? `appearance_${userId}` : 'appearance'
       Settings.set(key, prefs).catch(() => {})
       Settings.set('global_appearance', prefs).catch(() => {})
