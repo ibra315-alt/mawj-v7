@@ -19,7 +19,7 @@ const TABS = [
 /* ── Segment definitions (match Customers.jsx) ── */
 const SEGMENTS = [
   { id: 'all',  label: 'الكل',   color: 'var(--action)' },
-  { id: 'VIP',  label: 'VIP',    color: '#f59e0b' },
+  { id: 'VIP',  label: 'VIP',    color: 'var(--warning)' },
   { id: 'مخلص', label: 'مخلص',   color: 'var(--info)' },
   { id: 'نشط',  label: 'نشط',    color: 'var(--success)' },
   { id: 'جديد', label: 'جديد',   color: 'var(--action)' },
@@ -77,7 +77,7 @@ function SendModeSwitch({ mode, onChange }) {
       ].map(m => (
         <button key={m.id} onClick={() => onChange(m.id)} style={{
           padding:'6px 12px', borderRadius:6, border:'none', cursor:'pointer',
-          background: mode===m.id ? '#25d366' : 'transparent',
+          background: mode===m.id ? 'var(--whatsapp)' : 'transparent',
           color: mode===m.id ? '#fff' : 'var(--text-muted)',
           fontWeight: mode===m.id ? 700 : 500, fontSize:11, fontFamily:'inherit',
           transition:'all 120ms', display:'flex', alignItems:'center', gap:4,
@@ -182,7 +182,7 @@ export default function WhatsAppCenter() {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'9px 4px', borderRadius:8, border:'none', cursor:'pointer',
-            background: tab===t.id ? 'linear-gradient(135deg,#25d366,#128c7e)' : 'transparent',
+            background: tab===t.id ? 'linear-gradient(135deg,var(--whatsapp),var(--whatsapp))' : 'transparent',
             color: tab===t.id ? '#ffffff' : 'var(--text-muted)',
             fontWeight: tab===t.id ? 800 : 500, fontSize:12, fontFamily:'inherit', transition:'all 120ms',
           }}>{t.label}</button>
@@ -242,8 +242,8 @@ function MessageLogTab({ log, orders }) {
         ].map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} style={{
             padding:'6px 14px', borderRadius:999, border:'none', cursor:'pointer',
-            background: filter===f.id ? 'rgba(37,211,102,0.1)' : 'var(--bg-hover)',
-            color: filter===f.id ? '#25d366' : 'var(--text-muted)',
+            background: filter===f.id ? 'rgba(var(--whatsapp-rgb),0.1)' : 'var(--bg-hover)',
+            color: filter===f.id ? 'var(--whatsapp)' : 'var(--text-muted)',
             fontWeight: filter===f.id ? 700 : 500, fontSize:12, fontFamily:'inherit',
           }}>{f.label}</button>
         ))}
@@ -261,8 +261,8 @@ function MessageLogTab({ log, orders }) {
               borderInlineStart: `3px solid ${msg.status==='completed' ? 'var(--success)' : 'var(--danger)'}`,
               display:'flex', alignItems:'center', gap:12, flexWrap:'wrap',
             }}>
-              <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(37,211,102,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <IcWhatsapp size={16} style={{ color:'#25d366' }}/>
+              <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(var(--whatsapp-rgb),0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <IcWhatsapp size={16} style={{ color:'var(--whatsapp)' }}/>
               </div>
               <div style={{ flex:1, minWidth:140 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', marginBottom:2 }}>
@@ -430,7 +430,7 @@ function CampaignsTab({ orders, templates, campaigns, setCampaigns, sendMode }) 
 
       {/* Actions */}
       <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-        <Btn onClick={() => { setShowComposer(true); setMessage(templates.followup_inactive || '') }} style={{ background:'#25d366', borderColor:'#25d366', gap:6 }}>
+        <Btn onClick={() => { setShowComposer(true); setMessage(templates.followup_inactive || '') }} style={{ background:'var(--whatsapp)', borderColor:'var(--whatsapp)', gap:6 }}>
           <IcWhatsapp size={15}/> حملة جديدة
         </Btn>
         <Select value={city} onChange={e => setCity(e.target.value)} style={{ maxWidth:180 }}>
@@ -450,8 +450,8 @@ function CampaignsTab({ orders, templates, campaigns, setCampaigns, sendMode }) 
                 padding:'12px 14px', boxShadow:'var(--card-shadow)',
                 display:'flex', alignItems:'center', gap:12, flexWrap:'wrap',
               }}>
-                <div style={{ width:36, height:36, borderRadius:'var(--r-md)', background:'rgba(37,211,102,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <IcWhatsapp size={18} style={{ color:'#25d366' }}/>
+                <div style={{ width:36, height:36, borderRadius:'var(--r-md)', background:'rgba(var(--whatsapp-rgb),0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <IcWhatsapp size={18} style={{ color:'var(--whatsapp)' }}/>
                 </div>
                 <div style={{ flex:1, minWidth:120 }}>
                   <div style={{ fontWeight:700, fontSize:13 }}>{c.name}</div>
@@ -503,7 +503,7 @@ function CampaignsTab({ orders, templates, campaigns, setCampaigns, sendMode }) 
                 <span style={{ color:'var(--action)', fontWeight:700, fontFamily:'Inter,sans-serif' }}>{formatCurrency(c.totalSpent)}</span>
                 <button onClick={() => openWaMe(c.phone, '')} title="فتح wa.me" style={{
                   width:24, height:24, borderRadius:6, border:'none', cursor:'pointer',
-                  background:'rgba(37,211,102,0.1)', color:'#25d366', display:'flex',
+                  background:'rgba(var(--whatsapp-rgb),0.1)', color:'var(--whatsapp)', display:'flex',
                   alignItems:'center', justifyContent:'center', flexShrink:0, padding:0,
                 }}>
                   <IcWhatsapp size={12}/>
@@ -539,11 +539,11 @@ function CampaignsTab({ orders, templates, campaigns, setCampaigns, sendMode }) 
               if (filteredCustomers.length > 20) toast(`تم فتح أول 20 رابط — المجموع ${filteredCustomers.length}`, 'warning')
               else toast(`تم فتح ${filteredCustomers.length} رابط wa.me ✓`)
               setShowComposer(false)
-            }} style={{ background:'#128c7e', borderColor:'#128c7e', gap:6 }}>
+            }} style={{ background:'var(--whatsapp)', borderColor:'var(--whatsapp)', gap:6 }}>
               🔗 فتح wa.me ({Math.min(filteredCustomers.length, 20)})
             </Btn>
           ) : (
-            <Btn onClick={handleSend} style={{ background:'#25d366', borderColor:'#25d366', gap:6 }}>
+            <Btn onClick={handleSend} style={{ background:'var(--whatsapp)', borderColor:'var(--whatsapp)', gap:6 }}>
               <IcWhatsapp size={14}/> إرسال API ({filteredCustomers.length})
             </Btn>
           )}
@@ -596,8 +596,8 @@ function CampaignsTab({ orders, templates, campaigns, setCampaigns, sendMode }) 
 
           {/* Preview */}
           {message && filteredCustomers[0] && (
-            <div style={{ background:'rgba(37,211,102,0.06)', border:'1px solid rgba(37,211,102,0.2)', borderRadius:'var(--r-md)', padding:'12px 14px' }}>
-              <div style={{ fontSize:10, fontWeight:600, color:'#25d366', marginBottom:6 }}>معاينة ({filteredCustomers[0].name}):</div>
+            <div style={{ background:'rgba(var(--whatsapp-rgb),0.06)', border:'1px solid rgba(var(--whatsapp-rgb),0.2)', borderRadius:'var(--r-md)', padding:'12px 14px' }}>
+              <div style={{ fontSize:10, fontWeight:600, color:'var(--whatsapp)', marginBottom:6 }}>معاينة ({filteredCustomers[0].name}):</div>
               <div style={{ fontSize:12, color:'var(--text)', whiteSpace:'pre-wrap', lineHeight:1.6 }}>
                 {fillTemplate(message, { customer_name: filteredCustomers[0].name, المدينة: filteredCustomers[0].city })}
               </div>
@@ -618,7 +618,7 @@ function CampaignsTab({ orders, templates, campaigns, setCampaigns, sendMode }) 
                 <div style={{
                   height:'100%', borderRadius:99, transition:'width 0.3s',
                   width:`${((sendProgress.sent + sendProgress.failed) / sendProgress.total) * 100}%`,
-                  background:'linear-gradient(90deg,#25d366,#128c7e)',
+                  background:'linear-gradient(90deg,var(--whatsapp),var(--whatsapp))',
                 }}/>
               </div>
             </div>
@@ -665,8 +665,8 @@ function AutoNotificationsTab({ settings, setSettings, templates, setTemplates, 
 
   return (
     <>
-      <div style={{ background:'rgba(37,211,102,0.06)', border:'1px solid rgba(37,211,102,0.15)', borderRadius:'var(--r-md)', padding:'14px 16px', marginBottom:16 }}>
-        <div style={{ fontWeight:700, fontSize:13, color:'#25d366', marginBottom:4 }}>الإشعارات التلقائية</div>
+      <div style={{ background:'rgba(var(--whatsapp-rgb),0.06)', border:'1px solid rgba(var(--whatsapp-rgb),0.15)', borderRadius:'var(--r-md)', padding:'14px 16px', marginBottom:16 }}>
+        <div style={{ fontWeight:700, fontSize:13, color:'var(--whatsapp)', marginBottom:4 }}>الإشعارات التلقائية</div>
         <div style={{ fontSize:12, color:'var(--text-sec)', lineHeight:1.6 }}>
           {sendMode === 'api'
             ? 'عند تغيير حالة الطلب، يتم إرسال رسالة واتساب تلقائياً للعميل عبر Meta API.'
@@ -684,7 +684,7 @@ function AutoNotificationsTab({ settings, setSettings, templates, setTemplates, 
           <div key={t.key} style={{
             background:'var(--bg-surface)', borderRadius:'var(--r-md)',
             padding:'14px 16px', boxShadow:'var(--card-shadow)',
-            border: settings[t.key] ? '1.5px solid rgba(37,211,102,0.3)' : '1.5px solid var(--border)',
+            border: settings[t.key] ? '1.5px solid rgba(var(--whatsapp-rgb),0.3)' : '1.5px solid var(--border)',
           }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:8 }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -698,7 +698,7 @@ function AutoNotificationsTab({ settings, setSettings, templates, setTemplates, 
                 onClick={() => toggleTrigger(t.key)}
                 style={{
                   width:48, height:26, borderRadius:999, border:'none', cursor:'pointer',
-                  background: settings[t.key] ? '#25d366' : 'var(--border)',
+                  background: settings[t.key] ? 'var(--whatsapp)' : 'var(--border)',
                   position:'relative', transition:'background 200ms', flexShrink:0,
                 }}
               >
@@ -878,7 +878,7 @@ function FollowUpTab({ orders, templates, sendMode }) {
       icon: '💰', label: 'تحصيل COD معلق',
       desc: 'طلبات مسلّمة بانتظار التحصيل',
       count: followups.pendingCOD.length,
-      color: '#f59e0b',
+      color: 'var(--warning)',
       sub: `المبلغ: ${formatCurrency(followups.pendingTotal)}`,
       action: null,
       waAction: null,
@@ -888,8 +888,8 @@ function FollowUpTab({ orders, templates, sendMode }) {
 
   return (
     <>
-      <div style={{ background:'rgba(37,211,102,0.06)', border:'1px solid rgba(37,211,102,0.15)', borderRadius:'var(--r-md)', padding:'14px 16px', marginBottom:16 }}>
-        <div style={{ fontWeight:700, fontSize:13, color:'#25d366', marginBottom:4 }}>المتابعة الذكية</div>
+      <div style={{ background:'rgba(var(--whatsapp-rgb),0.06)', border:'1px solid rgba(var(--whatsapp-rgb),0.15)', borderRadius:'var(--r-md)', padding:'14px 16px', marginBottom:16 }}>
+        <div style={{ fontWeight:700, fontSize:13, color:'var(--whatsapp)', marginBottom:4 }}>المتابعة الذكية</div>
         <div style={{ fontSize:12, color:'var(--text-sec)', lineHeight:1.6 }}>
           يكتشف النظام تلقائياً العملاء والطلبات التي تحتاج متابعة عبر واتساب.
           اضغط على الزر لإرسال الرسائل دفعة واحدة.
@@ -923,7 +923,7 @@ function FollowUpTab({ orders, templates, sendMode }) {
                     onClick={c.action}
                     loading={sending === c.key}
                     size="sm"
-                    style={{ background:'#25d366', borderColor:'#25d366', gap:6 }}
+                    style={{ background:'var(--whatsapp)', borderColor:'var(--whatsapp)', gap:6 }}
                   >
                     <IcWhatsapp size={13}/> {c.actionLabel} API ({Math.min(c.count, 50)})
                   </Btn>
@@ -931,7 +931,7 @@ function FollowUpTab({ orders, templates, sendMode }) {
                   <Btn
                     onClick={() => c.waAction && c.waAction()}
                     size="sm"
-                    style={{ background:'#128c7e', borderColor:'#128c7e', gap:6 }}
+                    style={{ background:'var(--whatsapp)', borderColor:'var(--whatsapp)', gap:6 }}
                   >
                     🔗 {c.actionLabel} wa.me ({Math.min(c.count, 10)})
                   </Btn>

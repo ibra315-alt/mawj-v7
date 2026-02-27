@@ -3,7 +3,7 @@ import BgCanvas from './BgCanvas'
 import {
   IcDashboard, IcOrders, IcCustomers, IcExpenses,
   IcReports, IcInventory, IcSettings, IcLogout,
-  IcTruck, IcMoon, IcSun, IcClose,
+  IcTruck, IcClose,
   IcSuppliers, IcPartners, IcAccounting, IcUpload,
   IcWhatsapp,
 } from './Icons'
@@ -94,14 +94,11 @@ const MOBILE_TABS = [
 const MORE_ITEMS = ALL_NAV.filter(n => !MOBILE_TABS.some(t => t.id === n.id))
 
 
-export default function Layout({ page, onNavigate, user, onLogout, children, theme: themeProp, toggleTheme: toggleThemeProp }) {
+export default function Layout({ page, onNavigate, user, onLogout, children }) {
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('mawj-sidebar') === 'collapsed' } catch { return false }
   })
   const [moreOpen, setMoreOpen] = useState(false)
-
-  const dark = themeProp === 'dark'
-  const toggleTheme = toggleThemeProp
 
   const navigate = useCallback((id) => {
     onNavigate(id)
@@ -224,21 +221,6 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
             </div>
           )}
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="sidebar-nav-item"
-            style={{
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              padding: collapsed ? '10px 0' : '10px 16px',
-              margin: '2px 8px',
-            }}
-            title={dark ? 'وضع فاتح' : 'وضع داكن'}
-          >
-            {dark ? <IcSun size={18}/> : <IcMoon size={18}/>}
-            {!collapsed && <span>{dark ? 'وضع فاتح' : 'وضع داكن'}</span>}
-          </button>
-
           {/* Logout */}
           <button
             onClick={onLogout}
@@ -324,14 +306,6 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
                 </div>
               </div>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={toggleTheme} style={{
-                  width:38, height:38, borderRadius:'var(--r-md)',
-                  border:'1px solid var(--border)', background:'var(--bg-hover)',
-                  color:'var(--text-sec)', cursor:'pointer',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                }}>
-                  {dark ? <IcSun size={16}/> : <IcMoon size={16}/>}
-                </button>
                 <button onClick={() => setMoreOpen(false)} style={{
                   width:38, height:38, borderRadius:'var(--r-md)',
                   border:'1px solid var(--border)', background:'var(--bg-hover)',

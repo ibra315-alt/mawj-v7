@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
 /* ══════════════════════════════════════════════════
-   موج UI v10 — Maison · Sky Blue · Premium
-   Sky Blue = PRIMARY action · Blue = info accent
-   Light mode default · Role-aware
+   موج UI v11 — Liquid Glass · Bright Blue · Premium
+   Unified glass design — no dark/light toggle
 ══════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════
@@ -154,7 +153,10 @@ export function Card({ children, style, hover, glow, onClick, accentColor }) {
     <div onClick={onClick} className={hover || onClick ? 'mawj-card mawj-card-hover' : 'mawj-card'}
       style={{
         background:'var(--bg-surface)',
-        border:'none',
+        backdropFilter:'var(--glass-blur)',
+        WebkitBackdropFilter:'var(--glass-blur)',
+        border:'1px solid var(--border)',
+        borderTopColor:'var(--glass-edge)',
         borderRadius:'var(--r-lg)', padding:'var(--sp-5)',
         cursor: onClick ? 'pointer' : 'default',
         position:'relative', overflow:'hidden',
@@ -500,7 +502,10 @@ export function Modal({ open, onClose, title, children, width=580, footer }) {
         maxHeight:'88dvh',
         display:'flex', flexDirection:'column',
         background:'var(--modal-bg)',
-        border:'none',
+        backdropFilter:'var(--glass-blur-lg)',
+        WebkitBackdropFilter:'var(--glass-blur-lg)',
+        border:'1px solid var(--border)',
+        borderTopColor:'var(--glass-edge)',
         borderRadius:'var(--r-xl)',
         boxShadow:'var(--modal-shadow)',
         animation:'modalIn 0.22s var(--ease-io) both',
@@ -562,7 +567,7 @@ export function ToastContainer() {
     success: { bg:'linear-gradient(135deg,var(--success),var(--success-light))', color:'#fff',    icon:'' },
     error:   { bg:'linear-gradient(135deg,var(--danger),var(--danger-light))', color:'#fff',    icon:'' },
     warning: { bg:'linear-gradient(135deg,var(--warning),var(--warning-light))', color:'#fff',    icon:'' },
-    info:    { bg:'linear-gradient(135deg,#38BDF8,#0EA5E9)', color:'#fff',    icon:'ℹ' },
+    info:    { bg:'linear-gradient(135deg,var(--action),var(--action-deep))', color:'#fff',    icon:'ℹ' },
   }
   return (
     <div role="status" aria-live="polite" style={{

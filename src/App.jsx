@@ -1,12 +1,11 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { supabase, Auth } from './data/db'
-import { loadAndApplyAppearance, saveAppearance, DEFAULT_PREFS } from './data/appearance'
+import { loadAndApplyAppearance, DEFAULT_PREFS } from './data/appearance'
 import { unsubscribeAll } from './data/realtime'
 import { ToastContainer, toast, PageLoader } from './components/ui'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import MawjLogo from './components/Logo'
-import CursorSpotlight from './components/CursorSpotlight'
 
 // ── Lazy-loaded pages (code splitting) ──
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -50,16 +49,10 @@ export default function App() {
   const [user, setUser]         = useState(null)
   const [page, setPage]         = useState(() => localStorage.getItem('mawj-page') || 'dashboard')
   const [pageKey, setPageKey]   = useState(0)
-  const [theme, setTheme]       = useState('light')  // Light mode default
   const [showAI, setShowAI]     = useState(false)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState(null)
   const [swWaiting, setSwWaiting] = useState(null)
-
-  // ── Sync data-theme attribute ──
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
 
   // ── Online / offline ──
   useEffect(() => {
@@ -107,8 +100,6 @@ export default function App() {
   useEffect(() => {
     loadAndApplyAppearance().then(prefs => {
       window.__mawjPrefs = prefs || DEFAULT_PREFS
-      // Default to light if no saved preference
-      setTheme(window.__mawjPrefs.mode || 'light')
     })
   }, [])
 
@@ -140,14 +131,6 @@ export default function App() {
     if (id !== page) setPageKey(k => k + 1)
     setPage(id)
     localStorage.setItem('mawj-page', id)
-  }
-
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    const prefs = { ...(window.__mawjPrefs || DEFAULT_PREFS), mode: next }
-    window.__mawjPrefs = prefs
-    setTheme(next)
-    saveAppearance(prefs)
   }
 
   async function handleInstall() {
@@ -192,13 +175,13 @@ export default function App() {
   // ── Login ──
   if (!session) return (
     <>
-      <Login theme={theme} toggleTheme={toggleTheme} />
+      <Login />
       <ToastContainer />
     </>
   )
 
   function renderPage() {
-    const props = { user, onNavigate: navigate, theme, toggleTheme }
+    const props = { user, onNavigate: navigate }
     // Enforce role access — redirect to dashboard if no access
     const currentPage = (user && !canAccess(user.role, page)) ? 'dashboard' : page
     switch (currentPage) {
@@ -302,8 +285,6 @@ export default function App() {
         onNavigate={navigate}
         user={user}
         onLogout={() => { Auth.signOut(); setPage('dashboard') }}
-        theme={theme}
-        toggleTheme={toggleTheme}
       >
         <Suspense fallback={<PageLoader />}>
           {renderPage()}
@@ -336,7 +317,6 @@ export default function App() {
 
       {/* ── Globals ── */}
       <ToastContainer />
-      {theme === 'dark' && <CursorSpotlight />}
       {showAI && (
         <Suspense fallback={null}>
           <AIAssistant onClose={() => setShowAI(false)} />
