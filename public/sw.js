@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════
-   MAWJ SERVICE WORKER v12 — Liquid Glass
+   MAWJ SERVICE WORKER v13 — Liquid Glass
    Strategy:
    - App shell (HTML/JS/CSS): Cache first, update in background
    - Fonts / static assets:   Cache forever (hashed filenames)
@@ -7,9 +7,9 @@
    - Navigation fallback:     Serve /index.html offline
 ══════════════════════════════════════════════════ */
 
-const CACHE_SHELL   = 'mawj-shell-v12'
-const CACHE_ASSETS  = 'mawj-assets-v12'
-const CACHE_FONTS   = 'mawj-fonts-v12'
+const CACHE_SHELL   = 'mawj-shell-v13'
+const CACHE_ASSETS  = 'mawj-assets-v13'
+const CACHE_FONTS   = 'mawj-fonts-v13'
 const ALL_CACHES    = [CACHE_SHELL, CACHE_ASSETS, CACHE_FONTS]
 
 self.addEventListener('install', e => {
