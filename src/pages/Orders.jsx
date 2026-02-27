@@ -949,19 +949,16 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
       <div style={{
         position:'fixed', inset:0, zIndex:1100,
         display:'flex', alignItems:'center', justifyContent:'center',
-        background:'rgba(0,0,0,0.5)',
+        background:'rgba(0,0,0,0.45)',
         padding:20,
       }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="order-view-modal" style={{
+        position:'relative',
         width:'min(560px, 94vw)', maxHeight:'90vh', overflowY:'auto',
-        background:'rgba(255,255,255,0.92)',
-        backdropFilter:'var(--glass-blur-lg)',
-        WebkitBackdropFilter:'var(--glass-blur-lg)',
+        background:'#fff',
         borderRadius:'var(--r-xl)',
-        boxShadow:'var(--modal-shadow)', zIndex:1101,
-        border:'1px solid var(--border)',
-        borderTopColor:'var(--glass-edge)',
-        animation:'fadeInUp var(--dur-base) var(--ease-out) both',
+        boxShadow:'0 24px 80px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
+        border:'1px solid rgba(255,255,255,0.3)',
         padding:'24px',
       }}>
         {/* Close */}
