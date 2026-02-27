@@ -5,6 +5,7 @@ import {
   IcReports, IcInventory, IcSettings, IcLogout,
   IcTruck, IcMoon, IcSun, IcClose,
   IcSuppliers, IcPartners, IcAccounting, IcUpload,
+  IcWhatsapp,
 } from './Icons'
 import MawjLogo from './Logo'
 
@@ -51,6 +52,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'customers', label: 'العملاء',   icon: IcCustomers },
       { id: 'suppliers', label: 'الموردون',  icon: IcSuppliers },
+      { id: 'whatsapp',  label: 'واتساب',    icon: IcWhatsapp  },
     ],
   },
   {
