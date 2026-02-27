@@ -59,7 +59,7 @@ export default function Reports() {
 
   const { monthOrders, monthExpenses, delivered, replacements, notDelivered,
     revenue, grossProfit, hayyakFees, productCost, totalExp, netProfit,
-    deliveryRate, replaceRate, dailyData, maxDay, cities, maxCity, statusMap,
+    deliveryRate, replaceRate, dailyData, maxDay, daysInMonth, cities, maxCity, statusMap,
   } = useMemo(() => {
     const { start, end } = monthRange(selYear, selMonth)
     const mOrders   = orders.filter(o => { const d=new Date(o.order_date||o.created_at); return d>=start&&d<=end })
@@ -109,7 +109,7 @@ export default function Reports() {
       totalExp: tExp, netProfit: gp - tExp,
       deliveryRate: pct(del.length, mOrders.length),
       replaceRate: pct(repl.length, mOrders.length),
-      dailyData: daily, maxDay: mDay,
+      dailyData: daily, maxDay: mDay, daysInMonth,
       cities: cList, maxCity: mCity, statusMap: sMap,
     }
   }, [orders, expenses, selYear, selMonth])
