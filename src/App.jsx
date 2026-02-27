@@ -103,6 +103,44 @@ export default function App() {
     })
   }, [])
 
+  // ── Apply saved UI preferences (font size, accent color, animations) ──
+  useEffect(() => {
+    try {
+      const r = document.documentElement
+      // Font size
+      const savedFontSize = localStorage.getItem('mawj_fontsize')
+      if (savedFontSize === 'large') {
+        r.style.setProperty('font-size', '19px')
+        r.style.setProperty('--t-display', '48px')
+        r.style.setProperty('--t-title', '30px')
+        r.style.setProperty('--t-body', '19px')
+        r.style.setProperty('--t-label', '14px')
+        r.style.setProperty('--t-2xl', '40px')
+      }
+      // Accent color
+      const savedAccent = localStorage.getItem('mawj_accent')
+      const ACCENT_MAP = {
+        '#5856D6':'88,86,214', '#00C9A7':'0,201,167', '#30D158':'48,209,88',
+        '#FF9500':'255,149,0', '#FF375F':'255,55,95',
+      }
+      if (savedAccent && ACCENT_MAP[savedAccent]) {
+        const rgb = ACCENT_MAP[savedAccent]
+        r.style.setProperty('--action', savedAccent)
+        r.style.setProperty('--action-rgb', rgb)
+        r.style.setProperty('--action-glow', `rgba(${rgb},0.20)`)
+        r.style.setProperty('--action-soft', `rgba(${rgb},0.10)`)
+        r.style.setProperty('--action-faint', `rgba(${rgb},0.05)`)
+      }
+      // Animations
+      if (localStorage.getItem('mawj_animations') === 'false') {
+        r.style.setProperty('--dur-fast', '0ms')
+        r.style.setProperty('--dur-base', '0ms')
+        r.style.setProperty('--dur-slow', '0ms')
+        r.style.setProperty('--dur-page', '0ms')
+      }
+    } catch {}
+  }, [])
+
   // ── Auth ──
   useEffect(() => {
     Auth.getSession().then(s => { setSession(s); if (s?.user) loadUser(s.user.email) })

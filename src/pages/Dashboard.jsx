@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { DB } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency } from '../data/constants'
@@ -219,8 +219,8 @@ export default function Dashboard({ onNavigate }) {
           </div>
 
           {sparkData.revenue.length > 1 && (
-            <div style={{ position:'relative', zIndex:1, marginTop:18, opacity:0.85 }}>
-              <Sparkline data={sparkData.revenue} color="var(--action)" width={400} height={48}/>
+            <div style={{ position:'relative', zIndex:1, marginTop:18, opacity:0.85, width:'100%' }}>
+              <HeroSparkline data={sparkData.revenue} color="var(--action)" />
             </div>
           )}
         </div>
@@ -343,6 +343,28 @@ export default function Dashboard({ onNavigate }) {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+
+/* ═══════════════════════════════════════════════════
+   HERO SPARKLINE — Responsive width sparkline for hero card
+═══════════════════════════════════════════════════ */
+function HeroSparkline({ data, color }) {
+  const ref = useRef(null)
+  const [w, setW] = useState(300)
+  useEffect(() => {
+    if (!ref.current) return
+    const measure = () => setW(ref.current.offsetWidth)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(ref.current)
+    return () => ro.disconnect()
+  }, [])
+  return (
+    <div ref={ref} style={{ width:'100%' }}>
+      <Sparkline data={data} color={color} width={w} height={52} />
     </div>
   )
 }
@@ -473,8 +495,8 @@ function RingCard({ label, value, pct, color, rgbVar, sub, sparkData, sparkColor
       </div>
 
       {sparkData?.length > 1 && (
-        <div style={{ marginTop:12, opacity:0.65 }}>
-          <Sparkline data={sparkData} color={sparkColor || color} width={180} height={26}/>
+        <div style={{ marginTop:12, opacity:0.65, width:'100%', overflow:'hidden' }}>
+          <Sparkline data={sparkData} color={sparkColor || color} width={220} height={26}/>
         </div>
       )}
     </div>

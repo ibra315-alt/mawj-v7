@@ -22,7 +22,7 @@ export default function Sparkline({ data = [], color = '#38BDF8', width = 80, he
   const lastUp = data[data.length - 1] >= data[data.length - 2]
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow:'visible' }}>
+    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ overflow:'visible', display:'block' }}>
       <defs>
         <linearGradient id={`spark-fill-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.25" />

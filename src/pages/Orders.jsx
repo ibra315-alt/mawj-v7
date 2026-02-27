@@ -946,14 +946,22 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
 
   return (
     <>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1100 }}/>
+      <div style={{
+        position:'fixed', inset:0, zIndex:1100,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        background:'rgba(0,0,0,0.5)',
+        padding:20,
+      }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="order-view-modal" style={{
-        position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)',
         width:'min(560px, 94vw)', maxHeight:'90vh', overflowY:'auto',
-        background:'var(--modal-bg)', borderRadius:'var(--r-xl)',
+        background:'rgba(255,255,255,0.92)',
+        backdropFilter:'var(--glass-blur-lg)',
+        WebkitBackdropFilter:'var(--glass-blur-lg)',
+        borderRadius:'var(--r-xl)',
         boxShadow:'var(--modal-shadow)', zIndex:1101,
         border:'1px solid var(--border)',
-        animation:'modalIn var(--dur-base) var(--ease-out) both',
+        borderTopColor:'var(--glass-edge)',
+        animation:'fadeInUp var(--dur-base) var(--ease-out) both',
         padding:'24px',
       }}>
         {/* Close */}
@@ -1098,6 +1106,7 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
             <PrintReceipt order={order} statuses={ORDER_STATUSES}/>
           </div>
         </div>
+      </div>
       </div>
     </>
   )

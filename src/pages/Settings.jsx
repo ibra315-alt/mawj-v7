@@ -804,6 +804,49 @@ function AppearanceTab() {
     try { return localStorage.getItem('mawj_animations') !== 'false' } catch { return true }
   })
 
+  // Apply saved preferences on mount
+  useEffect(() => {
+    // Apply accent
+    const savedAccent = ACCENT_PRESETS.find(p => p.color === accent)
+    if (savedAccent && savedAccent.color !== '#0A84FF') {
+      const r = document.documentElement
+      r.style.setProperty('--action', savedAccent.color)
+      r.style.setProperty('--action-rgb', savedAccent.rgb)
+      r.style.setProperty('--action-glow', `rgba(${savedAccent.rgb},0.20)`)
+      r.style.setProperty('--action-soft', `rgba(${savedAccent.rgb},0.10)`)
+      r.style.setProperty('--action-faint', `rgba(${savedAccent.rgb},0.05)`)
+    }
+    // Apply font size
+    applyFontSize(fontSize)
+    // Apply animations
+    if (!animations) {
+      const r = document.documentElement
+      r.style.setProperty('--dur-fast', '0ms')
+      r.style.setProperty('--dur-base', '0ms')
+      r.style.setProperty('--dur-slow', '0ms')
+      r.style.setProperty('--dur-page', '0ms')
+    }
+  }, [])
+
+  function applyFontSize(size) {
+    const r = document.documentElement
+    if (size === 'large') {
+      r.style.setProperty('font-size', '19px')
+      r.style.setProperty('--t-display', '48px')
+      r.style.setProperty('--t-title', '30px')
+      r.style.setProperty('--t-body', '19px')
+      r.style.setProperty('--t-label', '14px')
+      r.style.setProperty('--t-2xl', '40px')
+    } else {
+      r.style.removeProperty('font-size')
+      r.style.removeProperty('--t-display')
+      r.style.removeProperty('--t-title')
+      r.style.removeProperty('--t-body')
+      r.style.removeProperty('--t-label')
+      r.style.removeProperty('--t-2xl')
+    }
+  }
+
   function pickAccent(c) {
     setAccent(c.color)
     localStorage.setItem('mawj_accent', c.color)
@@ -819,7 +862,7 @@ function AppearanceTab() {
     const next = fontSize === 'normal' ? 'large' : 'normal'
     setFontSize(next)
     localStorage.setItem('mawj_fontsize', next)
-    document.documentElement.style.fontSize = next === 'large' ? '17px' : ''
+    applyFontSize(next)
     toast(next === 'large' ? 'تم تكبير الخط' : 'تم إرجاع الخط الطبيعي')
   }
 
