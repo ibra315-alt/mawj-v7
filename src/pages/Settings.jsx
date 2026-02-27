@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Settings as SettingsDB, DB, supabase } from '../data/db'
+import { Settings as SettingsDB, DB, Storage, supabase } from '../data/db'
 import { saveAppearance } from '../data/appearance'
 import { UAE_CITIES } from '../data/constants'
 import { Btn, Card, Input, Select, Textarea, Spinner, Toggle, Badge, toast } from '../components/ui'
@@ -313,8 +313,58 @@ function BusinessTab({ data, products, partners, updateData }) {
   const [form, setForm]   = useState(data.business||{})
   const [pForm, setPForm] = useState({ name:'', price:'', cost:'', sku:'' })
   const [partnerName, setPartnerName] = useState('')
+  const [logoUploading, setLogoUploading] = useState(false)
 
   function field(k,v) { setForm(p=>({...p,[k]:v})) }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast('يرجى اختيار ملف صورة', 'error')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast('حجم الملف يجب أن يكون أقل من 2 ميجابايت', 'error')
+      return
+    }
+    setLogoUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'png'
+      const path = `branding/logo-${Date.now()}.${ext}`
+      const url = await Storage.upload('assets', path, file)
+      const updated = { ...form, logo_url: url }
+      setForm(updated)
+      updateData('business', updated)
+      toast('تم رفع الشعار بنجاح')
+    } catch (err) {
+      console.error('Logo upload failed:', err)
+      // Fallback: convert to base64 and store in settings
+      try {
+        const reader = new FileReader()
+        const base64 = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+        const updated = { ...form, logo_url: base64 }
+        setForm(updated)
+        updateData('business', updated)
+        toast('تم حفظ الشعار')
+      } catch {
+        toast('فشل رفع الشعار', 'error')
+      }
+    } finally {
+      setLogoUploading(false)
+    }
+  }
+
+  function removeLogo() {
+    const updated = { ...form, logo_url: null }
+    setForm(updated)
+    updateData('business', updated)
+    toast('تم حذف الشعار')
+  }
 
   function addProduct() {
     if (!pForm.name) return
@@ -349,6 +399,56 @@ function BusinessTab({ data, products, partners, updateData }) {
           </Select>
         </div>
         <Btn onClick={()=>updateData('business',form)}><IcSave size={14}/> حفظ الإعدادات</Btn>
+      </Card>
+
+      <Card>
+        <SectionTitle>شعار المتجر</SectionTitle>
+        <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:14}}>
+          <div style={{
+            width:80,height:80,borderRadius:12,
+            background:'var(--bg-hover)',border:'2px dashed var(--border)',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            overflow:'hidden',flexShrink:0,
+          }}>
+            {form.logo_url ? (
+              <img src={form.logo_url} alt="شعار" style={{width:'100%',height:'100%',objectFit:'contain',padding:4}} />
+            ) : (
+              <span style={{fontSize:28,opacity:0.3}}>🖼️</span>
+            )}
+          </div>
+          <div style={{flex:1,display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{fontSize:12,color:'var(--text-sec)'}}>
+              {form.logo_url ? 'الشعار الحالي — يظهر في الفاتورة' : 'لم يتم رفع شعار بعد — سيظهر النص الافتراضي في الفاتورة'}
+            </div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <label style={{
+                display:'inline-flex',alignItems:'center',gap:6,
+                padding:'7px 16px',borderRadius:8,cursor:logoUploading?'wait':'pointer',
+                background:'var(--action)',color:'#fff',
+                fontSize:12,fontWeight:700,fontFamily:'inherit',
+                opacity:logoUploading?0.6:1,transition:'opacity 0.2s',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {logoUploading ? 'جاري الرفع...' : 'رفع شعار'}
+                <input type="file" accept="image/*" onChange={handleLogoUpload} style={{display:'none'}} disabled={logoUploading} />
+              </label>
+              {form.logo_url && (
+                <button onClick={removeLogo} style={{
+                  display:'inline-flex',alignItems:'center',gap:4,
+                  padding:'7px 14px',borderRadius:8,cursor:'pointer',
+                  background:'rgba(var(--red-rgb,220,38,38),0.1)',color:'var(--red)',
+                  border:'1px solid rgba(var(--red-rgb,220,38,38),0.2)',
+                  fontSize:12,fontWeight:600,fontFamily:'inherit',
+                }}>حذف</button>
+              )}
+            </div>
+            <div style={{fontSize:10,color:'var(--text-muted)'}}>PNG أو JPG — أقصى حجم 2 ميجابايت</div>
+          </div>
+        </div>
       </Card>
 
       <Card>
