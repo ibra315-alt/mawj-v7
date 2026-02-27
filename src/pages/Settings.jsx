@@ -329,7 +329,7 @@ function InfoBox({ children, color='var(--action)', icon='' }) {
   return (
     <div style={{
       padding:'12px 16px',
-      background:`rgba(${color==='var(--action)'?'0,228,184':'37,99,235'},0.06)`,
+      background:`rgba(${color==='var(--action)'?'56,189,248':'37,99,235'},0.06)`,
       border:`1px solid ${color==='var(--action)'?'rgba(56,189,248,0.18)':'rgba(37,99,235,0.18)'}`,
       borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',
       display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
