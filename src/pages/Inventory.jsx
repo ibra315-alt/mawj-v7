@@ -105,7 +105,7 @@ export default function Inventory() {
 
       {/* Zero stock banner */}
       {zeroStockItems.length > 0 && (
-        <div style={{ marginBottom:14, padding:'14px 16px', background:'rgba(239,68,68,0.08)', border:'1.5px solid rgba(239,68,68,0.25)', borderRadius:'var(--r-md)' }}>
+        <div style={{ marginBottom:14, padding:'14px 16px', background:'rgba(var(--danger-rgb),0.08)', border:'1.5px solid rgba(var(--danger-rgb),0.25)', borderRadius:'var(--r-md)' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <span style={{ fontSize:18 }}>⚠️</span>
@@ -120,7 +120,7 @@ export default function Inventory() {
             </div>
             <button
               onClick={() => setFilterLow(true)}
-              style={{ fontSize:12, fontWeight:700, color:'var(--danger)', background:'rgba(239,68,68,0.12)', border:'1.5px solid rgba(239,68,68,0.25)', borderRadius:999, padding:'6px 14px', cursor:'pointer', fontFamily:'inherit' }}
+              style={{ fontSize:12, fontWeight:700, color:'var(--danger)', background:'rgba(var(--danger-rgb),0.12)', border:'1.5px solid rgba(var(--danger-rgb),0.25)', borderRadius:999, padding:'6px 14px', cursor:'pointer', fontFamily:'inherit' }}
             >
               تحديث المخزون
             </button>
@@ -130,16 +130,16 @@ export default function Inventory() {
 
       {/* Reorder suggestions */}
       {items.filter(i=>i.active && i.stock_qty <= i.low_stock_threshold).length > 0 && (
-        <div style={{ marginBottom:16, padding:'12px 14px', background:'rgba(245,158,11,0.06)', border:'1.5px solid rgba(245,158,11,0.25)', borderRadius:'var(--r-lg)' }}>
+        <div style={{ marginBottom:16, padding:'12px 14px', background:'rgba(var(--warning-rgb),0.06)', border:'1.5px solid rgba(var(--warning-rgb),0.25)', borderRadius:'var(--r-lg)' }}>
           <div style={{ fontWeight:800, fontSize:13, color:'var(--amber,#f59e0b)', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
             <IcAlert size={15} color="var(--amber,#f59e0b)"/> مقترح إعادة الطلب
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
             {items.filter(i=>i.active && i.stock_qty <= i.low_stock_threshold).map(item => (
-              <div key={item.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 12px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'var(--radius-pill,999px)' }}>
+              <div key={item.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 12px', background:'rgba(var(--warning-rgb),0.08)', border:'1px solid rgba(var(--warning-rgb),0.2)', borderRadius:'var(--radius-pill,999px)' }}>
                 <span style={{ fontSize:12, fontWeight:700, color:'var(--text)' }}>{item.name}</span>
                 <span style={{ fontSize:11, color:'var(--amber,#f59e0b)', fontWeight:800 }}>{item.stock_qty} / {item.low_stock_threshold}</span>
-                <button onClick={() => adjustStockWithNote(item.id)} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, border:'1px solid rgba(245,158,11,0.4)', background:'rgba(245,158,11,0.12)', color:'var(--amber,#f59e0b)', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
+                <button onClick={() => adjustStockWithNote(item.id)} style={{ fontSize:11, padding:'2px 8px', borderRadius:999, border:'1px solid rgba(var(--warning-rgb),0.4)', background:'rgba(var(--warning-rgb),0.12)', color:'var(--amber,#f59e0b)', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
                   + إضافة
                 </button>
               </div>
@@ -174,7 +174,7 @@ export default function Inventory() {
             return (
               <Card
                 key={item.id}
-                style={{ borderColor: isLow ? 'rgba(245,158,11,0.4)' : 'var(--border)' }}
+                style={{ borderColor: isLow ? 'rgba(var(--warning-rgb),0.4)' : 'var(--border)' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
@@ -183,7 +183,7 @@ export default function Inventory() {
                     {item.category && <Badge color="var(--info-light)" style={{ marginTop: 4, fontSize: 10 }}>{item.category}</Badge>}
                   </div>
                   {isLow && (
-                    <div style={{ padding: '4px 8px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, fontSize: 11, color: 'var(--amber)', fontWeight: 700, flexShrink: 0 }}>
+                    <div style={{ padding: '4px 8px', background: 'rgba(var(--warning-rgb),0.15)', border: '1px solid rgba(var(--warning-rgb),0.3)', borderRadius: 6, fontSize: 11, color: 'var(--amber)', fontWeight: 700, flexShrink: 0 }}>
                       منخفض
                     </div>
                   )}

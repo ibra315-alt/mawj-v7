@@ -87,6 +87,16 @@
   --warning:       var(--amber-500);
   --warning-light: var(--amber-400);
 
+  /* RGB triplets for rgba() in JS */
+  --success-rgb: 16,185,129;
+  --danger-rgb:  239,68,68;
+  --warning-rgb: 245,158,11;
+  --action-rgb:  56,189,248;
+  --info-rgb:    59,130,246;
+
+  /* WhatsApp brand */
+  --whatsapp: #25d366;
+
   /* Spacing — 8px grid, generous */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
   --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-12:48px; --sp-16:64px;
@@ -234,10 +244,10 @@
    DARK THEME — Brighter soft indigo
 ══════════════════════════════════════════════════════════════ */
 [data-theme="dark"] {
-  --bg:           var(--indigo-850);
-  --bg-alt:       var(--indigo-800);
-  --bg-surface:   var(--indigo-700);
-  --bg-elevated:  var(--indigo-600);
+  --bg:           var(--indigo-800);
+  --bg-alt:       var(--indigo-700);
+  --bg-surface:   var(--indigo-600);
+  --bg-elevated:  var(--indigo-500);
   --bg-overlay:   rgba(15,15,26,0.92);
   --bg-hover:     rgba(56,189,248,0.07);
   --bg-active:    rgba(56,189,248,0.12);
@@ -551,7 +561,7 @@ option { background: var(--option-bg); color: var(--option-color); }
   font-size: var(--t-label);
   font-weight: 700;
 }
-.badge-success { background: rgba(16,185,129,0.12); color: var(--success-light); }
+.badge-success { background: rgba(var(--success-rgb),0.12); color: var(--success-light); }
 .badge-danger  { background: rgba(239,68,68,0.10);  color: var(--danger-light);  }
 .badge-warning { background: rgba(245,158,11,0.12); color: var(--warning-light); }
 .badge-info    { background: var(--info-soft);      color: var(--info-light);    }

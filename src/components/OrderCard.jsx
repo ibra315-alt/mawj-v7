@@ -5,7 +5,7 @@ import { IcWhatsapp, IcEdit, IcEye, IcPhone, IcTrendUp, IcLocation } from './Ico
 
 export default function OrderCard({ order, statuses, onView, onEdit, onStatusChange, compact }) {
   const [showActions, setShowActions] = useState(false)
-  const statusObj = statuses?.find(s => s.id === order.status) || { label: order.status, color: '#6b7280' }
+  const statusObj = statuses?.find(s => s.id === order.status) || { label: order.status, color: 'var(--text-muted)' }
 
   function sendWhatsApp(type) {
     const phone = order.customer_phone?.replace(/\D/g, '')
@@ -98,7 +98,7 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
         {order.customer_phone && (
           <button
             onClick={() => sendWhatsApp('confirm')}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 10px', background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 7, color: '#25d166', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 10px', background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 7, color: 'var(--whatsapp)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}
           >
             <IcWhatsapp size={14} /> واتساب
           </button>

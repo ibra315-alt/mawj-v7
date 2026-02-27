@@ -6,11 +6,11 @@ import { IcSearch, IcWhatsapp } from '../components/Icons'
 
 function getSegment(c) {
   const daysSinceLast = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
-  if (c.totalSpent >= 2000 || c.orderCount >= 5) return { label:'VIP',   color:'#F59E0B', icon:'', tier:1 }
+  if (c.totalSpent >= 2000 || c.orderCount >= 5) return { label:'VIP',   color:'var(--warning)', icon:'', tier:1 }
   if (c.orderCount >= 3 && daysSinceLast < 60)   return { label:'مخلص', color:'#38BDF8', icon:'⭐', tier:2 }
-  if (daysSinceLast > 90 && c.orderCount >= 2)   return { label:'خامل', color:'#EF4444', icon:'', tier:4 }
-  if (c.orderCount === 1)                        return { label:'جديد',  color:'#8B5CF6', icon:'', tier:3 }
-  return                                                { label:'نشط',   color:'#10B981', icon:'', tier:2 }
+  if (daysSinceLast > 90 && c.orderCount >= 2)   return { label:'خامل', color:'var(--danger)', icon:'', tier:4 }
+  if (c.orderCount === 1)                        return { label:'جديد',  color:'var(--info-light)', icon:'', tier:3 }
+  return                                                { label:'نشط',   color:'var(--success)', icon:'', tier:2 }
 }
 
 // Generate auto customer ID
@@ -105,7 +105,7 @@ export default function Customers() {
         {[
           { label:'إجمالي العملاء',    value: customers.length,       color:'var(--info-light)' },
           { label:'متوسط قيمة العميل', value: formatCurrency(avgLTV), color:'var(--action)' },
-          { label:'عملاء VIP',        value: vipCount,                color:'#f59e0b' },
+          { label:'عملاء VIP',        value: vipCount,                color:'var(--warning)' },
         ].map(s => (
           <div key={s.label} style={{ background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center' }}>
             <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:3 }}>{s.label}</div>
@@ -120,7 +120,7 @@ export default function Customers() {
           <button key={seg} onClick={() => setSegFilter(seg)} style={{
             padding:'5px 12px', borderRadius:999,
             border:`1.5px solid ${segFilter===seg ? 'var(--action)' : 'var(--border)'}`,
-            background: segFilter===seg ? 'rgba(56,189,248,0.12)' : 'var(--bg-hover)',
+            background: segFilter===seg ? 'rgba(var(--action-rgb),0.12)' : 'var(--bg-hover)',
             color: segFilter===seg ? 'var(--action)' : 'var(--text-muted)',
             fontSize:12, fontWeight: segFilter===seg ? 800 : 500,
             cursor:'pointer', fontFamily:'inherit', flexShrink:0, whiteSpace:'nowrap',
@@ -169,11 +169,11 @@ function CustomerCard({ customer: c, onClick, index }) {
     <div onClick={onClick} className="list-row" style={{
       background:'var(--bg-surface)',
       borderTop:`3px solid ${seg.color}`,
-      border: isVIP ? `1.5px solid rgba(245,158,11,0.35)` : '1px solid var(--border)',
+      border: isVIP ? `1.5px solid rgba(var(--warning-rgb),0.35)` : '1px solid var(--border)',
       borderTopWidth: 3, borderTopColor: seg.color, borderTopStyle: 'solid',
       borderRadius:'var(--r-lg)', padding: isVIP ? '18px' : '16px', cursor:'pointer',
       transition:'box-shadow 120ms ease, transform 120ms ease',
-      boxShadow: isVIP ? '0 4px 24px rgba(245,158,11,0.12)' : 'var(--card-shadow)',
+      boxShadow: isVIP ? '0 4px 24px rgba(var(--warning-rgb),0.12)' : 'var(--card-shadow)',
       position:'relative', overflow:'hidden',
     }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:40, background:`radial-gradient(ellipse at 50% 0%, ${seg.color}15, transparent 70%)`, pointerEvents:'none' }}/>
@@ -187,7 +187,7 @@ function CustomerCard({ customer: c, onClick, index }) {
             <span style={{ fontWeight:800, fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name || 'بدون اسم'}</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-            <span style={{ fontSize:10, fontFamily:'monospace', color:'var(--action)', fontWeight:700, background:'rgba(56,189,248,0.08)', padding:'1px 6px', borderRadius:4 }}>{custId}</span>
+            <span style={{ fontSize:10, fontFamily:'monospace', color:'var(--action)', fontWeight:700, background:'rgba(var(--action-rgb),0.08)', padding:'1px 6px', borderRadius:4 }}>{custId}</span>
             {c.phone && <span style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr' }}>{c.phone}</span>}
           </div>
         </div>
@@ -216,7 +216,7 @@ function CustomerCard({ customer: c, onClick, index }) {
         {c.phone && (
           <a href={`https://wa.me/${c.phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
             onClick={e => e.stopPropagation()}
-            style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', background:'rgba(37,209,102,0.1)', border:'1px solid rgba(37,209,102,0.2)', borderRadius:999, color:'#25d166', fontSize:11, fontWeight:700, textDecoration:'none' }}>
+            style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', background:'rgba(37,209,102,0.1)', border:'1px solid rgba(37,209,102,0.2)', borderRadius:999, color:'var(--whatsapp)', fontSize:11, fontWeight:700, textDecoration:'none' }}>
             <IcWhatsapp size={12}/> واتساب
           </a>
         )}
@@ -241,7 +241,7 @@ function CustomerModal({ customer: c, onClose }) {
             <div style={{ fontSize:12, color:'var(--text-muted)' }}>عميل منذ {daysSinceFirst} يوم</div>
           </div>
           {c.phone && (
-            <a href={`https://wa.me/${c.phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ marginInlineStart:'auto', display:'flex', alignItems:'center', gap:5, padding:'6px 12px', background:'rgba(37,209,102,0.12)', border:'1px solid rgba(37,209,102,0.25)', borderRadius:999, color:'#25d166', fontSize:12, fontWeight:700, textDecoration:'none' }}>
+            <a href={`https://wa.me/${c.phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ marginInlineStart:'auto', display:'flex', alignItems:'center', gap:5, padding:'6px 12px', background:'rgba(37,209,102,0.12)', border:'1px solid rgba(37,209,102,0.25)', borderRadius:999, color:'var(--whatsapp)', fontSize:12, fontWeight:700, textDecoration:'none' }}>
               <IcWhatsapp size={13}/> واتساب
             </a>
           )}
@@ -338,7 +338,7 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
       footer={<>
         <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
         <Btn onClick={sendToAll} loading={sending} disabled={targets.length===0}
-          style={{ background:'#25d166', color:'#fff', border:'none', gap:6 }}>
+          style={{ background:'var(--whatsapp)', color:'#fff', border:'none', gap:6 }}>
           إرسال لـ {targets.length} عميل
         </Btn>
       </>}
@@ -365,7 +365,7 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
 
         {/* Target count */}
         <div style={{ padding:'10px 14px', background:'rgba(37,209,102,0.06)', border:'1px solid rgba(37,209,102,0.2)', borderRadius:'var(--r-md)', fontSize:13 }}>
-          <span style={{ fontWeight:800, color:'#25d166', fontSize:16 }}>{targets.length}</span>
+          <span style={{ fontWeight:800, color:'var(--whatsapp)', fontSize:16 }}>{targets.length}</span>
           <span style={{ color:'var(--text-sec)' }}> عميل سيصلهم الرسالة</span>
           {targets.length === 0 && <span style={{ color:'var(--red)', marginInlineStart:8 }}>— لا يوجد عملاء بأرقام هاتف</span>}
         </div>
@@ -394,7 +394,7 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
         )}
 
         {sending && (
-          <div style={{ padding:'10px 14px', background:'rgba(56,189,248,0.06)', border:'1px solid rgba(56,189,248,0.2)', borderRadius:'var(--r-md)', textAlign:'center' }}>
+          <div style={{ padding:'10px 14px', background:'rgba(var(--action-rgb),0.06)', border:'1px solid rgba(var(--action-rgb),0.2)', borderRadius:'var(--r-md)', textAlign:'center' }}>
             <div style={{ fontSize:13, color:'var(--action)', fontWeight:700 }}>جاري الإرسال... {sentCount}/{targets.length}</div>
             <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>سيتم فتح واتساب لكل عميل — يرجى عدم إغلاق النوافذ</div>
           </div>

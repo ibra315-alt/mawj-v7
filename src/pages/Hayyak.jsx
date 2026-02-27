@@ -171,19 +171,19 @@ export default function Hayyak() {
       {stats.pendingCOD > 0 && (
         <div style={{
           marginBottom:16, padding:'14px 16px',
-          background:'rgba(245,158,11,0.08)',
-          border:'1.5px solid rgba(245,158,11,0.3)',
+          background:'rgba(var(--warning-rgb),0.08)',
+          border:'1.5px solid rgba(var(--warning-rgb),0.3)',
           borderRadius:'var(--r-md)',
           display:'flex', alignItems:'center', gap:12,
         }}>
-          <IcAlert size={20} style={{ color:'#f59e0b', flexShrink:0 }}/>
+          <IcAlert size={20} style={{ color:'var(--warning)', flexShrink:0 }}/>
           <div style={{ flex:1 }}>
-            <span style={{ fontWeight:800, color:'#f59e0b', fontSize:15 }}>{formatCurrency(stats.pendingCOD)}</span>
+            <span style={{ fontWeight:800, color:'var(--warning)', fontSize:15 }}>{formatCurrency(stats.pendingCOD)}</span>
             <span style={{ color:'var(--text-sec)', fontSize:13, marginInlineStart:8 }}>
               محصّلة من {stats.pendingCount} طلب — لم تُحوَّل بعد من حياك
             </span>
           </div>
-          <Btn size="sm" onClick={() => setTab('pending')} style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', border:'none' }}>
+          <Btn size="sm" onClick={() => setTab('pending')} style={{ background:'rgba(var(--warning-rgb),0.15)', color:'var(--warning)', border:'none' }}>
             عرض الطلبات
           </Btn>
         </div>
@@ -201,7 +201,7 @@ export default function Hayyak() {
           }}>
             {t.label}
             {t.id === 'pending' && stats.pendingCount > 0 && (
-              <span style={{ marginInlineStart:6, padding:'1px 6px', borderRadius:999, fontSize:10, fontWeight:900, background:'rgba(245,158,11,0.2)', color:'#f59e0b' }}>
+              <span style={{ marginInlineStart:6, padding:'1px 6px', borderRadius:999, fontSize:10, fontWeight:900, background:'rgba(var(--warning-rgb),0.2)', color:'var(--warning)' }}>
                 {stats.pendingCount}
               </span>
             )}
@@ -216,7 +216,7 @@ export default function Hayyak() {
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))', gap:10, marginBottom:20 }}>
             {[
               { label:'طلبات مسلّمة',    value: stats.deliveredCount,           color:'var(--action)' },
-              { label:'معدل التسليم',     value: `${stats.deliveryRate}%`,       color: stats.deliveryRate >= 80 ? 'var(--action)' : '#f59e0b' },
+              { label:'معدل التسليم',     value: `${stats.deliveryRate}%`,       color: stats.deliveryRate >= 80 ? 'var(--action)' : 'var(--warning)' },
               { label:'لم يتم التسليم',  value: stats.notDeliveredCount,        color:'var(--danger)' },
               { label:'إجمالي رسوم حياك',value: formatCurrency(stats.totalHayyakFees), color:'var(--danger)', small:true },
             ].map(s => (
@@ -233,9 +233,9 @@ export default function Hayyak() {
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
               {[
                 { label:'إجمالي COD المحصّل',  value: formatCurrency(stats.totalCOD),     color:'var(--text)',   bg:'var(--bg-hover)' },
-                { label:'تم استلامه من حياك',  value: formatCurrency(stats.bankReceived),  color:'var(--action)', bg:'rgba(56,189,248,0.06)' },
-                { label:'COD المعلق',           value: formatCurrency(stats.pendingCOD),   color: stats.pendingCOD > 0 ? '#f59e0b' : 'var(--action)', bg: stats.pendingCOD > 0 ? 'rgba(245,158,11,0.08)' : 'rgba(56,189,248,0.06)' },
-                { label:'رسوم تحويل بنكي',      value: formatCurrency(stats.transferFees), color:'var(--danger)', bg:'rgba(239,68,68,0.06)' },
+                { label:'تم استلامه من حياك',  value: formatCurrency(stats.bankReceived),  color:'var(--action)', bg:'rgba(var(--action-rgb),0.06)' },
+                { label:'COD المعلق',           value: formatCurrency(stats.pendingCOD),   color: stats.pendingCOD > 0 ? 'var(--warning)' : 'var(--action)', bg: stats.pendingCOD > 0 ? 'rgba(var(--warning-rgb),0.08)' : 'rgba(var(--action-rgb),0.06)' },
+                { label:'رسوم تحويل بنكي',      value: formatCurrency(stats.transferFees), color:'var(--danger)', bg:'rgba(var(--danger-rgb),0.06)' },
               ].map(s => (
                 <div key={s.label} style={{ padding:'12px 14px', background:s.bg, borderRadius:'var(--r-md)' }}>
                   <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:6 }}>{s.label}</div>
@@ -274,8 +274,8 @@ export default function Hayyak() {
         <>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:16 }}>
             {[
-              { label:'طلبات معلقة',  value: stats.pendingCount,            color:'#f59e0b' },
-              { label:'COD المعلق',   value: formatCurrency(stats.pendingCOD), color:'#f59e0b', small:true },
+              { label:'طلبات معلقة',  value: stats.pendingCount,            color:'var(--warning)' },
+              { label:'COD المعلق',   value: formatCurrency(stats.pendingCOD), color:'var(--warning)', small:true },
               { label:'رسوم حياك',    value: formatCurrency(stats.pendingOrders.reduce((s,o) => s + (o.hayyak_fee || 0), 0)), color:'var(--danger)', small:true },
             ].map(s => (
               <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
@@ -322,7 +322,7 @@ export default function Hayyak() {
             : (
               <>
                 {/* Create remittance from selection */}
-                <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(56,189,248,0.05)', border:'1px solid rgba(56,189,248,0.15)', borderRadius:'var(--r-md)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
+                <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(var(--action-rgb),0.05)', border:'1px solid rgba(var(--action-rgb),0.15)', borderRadius:'var(--r-md)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
                   <span style={{ fontSize:12, color:'var(--text-sec)' }}>
                     استلمت تحويلاً من حياك؟
                   </span>
@@ -341,7 +341,7 @@ export default function Hayyak() {
                           </div>
                           <div style={{ display:'flex', gap:12, fontSize:11, color:'var(--text-muted)' }}>
                             <span>{groupOrders.length} طلب</span>
-                            <span style={{ color:'#f59e0b', fontWeight:700 }}>
+                            <span style={{ color:'var(--warning)', fontWeight:700 }}>
                               COD: {formatCurrency(groupOrders.reduce((s,o) => s+(o.total||0), 0))}
                             </span>
                           </div>
@@ -441,7 +441,7 @@ function PendingOrderRow({ order, onQuickLink }) {
     <div style={{
       display:'flex', alignItems:'center', gap:10, padding:'11px 14px',
       background:'var(--bg-surface)', borderRadius:'var(--r-md)',
-      borderInlineStart:'3px solid #f59e0b', boxShadow:'var(--card-shadow)',
+      borderInlineStart:'3px solid var(--warning)', boxShadow:'var(--card-shadow)',
       flexWrap:'wrap',
     }}>
       <div style={{ flex:1, minWidth:100 }}>
@@ -463,7 +463,7 @@ function PendingOrderRow({ order, onQuickLink }) {
         </div>
         <div style={{ textAlign:'center', minWidth:64 }}>
           <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>COD</div>
-          <div style={{ fontWeight:800, color:'#f59e0b', fontSize:14, fontFamily:'Inter,sans-serif' }}>
+          <div style={{ fontWeight:800, color:'var(--warning)', fontSize:14, fontFamily:'Inter,sans-serif' }}>
             {formatCurrency(order.total || 0)}
           </div>
         </div>
@@ -691,7 +691,7 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
                         .map(o => o.id)
                       setSelectedIds(ids)
                     }}
-                    style={{ fontSize:11, color:'#f59e0b', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:999, padding:'3px 10px', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}
+                    style={{ fontSize:11, color:'var(--warning)', background:'rgba(var(--warning-rgb),0.08)', border:'1px solid rgba(var(--warning-rgb),0.2)', borderRadius:999, padding:'3px 10px', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}
                   >
                     ≤ تاريخ التحويل فقط
                   </button>
@@ -712,8 +712,8 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
                       onClick={() => toggleOrder(order.id)}
                       style={{
                         display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
-                        background: selected ? 'rgba(56,189,248,0.06)' : 'var(--bg-hover)',
-                        border:`1.5px solid ${selected ? 'rgba(56,189,248,0.25)' : 'var(--border)'}`,
+                        background: selected ? 'rgba(var(--action-rgb),0.06)' : 'var(--bg-hover)',
+                        border:`1.5px solid ${selected ? 'rgba(var(--action-rgb),0.25)' : 'var(--border)'}`,
                         borderRadius:'var(--r-md)', cursor:'pointer', transition:'all 120ms',
                       }}
                     >
@@ -767,8 +767,8 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
       {!isEdit && selectedIds.length > 0 && (
         <div style={{
           padding:'14px 16px', borderRadius:'var(--r-md)', marginBottom:14,
-          background: Math.abs(difference) < 5 ? 'rgba(56,189,248,0.06)' : 'rgba(245,158,11,0.08)',
-          border:`1.5px solid ${Math.abs(difference) < 5 ? 'rgba(56,189,248,0.2)' : 'rgba(245,158,11,0.3)'}`,
+          background: Math.abs(difference) < 5 ? 'rgba(var(--action-rgb),0.06)' : 'rgba(var(--warning-rgb),0.08)',
+          border:`1.5px solid ${Math.abs(difference) < 5 ? 'rgba(var(--action-rgb),0.2)' : 'rgba(var(--warning-rgb),0.3)'}`,
         }}>
           <div style={{ fontWeight:700, fontSize:12, color:'var(--text-muted)', marginBottom:10, letterSpacing:'0.05em', textTransform:'uppercase' }}>التحقق</div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 20px' }}>
@@ -791,14 +791,14 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
             )}
             <span style={{
               fontSize:14, fontWeight:800, fontFamily:'Inter,sans-serif',
-              color: Math.abs(difference) < 5 ? 'var(--action)' : '#f59e0b',
+              color: Math.abs(difference) < 5 ? 'var(--action)' : 'var(--warning)',
             }}>
               فرق: {difference >= 0 ? '+' : ''}{formatCurrency(difference)}
               {Math.abs(difference) < 5 && ' ✓'}
             </span>
           </div>
           {Math.abs(difference) >= 5 && (
-            <div style={{ marginTop:8, fontSize:11, color:'#f59e0b' }}>
+            <div style={{ marginTop:8, fontSize:11, color:'var(--warning)' }}>
               ⚠️ الفرق يزيد عن 5 د.إ — تحقق من المبلغ أو اختر طلبات مختلفة
             </div>
           )}

@@ -190,7 +190,7 @@ export default function Reports() {
   return (
     <div className="page">
       <PageHeader title="التقارير"
-        actions={<Btn variant="ghost" onClick={shareWhatsApp} style={{ color:'#25d166', borderColor:'rgba(37,211,102,0.3)' }}><IcWhatsapp size={15}/> مشاركة</Btn>}
+        actions={<Btn variant="ghost" onClick={shareWhatsApp} style={{ color:'var(--whatsapp)', borderColor:'rgba(37,211,102,0.3)' }}><IcWhatsapp size={15}/> مشاركة</Btn>}
       />
 
       <div style={{ display:'flex', gap:4, marginBottom:20, background:'var(--bg-hover)', borderRadius:'var(--r-md)', padding:4 }}>
@@ -224,7 +224,7 @@ export default function Reports() {
             <KPI label="رسوم حياك"        value={formatCurrency(hayyakFees)}  color="var(--danger)" small/>
             <KPI label="تكلفة المنتجات"   value={formatCurrency(productCost)} color="var(--danger)" small/>
             <KPI label="عدد الطلبات"      value={monthOrders.length}          color="var(--text)"   sub={`${delivered.length} تم تسليمها`}/>
-            <KPI label="نسبة التسليم"     value={`${deliveryRate}%`}          color={parseFloat(deliveryRate)>=90?'var(--action)':'#f59e0b'}/>
+            <KPI label="نسبة التسليم"     value={`${deliveryRate}%`}          color={parseFloat(deliveryRate)>=90?'var(--action)':'var(--warning)'}/>
             <KPI label="الاستبدالات"      value={`${replacements.length} (${replaceRate}%)`} color={parseFloat(replaceRate)>10?'var(--danger)':'var(--text-muted)'} small/>
           </div>
 
@@ -256,9 +256,9 @@ export default function Reports() {
             <Card>
               <div style={{ fontWeight:700, fontSize:13, marginBottom:12 }}>حالات الطلبات</div>
               {[
-                { key:'delivered',     label:'تم التسليم', color:'#10b981' },
-                { key:'تم',            label:'تم',          color:'#10b981' },
-                { key:'pending',       label:'معلق',        color:'#f59e0b' },
+                { key:'delivered',     label:'تم التسليم', color:'var(--success)' },
+                { key:'تم',            label:'تم',          color:'var(--success)' },
+                { key:'pending',       label:'معلق',        color:'var(--warning)' },
                 { key:'new',           label:'جديد',        color:'var(--action)' },
                 { key:'not_delivered', label:'لم يتم',      color:'var(--danger)' },
                 { key:'لم يتم',        label:'لم يتم',      color:'var(--danger)' },
@@ -287,7 +287,7 @@ export default function Reports() {
               { label:'ربح إجمالي',        value:formatCurrency(ytdGP),      color:'var(--action)' },
               { label:'مصاريف',            value:formatCurrency(ytdExp),      color:'var(--danger)' },
               { label:'صافي الربح',        value:formatCurrency(ytdNet),      color:ytdNet>=0?'var(--action)':'var(--danger)' },
-              { label:'الاستبدالات',       value:ytdRepl,                     color:'#f59e0b' },
+              { label:'الاستبدالات',       value:ytdRepl,                     color:'var(--warning)' },
             ].map(s => (
               <div key={s.label}>
                 <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:3 }}>{s.label}</div>
@@ -340,7 +340,7 @@ export default function Reports() {
                       <td style={{ padding:'8px', fontWeight:800, fontFamily:'Inter,sans-serif', color:m.netProfit>=0?'var(--action)':'var(--danger)' }}>
                         {m.netProfit>=0?'+':''}{formatCurrency(m.netProfit)}
                       </td>
-                      <td style={{ padding:'8px', color:'#f59e0b', fontWeight:700 }}>{m.revenue>0?pct(m.netProfit,m.revenue):'0'}%</td>
+                      <td style={{ padding:'8px', color:'var(--warning)', fontWeight:700 }}>{m.revenue>0?pct(m.netProfit,m.revenue):'0'}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -375,7 +375,7 @@ export default function Reports() {
               <button key={s.value} onClick={() => setProdSort(s.value)} style={{
                 padding:'7px 14px', borderRadius:999,
                 border:`1.5px solid ${prodSort===s.value?'var(--action)':'var(--border)'}`,
-                background: prodSort===s.value?'rgba(56,189,248,0.1)':'var(--bg-hover)',
+                background: prodSort===s.value?'rgba(var(--action-rgb),0.1)':'var(--bg-hover)',
                 color: prodSort===s.value?'var(--action)':'var(--text-muted)',
                 fontSize:12, fontWeight:prodSort===s.value?800:500, cursor:'pointer', fontFamily:'inherit',
               }}>{s.label}</button>
@@ -394,7 +394,7 @@ export default function Reports() {
                 const isTop = i===0
                 const rankColors = ['linear-gradient(135deg,#f59e0b,#fbbf24)','linear-gradient(135deg,#94a3b8,#cbd5e1)','linear-gradient(135deg,#cd7c3a,#d4a35a)']
                 return (
-                  <div key={`${p.name}-${p.size}`} style={{ background:'var(--bg-surface)', border:`1.5px solid ${isTop?'var(--action)':'var(--border)'}`, borderRadius:'var(--r-lg)', padding:'14px 16px', boxShadow: isTop?'0 0 16px rgba(56,189,248,0.08)':'var(--card-shadow)' }}>
+                  <div key={`${p.name}-${p.size}`} style={{ background:'var(--bg-surface)', border:`1.5px solid ${isTop?'var(--action)':'var(--border)'}`, borderRadius:'var(--r-lg)', padding:'14px 16px', boxShadow: isTop?'0 0 16px rgba(var(--action-rgb),0.08)':'var(--card-shadow)' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
                       <div style={{ width:30,height:30,borderRadius:9,flexShrink:0, background:i<3?rankColors[i]:'var(--bg-hover)', display:'flex',alignItems:'center',justifyContent:'center', fontWeight:900,fontSize:12, color:i<3?'#ffffff':'var(--text-muted)' }}>
                         {i<3?`#${i+1}`:i+1}
@@ -408,8 +408,8 @@ export default function Reports() {
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
                       {[
                         { label:'الكمية',     value:`${p.qty} وحدة`,         color:'var(--text-sec)' },
-                        { label:'الربح',      value:formatCurrency(p.profit), color:p.profit>=0?'#10b981':'var(--danger)' },
-                        { label:'الهامش',     value:`${p.margin}%`,           color:'#f59e0b' },
+                        { label:'الربح',      value:formatCurrency(p.profit), color:p.profit>=0?'var(--success)':'var(--danger)' },
+                        { label:'الهامش',     value:`${p.margin}%`,           color:'var(--warning)' },
                         { label:'سعر الوحدة', value:formatCurrency(p.avgPrice), color:'var(--text-muted)' },
                       ].map(s => (
                         <div key={s.label} style={{ padding:'5px 10px', background:'rgba(255,255,255,0.04)', borderRadius:8, fontSize:11 }}>
@@ -439,8 +439,8 @@ export default function Reports() {
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:8, marginBottom:20 }}>
             <KPI label="إجمالي الاستبدالات" value={allReplacements.length}        color="var(--danger)" sub={`${pct(allReplacements.length,orders.length)}% من الكل`}/>
             <KPI label="تكلفة الاستبدالات"  value={formatCurrency(totalReplCost)} color="var(--danger)" small/>
-            <KPI label="لم يتم التسليم"     value={allNotDelivered.length}         color="#f59e0b"       sub={`${pct(allNotDelivered.length,orders.length)}% من الكل`}/>
-            <KPI label="تكلفة لم يتم"       value={formatCurrency(totalNDCost)}    color="#f59e0b"       small/>
+            <KPI label="لم يتم التسليم"     value={allNotDelivered.length}         color="var(--warning)"       sub={`${pct(allNotDelivered.length,orders.length)}% من الكل`}/>
+            <KPI label="تكلفة لم يتم"       value={formatCurrency(totalNDCost)}    color="var(--warning)"       small/>
           </div>
 
           <Card style={{ marginBottom:14 }}>
@@ -451,13 +451,13 @@ export default function Reports() {
                   <span style={{ color:'var(--text-sec)' }}>{m.label} {m.year}</span>
                   <div style={{ display:'flex', gap:16 }}>
                     <span style={{ color:'var(--text-muted)' }}>{m.orderCount} طلب</span>
-                    <span style={{ fontWeight:700, color:parseFloat(m.replaceRate)>10?'var(--danger)':'#10b981' }}>
+                    <span style={{ fontWeight:700, color:parseFloat(m.replaceRate)>10?'var(--danger)':'var(--success)' }}>
                       {m.replacements} استبدال ({m.replaceRate}%)
                     </span>
                   </div>
                 </div>
                 <div style={{ height:5, background:'var(--bg-hover)', borderRadius:99 }}>
-                  <div style={{ width:`${Math.min(parseFloat(m.replaceRate)*5,100)}%`, height:'100%', background:parseFloat(m.replaceRate)>10?'var(--danger)':'#10b981', borderRadius:99, transition:'width 0.4s ease' }}/>
+                  <div style={{ width:`${Math.min(parseFloat(m.replaceRate)*5,100)}%`, height:'100%', background:parseFloat(m.replaceRate)>10?'var(--danger)':'var(--success)', borderRadius:99, transition:'width 0.4s ease' }}/>
                 </div>
               </div>
             ))}
@@ -490,7 +490,7 @@ export default function Reports() {
                     <span style={{ fontSize:12, flex:1, fontWeight:700 }}>{o.customer_name||'—'}</span>
                     {o.customer_city && <span style={{ fontSize:11, color:'var(--text-muted)' }}>{o.customer_city}</span>}
                     <span style={{ fontSize:11, color:'var(--text-muted)' }}>{o.order_date||formatDate(o.created_at)}</span>
-                    <span style={{ fontWeight:800, color:'#f59e0b', fontSize:12, fontFamily:'Inter,sans-serif' }}>{formatCurrency(o.total||0)}</span>
+                    <span style={{ fontWeight:800, color:'var(--warning)', fontSize:12, fontFamily:'Inter,sans-serif' }}>{formatCurrency(o.total||0)}</span>
                   </div>
                 ))}
               </div>
