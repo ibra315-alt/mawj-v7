@@ -55,9 +55,23 @@ export const Settings = {
   }
 }
 
+// ─── QUERY CACHE ────────────────────────────────────────────
+const queryCache = new Map()
+const CACHE_TTL = 30000 // 30 seconds
+
+export function invalidateCache(table) {
+  for (const [key] of queryCache) {
+    if (key.startsWith(`${table}:`)) queryCache.delete(key)
+  }
+}
+
 // ─── DB (CRUD) ───────────────────────────────────────────────
 export const DB = {
   async list(table, options = {}) {
+    const cacheKey = `${table}:${JSON.stringify(options)}`
+    const cached = queryCache.get(cacheKey)
+    if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data
+
     let query = supabase.from(table).select('*')
     if (options.orderBy) query = query.order(options.orderBy, { ascending: options.asc ?? false })
     if (options.filters) {
@@ -68,7 +82,9 @@ export const DB = {
     if (options.limit) query = query.limit(options.limit)
     const { data, error } = await query
     if (error) throw error
-    return data || []
+    const result = data || []
+    queryCache.set(cacheKey, { data: result, ts: Date.now() })
+    return result
   },
 
   async get(table, id) {
@@ -80,6 +96,7 @@ export const DB = {
   async insert(table, row) {
     const { data, error } = await supabase.from(table).insert(row).select().single()
     if (error) throw error
+    invalidateCache(table)
     return data
   },
 
@@ -91,45 +108,47 @@ export const DB = {
       .select()
       .single()
     if (error) throw error
+    invalidateCache(table)
     return data
   },
 
   async delete(table, id) {
     const { error } = await supabase.from(table).delete().eq('id', id)
     if (error) throw error
+    invalidateCache(table)
   },
 
   async upsert(table, row) {
     const { data, error } = await supabase.from(table).upsert(row).select().single()
     if (error) throw error
+    invalidateCache(table)
     return data
   }
 }
 
-// ─── ORDER NUMBER ────────────────────────────────────────────
+// ─── ORDER NUMBER (with retry to avoid race conditions) ─────
+let _orderNumberLock = false
 export async function generateOrderNumber() {
-  const today = new Date()
-  const prefix = `MWJ-${today.getFullYear().toString().slice(-2)}${String(today.getMonth() + 1).padStart(2, '0')}`
-  const { data } = await supabase
-    .from('orders')
-    .select('order_number')
-    .like('order_number', `${prefix}%`)
-    .order('order_number', { ascending: false })
-    .limit(1)
-  if (data && data.length > 0) {
-    const lastNum = parseInt(data[0].order_number.split('-').pop(), 10)
-    return `${prefix}-${String(lastNum + 1).padStart(4, '0')}`
+  // Simple mutex to prevent concurrent generation
+  while (_orderNumberLock) await new Promise(r => setTimeout(r, 50))
+  _orderNumberLock = true
+  try {
+    const today = new Date()
+    const prefix = `MWJ-${today.getFullYear().toString().slice(-2)}${String(today.getMonth() + 1).padStart(2, '0')}`
+    const { data } = await supabase
+      .from('orders')
+      .select('order_number')
+      .like('order_number', `${prefix}%`)
+      .order('order_number', { ascending: false })
+      .limit(1)
+    if (data && data.length > 0) {
+      const lastNum = parseInt(data[0].order_number.split('-').pop(), 10)
+      return `${prefix}-${String(lastNum + 1).padStart(4, '0')}`
+    }
+    return `${prefix}-0001`
+  } finally {
+    _orderNumberLock = false
   }
-  return `${prefix}-0001`
-}
-
-// ─── REALTIME ────────────────────────────────────────────────
-export function subscribeToOrders(callback) {
-  const channel = supabase
-    .channel('orders-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, callback)
-    .subscribe()
-  return () => supabase.removeChannel(channel)
 }
 
 // ─── STORAGE ─────────────────────────────────────────────────

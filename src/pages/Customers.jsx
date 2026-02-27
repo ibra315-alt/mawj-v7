@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
 import { Badge, Spinner, Empty, PageHeader, Modal, Btn } from '../components/ui'
@@ -65,24 +65,31 @@ export default function Customers() {
   }
 
   const segments = ['all', 'VIP', 'مخلص', 'نشط', 'جديد', 'خامل']
-  const segCounts = {}
-  customers.forEach(c => { segCounts[c.segment.label] = (segCounts[c.segment.label] || 0) + 1 })
 
-  let filtered = customers.filter(c => {
-    const q = !search || c.name.includes(search) || c.phone?.includes(search) || c.city?.includes(search)
-    const s = segFilter === 'all' || c.segment.label === segFilter
-    return q && s
-  })
-  filtered = [...filtered].sort((a,b) => {
-    if (sortBy==='spent')  return b.totalSpent - a.totalSpent
-    if (sortBy==='orders') return b.orderCount - a.orderCount
-    if (sortBy==='recent') return new Date(b.lastOrderDate) - new Date(a.lastOrderDate)
-    return a.name.localeCompare(b.name, 'ar')
-  })
+  const { segCounts, totalRevenue, vipCount, avgLTV } = useMemo(() => {
+    const counts = {}
+    let revenue = 0, vip = 0
+    customers.forEach(c => {
+      counts[c.segment.label] = (counts[c.segment.label] || 0) + 1
+      revenue += c.totalSpent
+      if (c.segment.label === 'VIP') vip++
+    })
+    return { segCounts: counts, totalRevenue: revenue, vipCount: vip, avgLTV: customers.length ? revenue / customers.length : 0 }
+  }, [customers])
 
-  const totalRevenue = customers.reduce((s,c) => s + c.totalSpent, 0)
-  const vipCount     = customers.filter(c => c.segment.label === 'VIP').length
-  const avgLTV       = customers.length ? totalRevenue / customers.length : 0
+  const filtered = useMemo(() => {
+    const list = customers.filter(c => {
+      const q = !search || c.name.includes(search) || c.phone?.includes(search) || c.city?.includes(search)
+      const s = segFilter === 'all' || c.segment.label === segFilter
+      return q && s
+    })
+    return [...list].sort((a,b) => {
+      if (sortBy==='spent')  return b.totalSpent - a.totalSpent
+      if (sortBy==='orders') return b.orderCount - a.orderCount
+      if (sortBy==='recent') return new Date(b.lastOrderDate) - new Date(a.lastOrderDate)
+      return a.name.localeCompare(b.name, 'ar')
+    })
+  }, [customers, search, segFilter, sortBy])
 
   if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh' }}><Spinner size={36}/></div>
 

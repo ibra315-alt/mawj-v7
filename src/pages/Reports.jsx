@@ -57,42 +57,62 @@ export default function Reports() {
     .finally(() => setLoading(false))
   }, [])
 
-  const { start, end } = monthRange(selYear, selMonth)
-  const monthOrders   = orders.filter(o => { const d=new Date(o.order_date||o.created_at); return d>=start&&d<=end })
-  const monthExpenses = expenses.filter(e => { const d=new Date(e.date); return d>=start&&d<=end })
+  const { monthOrders, monthExpenses, delivered, replacements, notDelivered,
+    revenue, grossProfit, hayyakFees, productCost, totalExp, netProfit,
+    deliveryRate, replaceRate, dailyData, maxDay, cities, maxCity, statusMap,
+  } = useMemo(() => {
+    const { start, end } = monthRange(selYear, selMonth)
+    const mOrders   = orders.filter(o => { const d=new Date(o.order_date||o.created_at); return d>=start&&d<=end })
+    const mExpenses = expenses.filter(e => { const d=new Date(e.date); return d>=start&&d<=end })
 
-  const delivered    = monthOrders.filter(o => o.status==='delivered'||o.status==='تم')
-  const replacements = monthOrders.filter(o => o.is_replacement)
-  const notDelivered = monthOrders.filter(o => o.status==='not_delivered'||o.status==='لم يتم')
+    const del    = mOrders.filter(o => o.status==='delivered'||o.status==='تم')
+    const repl   = mOrders.filter(o => o.is_replacement)
+    const notDel = mOrders.filter(o => o.status==='not_delivered'||o.status==='لم يتم')
 
-  const revenue     = monthOrders.reduce((s,o) => s+(o.total||0), 0)
-  const grossProfit = monthOrders.reduce((s,o) => s+(o.gross_profit||0), 0)
-  const hayyakFees  = monthOrders.reduce((s,o) => s+(o.hayyak_fee||0), 0)
-  const productCost = monthOrders.reduce((s,o) => s+(o.product_cost||0), 0)
-  const totalExp    = monthExpenses.reduce((s,e) => s+(e.amount||0), 0)
-  const netProfit   = grossProfit - totalExp
-  const deliveryRate = pct(delivered.length, monthOrders.length)
-  const replaceRate  = pct(replacements.length, monthOrders.length)
+    const rev   = mOrders.reduce((s,o) => s+(o.total||0), 0)
+    const gp    = mOrders.reduce((s,o) => s+(o.gross_profit||0), 0)
+    const hFees = mOrders.reduce((s,o) => s+(o.hayyak_fee||0), 0)
+    const pCost = mOrders.reduce((s,o) => s+(o.product_cost||0), 0)
+    const tExp  = mExpenses.reduce((s,e) => s+(e.amount||0), 0)
 
-  const daysInMonth = new Date(selYear, selMonth+1, 0).getDate()
-  const dailyData = Array.from({ length: daysInMonth }, (_,i) => {
-    const day = i+1
-    const dayOrds = monthOrders.filter(o => new Date(o.order_date||o.created_at).getDate()===day)
-    return { day, revenue: dayOrds.reduce((s,o)=>s+(o.total||0),0), count: dayOrds.length }
-  })
-  const maxDay = Math.max(...dailyData.map(d=>d.revenue), 1)
+    // dailyData — use a map for O(n) instead of O(n*d)
+    const daysInMonth = new Date(selYear, selMonth+1, 0).getDate()
+    const dayMap = Array.from({ length: daysInMonth }, () => ({ revenue: 0, count: 0 }))
+    mOrders.forEach(o => {
+      const day = new Date(o.order_date||o.created_at).getDate() - 1
+      if (day >= 0 && day < daysInMonth) {
+        dayMap[day].revenue += (o.total||0)
+        dayMap[day].count++
+      }
+    })
+    const daily = dayMap.map((d, i) => ({ day: i+1, ...d }))
+    const mDay = Math.max(...daily.map(d=>d.revenue), 1)
 
-  const cityMap = {}
-  monthOrders.forEach(o => {
-    const c = o.customer_city||'غير محدد'
-    if (!cityMap[c]) cityMap[c] = { count:0, revenue:0 }
-    cityMap[c].count++; cityMap[c].revenue += (o.total||0)
-  })
-  const cities = Object.entries(cityMap).sort((a,b)=>b[1].count-a[1].count)
-  const maxCity = Math.max(...cities.map(([,d])=>d.count), 1)
+    // cities
+    const cMap = {}
+    mOrders.forEach(o => {
+      const c = o.customer_city||'غير محدد'
+      if (!cMap[c]) cMap[c] = { count:0, revenue:0 }
+      cMap[c].count++; cMap[c].revenue += (o.total||0)
+    })
+    const cList = Object.entries(cMap).sort((a,b)=>b[1].count-a[1].count)
+    const mCity = Math.max(...cList.map(([,d])=>d.count), 1)
 
-  const statusMap = {}
-  monthOrders.forEach(o => { const s=o.status||'new'; if (!statusMap[s]) statusMap[s]=0; statusMap[s]++ })
+    // statuses
+    const sMap = {}
+    mOrders.forEach(o => { const s=o.status||'new'; if (!sMap[s]) sMap[s]=0; sMap[s]++ })
+
+    return {
+      monthOrders: mOrders, monthExpenses: mExpenses,
+      delivered: del, replacements: repl, notDelivered: notDel,
+      revenue: rev, grossProfit: gp, hayyakFees: hFees, productCost: pCost,
+      totalExp: tExp, netProfit: gp - tExp,
+      deliveryRate: pct(del.length, mOrders.length),
+      replaceRate: pct(repl.length, mOrders.length),
+      dailyData: daily, maxDay: mDay,
+      cities: cList, maxCity: mCity, statusMap: sMap,
+    }
+  }, [orders, expenses, selYear, selMonth])
 
   const pnlMonths = useMemo(() => {
     const result = []
@@ -118,60 +138,70 @@ export default function Reports() {
   }, [orders, expenses, selMonth, selYear])
   const maxPnl = Math.max(...pnlMonths.map(m=>m.revenue), 1)
 
-  const ytdOrders   = orders.filter(o => new Date(o.order_date||o.created_at).getFullYear()===selYear)
-  const ytdExpenses = expenses.filter(e => new Date(e.date).getFullYear()===selYear)
-  const ytdRevenue  = ytdOrders.reduce((s,o)=>s+(o.total||0),0)
-  const ytdGP       = ytdOrders.reduce((s,o)=>s+(o.gross_profit||0),0)
-  const ytdExp      = ytdExpenses.reduce((s,e)=>s+(e.amount||0),0)
-  const ytdNet      = ytdGP - ytdExp
-  const ytdRepl     = ytdOrders.filter(o=>o.is_replacement).length
-
-  const expCatMap = {}
-  expenses.filter(e=>new Date(e.date).getFullYear()===selYear).forEach(e => {
-    const cat=e.category||'أخرى'; if (!expCatMap[cat]) expCatMap[cat]=0; expCatMap[cat]+=(e.amount||0)
-  })
-  const expCategories = Object.entries(expCatMap).sort((a,b)=>b[1]-a[1])
-  const totalYtdExp   = expCategories.reduce((s,[,v])=>s+v,0)
-  const maxExpCat     = Math.max(...expCategories.map(([,v])=>v), 1)
-
-  // FIX: Product profitability includes hayyak fee allocation and respects order status
-  const productMap = {}
-  orders.filter(o => o.status !== 'cancelled').forEach(o => {
-    const items = o.items || []
-    const itemCount = items.reduce((s, i) => s + (parseInt(i.qty) || 1), 0)
-    const orderHayyak = parseFloat(o.hayyak_fee) || 0
-    items.forEach(item => {
-      const key = `${item.name}${item.size?'—'+item.size:''}`
-      if (!productMap[key]) productMap[key]={ name:item.name, size:item.size||'', qty:0, revenue:0, cost:0, profit:0 }
-      const qty = parseInt(item.qty) || 1
-      const revenue = (parseFloat(item.price)||0) * qty
-      const cost = (parseFloat(item.cost)||0) * qty
-      const hayyakShare = itemCount > 0 ? (orderHayyak * qty / itemCount) : 0
-      productMap[key].qty += qty
-      productMap[key].revenue += revenue
-      productMap[key].cost += cost
-      if (o.is_replacement || o.status === 'not_delivered') {
-        productMap[key].profit -= (cost + hayyakShare)
-      } else {
-        productMap[key].profit += (revenue - cost - hayyakShare)
-      }
+  const { ytdRevenue, ytdGP, ytdExp, ytdNet, ytdRepl, expCategories, totalYtdExp, maxExpCat } = useMemo(() => {
+    const yOrders   = orders.filter(o => new Date(o.order_date||o.created_at).getFullYear()===selYear)
+    const yExpenses = expenses.filter(e => new Date(e.date).getFullYear()===selYear)
+    const rev  = yOrders.reduce((s,o)=>s+(o.total||0),0)
+    const gp   = yOrders.reduce((s,o)=>s+(o.gross_profit||0),0)
+    const exp  = yExpenses.reduce((s,e)=>s+(e.amount||0),0)
+    const repl = yOrders.filter(o=>o.is_replacement).length
+    const catMap = {}
+    yExpenses.forEach(e => {
+      const cat=e.category||'أخرى'; if (!catMap[cat]) catMap[cat]=0; catMap[cat]+=(e.amount||0)
     })
-  })
-  const allProducts = Object.values(productMap).map(p => ({
-    ...p, margin: p.revenue>0?((p.profit/p.revenue)*100).toFixed(1):'0', avgPrice: p.qty>0?p.revenue/p.qty:0
-  }))
-  const sortedProducts = [...allProducts].sort((a,b) => {
-    if (prodSort==='revenue') return b.revenue-a.revenue
-    if (prodSort==='qty')     return b.qty-a.qty
-    if (prodSort==='profit')  return b.profit-a.profit
-    return parseFloat(b.margin)-parseFloat(a.margin)
-  })
-  const totalProductRevenue = allProducts.reduce((s,p)=>s+p.revenue,0)
+    const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1])
+    return {
+      ytdRevenue: rev, ytdGP: gp, ytdExp: exp, ytdNet: gp - exp, ytdRepl: repl,
+      expCategories: cats, totalYtdExp: cats.reduce((s,[,v])=>s+v,0),
+      maxExpCat: Math.max(...cats.map(([,v])=>v), 1),
+    }
+  }, [orders, expenses, selYear])
 
-  const allReplacements = orders.filter(o=>o.is_replacement)
-  const allNotDelivered = orders.filter(o=>o.status==='not_delivered'||o.status==='لم يتم')
-  const totalReplCost   = allReplacements.reduce((s,o)=>s+Math.abs(o.gross_profit||0),0)
-  const totalNDCost     = allNotDelivered.reduce((s,o)=>s+Math.abs(o.gross_profit||0),0)
+  // Product profitability (includes hayyak fee allocation, respects order status)
+  const { sortedProducts, totalProductRevenue } = useMemo(() => {
+    const pMap = {}
+    orders.filter(o => o.status !== 'cancelled').forEach(o => {
+      const items = o.items || []
+      const itemCount = items.reduce((s, i) => s + (parseInt(i.qty) || 1), 0)
+      const orderHayyak = parseFloat(o.hayyak_fee) || 0
+      items.forEach(item => {
+        const key = `${item.name}${item.size?'—'+item.size:''}`
+        if (!pMap[key]) pMap[key]={ name:item.name, size:item.size||'', qty:0, revenue:0, cost:0, profit:0 }
+        const qty = parseInt(item.qty) || 1
+        const rev = (parseFloat(item.price)||0) * qty
+        const cost = (parseFloat(item.cost)||0) * qty
+        const hayyakShare = itemCount > 0 ? (orderHayyak * qty / itemCount) : 0
+        pMap[key].qty += qty
+        pMap[key].revenue += rev
+        pMap[key].cost += cost
+        if (o.is_replacement || o.status === 'not_delivered') {
+          pMap[key].profit -= (cost + hayyakShare)
+        } else {
+          pMap[key].profit += (rev - cost - hayyakShare)
+        }
+      })
+    })
+    const all = Object.values(pMap).map(p => ({
+      ...p, margin: p.revenue>0?((p.profit/p.revenue)*100).toFixed(1):'0', avgPrice: p.qty>0?p.revenue/p.qty:0
+    }))
+    const sorted = [...all].sort((a,b) => {
+      if (prodSort==='revenue') return b.revenue-a.revenue
+      if (prodSort==='qty')     return b.qty-a.qty
+      if (prodSort==='profit')  return b.profit-a.profit
+      return parseFloat(b.margin)-parseFloat(a.margin)
+    })
+    return { sortedProducts: sorted, totalProductRevenue: all.reduce((s,p)=>s+p.revenue,0) }
+  }, [orders, prodSort])
+
+  const { allReplacements, allNotDelivered, totalReplCost, totalNDCost } = useMemo(() => {
+    const repl = orders.filter(o=>o.is_replacement)
+    const notDel = orders.filter(o=>o.status==='not_delivered'||o.status==='لم يتم')
+    return {
+      allReplacements: repl, allNotDelivered: notDel,
+      totalReplCost: repl.reduce((s,o)=>s+Math.abs(o.gross_profit||0),0),
+      totalNDCost: notDel.reduce((s,o)=>s+Math.abs(o.gross_profit||0),0),
+    }
+  }, [orders])
 
   function shareWhatsApp() {
     const text = `تقرير ${MONTHS[selMonth]} ${selYear}\n\nالمبيعات: ${formatCurrency(revenue)}\nالطلبات: ${monthOrders.length} (تسليم ${deliveryRate}%)\nربح إجمالي: ${formatCurrency(grossProfit)}\nصافي الربح: ${formatCurrency(netProfit)}\nاستبدالات: ${replacements.length} (${replaceRate}%)`

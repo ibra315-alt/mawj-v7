@@ -16,8 +16,13 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_SHELL)
       .then(c => c.addAll(['/', '/index.html', '/manifest.json', '/logo.png', '/offline.html']))
-      .then(() => self.skipWaiting())
+    // Note: skipWaiting() is triggered by the app via postMessage, not auto-called
   )
+})
+
+// Controlled update — app sends SKIP_WAITING after user confirms
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting()
 })
 
 self.addEventListener('activate', e => {

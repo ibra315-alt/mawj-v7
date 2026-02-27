@@ -164,6 +164,34 @@ create table discounts (
 );
 
 -- ============================================================
+-- CUSTOMERS TABLE (was previously derived from orders)
+-- ============================================================
+create table customers (
+  id uuid primary key default uuid_generate_v4(),
+  customer_id text unique,              -- e.g. MWJ-C0001
+  name text not null,
+  phone text,
+  email text,
+  city text,
+  segment text default 'جديد',          -- VIP, مخلص, نشط, جديد, خامل
+  total_spent numeric default 0,
+  total_profit numeric default 0,
+  order_count integer default 0,
+  avg_order numeric default 0,
+  first_order_date timestamptz,
+  last_order_date timestamptz,
+  notes text,
+  tags jsonb default '[]',
+  whatsapp_opted_in boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index idx_customers_phone on customers(phone);
+create index idx_customers_segment on customers(segment);
+create index idx_customers_city on customers(city);
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 
@@ -178,18 +206,82 @@ alter table supplier_purchases enable row level security;
 alter table capital_entries enable row level security;
 alter table withdrawals enable row level security;
 alter table discounts enable row level security;
+alter table customers enable row level security;
 
-create policy "auth_all" on settings for all to authenticated using (true) with check (true);
-create policy "auth_all" on users for all to authenticated using (true) with check (true);
-create policy "auth_all" on orders for all to authenticated using (true) with check (true);
-create policy "auth_all" on settlements for all to authenticated using (true) with check (true);
-create policy "auth_all" on expenses for all to authenticated using (true) with check (true);
-create policy "auth_all" on inventory for all to authenticated using (true) with check (true);
-create policy "auth_all" on suppliers for all to authenticated using (true) with check (true);
-create policy "auth_all" on supplier_purchases for all to authenticated using (true) with check (true);
-create policy "auth_all" on capital_entries for all to authenticated using (true) with check (true);
-create policy "auth_all" on withdrawals for all to authenticated using (true) with check (true);
-create policy "auth_all" on discounts for all to authenticated using (true) with check (true);
+-- ── Real RLS policies (role-based) ──
+-- Helper function to get current user's role
+create or replace function auth_user_role()
+returns text as $$
+  select role from users where email = auth.jwt() ->> 'email' limit 1;
+$$ language sql security definer stable;
+
+-- Settings: admin can write, all authenticated can read
+create policy "settings_read" on settings for select to authenticated using (true);
+create policy "settings_write" on settings for all to authenticated
+  using (auth_user_role() = 'admin')
+  with check (auth_user_role() = 'admin');
+
+-- Users: admin can manage, self can read
+create policy "users_read" on users for select to authenticated using (true);
+create policy "users_write" on users for all to authenticated
+  using (auth_user_role() = 'admin')
+  with check (auth_user_role() = 'admin');
+
+-- Orders: admin/accountant/sales can manage, viewer can read
+create policy "orders_read" on orders for select to authenticated using (true);
+create policy "orders_write" on orders for insert to authenticated
+  with check (auth_user_role() in ('admin', 'accountant', 'sales'));
+create policy "orders_update" on orders for update to authenticated
+  using (auth_user_role() in ('admin', 'accountant', 'sales'));
+create policy "orders_delete" on orders for delete to authenticated
+  using (auth_user_role() in ('admin', 'accountant'));
+
+-- Customers: same as orders
+create policy "customers_read" on customers for select to authenticated using (true);
+create policy "customers_write" on customers for all to authenticated
+  using (auth_user_role() in ('admin', 'accountant', 'sales'))
+  with check (auth_user_role() in ('admin', 'accountant', 'sales'));
+
+-- Financial tables: admin and accountant only
+create policy "settlements_all" on settlements for all to authenticated
+  using (auth_user_role() in ('admin', 'accountant'))
+  with check (auth_user_role() in ('admin', 'accountant'));
+
+create policy "expenses_read" on expenses for select to authenticated using (true);
+create policy "expenses_write" on expenses for all to authenticated
+  using (auth_user_role() in ('admin', 'accountant'))
+  with check (auth_user_role() in ('admin', 'accountant'));
+
+create policy "capital_all" on capital_entries for all to authenticated
+  using (auth_user_role() in ('admin'))
+  with check (auth_user_role() in ('admin'));
+
+create policy "withdrawals_all" on withdrawals for all to authenticated
+  using (auth_user_role() in ('admin'))
+  with check (auth_user_role() in ('admin'));
+
+-- Inventory: all can read, admin/accountant can write
+create policy "inventory_read" on inventory for select to authenticated using (true);
+create policy "inventory_write" on inventory for all to authenticated
+  using (auth_user_role() in ('admin', 'accountant'))
+  with check (auth_user_role() in ('admin', 'accountant'));
+
+-- Suppliers: admin/accountant
+create policy "suppliers_read" on suppliers for select to authenticated using (true);
+create policy "suppliers_write" on suppliers for all to authenticated
+  using (auth_user_role() in ('admin', 'accountant'))
+  with check (auth_user_role() in ('admin', 'accountant'));
+
+create policy "supplier_purchases_read" on supplier_purchases for select to authenticated using (true);
+create policy "supplier_purchases_write" on supplier_purchases for all to authenticated
+  using (auth_user_role() in ('admin', 'accountant'))
+  with check (auth_user_role() in ('admin', 'accountant'));
+
+-- Discounts: admin only
+create policy "discounts_read" on discounts for select to authenticated using (true);
+create policy "discounts_write" on discounts for all to authenticated
+  using (auth_user_role() = 'admin')
+  with check (auth_user_role() = 'admin');
 
 -- ============================================================
 -- INDEXES
