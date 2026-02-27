@@ -140,9 +140,9 @@ export default function Customers() {
       {/* Search + Sort */}
       <div style={{ display:'flex', gap:8, marginBottom:16 }}>
         <div style={{ position:'relative', flex:1 }}>
-          <IcSearch size={14} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
+          <IcSearch size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..."
-            style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
+            style={{ width:'100%', padding:'9px 12px 9px 32px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}/>
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
           style={{ padding:'9px 12px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', color:'var(--text)', fontSize:12, fontFamily:'inherit', cursor:'pointer' }}>

@@ -199,7 +199,7 @@ export default function Settings({ user }) {
                 fontFamily:'inherit',outline:'none',
               }}
             />
-            <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',fontSize:14,color:'var(--text-muted)',pointerEvents:'none'}}>🔍</span>
+            <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',fontSize:14,color:'var(--text-muted)',pointerEvents:'none'}}>🔍</span>
           </div>
           {visibleSections.map(s => {
             const active = section === s.id

@@ -288,11 +288,11 @@ export default function Hayyak() {
           {/* Filters */}
           <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
             <div style={{ position:'relative', flex:1, minWidth:140 }}>
-              <IcSearch size={14} style={{ position:'absolute', right:11, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
+              <IcSearch size={14} style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
               <input
                 value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="بحث..."
-                style={{ width:'100%', padding:'9px 32px 9px 12px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', boxShadow:'var(--card-shadow)' }}
+                style={{ width:'100%', padding:'9px 12px 9px 32px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', boxShadow:'var(--card-shadow)' }}
               />
             </div>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
