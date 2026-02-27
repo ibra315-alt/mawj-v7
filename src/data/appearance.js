@@ -74,6 +74,16 @@ export async function loadAndApplyAppearance(userId) {
     const userKey=userId?`appearance_${userId}`:'appearance'
     let prefs=await Settings.get(userKey)
     if(!prefs) prefs=await Settings.get('global_appearance')
+
+    // Force-migrate old teal design: if saved accent is old teal,
+    // replace entire prefs with new defaults and save back to DB
+    if (prefs && (prefs.accent === '#00e4b8' || prefs.accent === '#00E4B8')) {
+      prefs = { ...DEFAULT_PREFS }
+      const key = userId ? `appearance_${userId}` : 'appearance'
+      Settings.set(key, prefs).catch(() => {})
+      Settings.set('global_appearance', prefs).catch(() => {})
+    }
+
     applyAppearance(prefs||DEFAULT_PREFS)
     return prefs||DEFAULT_PREFS
   } catch {
