@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { DB, Settings, generateOrderNumber, supabase } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency, formatDate, SOURCE_LABELS, UAE_CITIES } from '../data/constants'
@@ -944,21 +945,23 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
     setWaMenuOpen(false)
   }
 
-  return (
-    <>
-      <div style={{
-        position:'fixed', inset:0, zIndex:1100,
-        display:'flex', alignItems:'center', justifyContent:'center',
-        background:'rgba(0,0,0,0.45)',
-        padding:20,
-      }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+  return createPortal(
+    <div style={{
+      position:'fixed', inset:0, zIndex:99999,
+      display:'flex', alignItems:'center', justifyContent:'center',
+      background:'rgba(0,0,0,0.45)',
+      padding:20,
+    }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="order-view-modal" style={{
         position:'relative',
-        width:'min(560px, 94vw)', maxHeight:'90vh', overflowY:'auto',
-        background:'#fff',
+        width:'100%', maxWidth:560, maxHeight:'90vh', overflowY:'auto',
+        background:'var(--modal-bg)',
+        backdropFilter:'var(--glass-blur-lg)',
+        WebkitBackdropFilter:'var(--glass-blur-lg)',
         borderRadius:'var(--r-xl)',
-        boxShadow:'0 24px 80px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
-        border:'1px solid rgba(255,255,255,0.3)',
+        boxShadow:'var(--modal-shadow)',
+        border:'1px solid var(--border)',
+        borderTopColor:'var(--glass-edge)',
         padding:'24px',
       }}>
         {/* Close */}
@@ -1104,8 +1107,8 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
           </div>
         </div>
       </div>
-      </div>
-    </>
+    </div>,
+    document.body
   )
 }
 

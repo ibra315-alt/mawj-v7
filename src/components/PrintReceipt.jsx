@@ -1,220 +1,412 @@
-import React, { useRef } from 'react'
+import React, { useState } from 'react'
 
-export default function PrintReceipt({ order, statuses, businessName = 'موج للهدايا' }) {
-  const ref = useRef()
+function buildReceiptHTML(order, statusLabel) {
+  const date = new Date(order.created_at || Date.now()).toLocaleDateString('ar-AE', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  })
+  const items = order.items || []
+  const subtotal = Number(order.subtotal || order.total || 0)
+  const discount = Number(order.discount || order.discount_amount || 0)
+  const total = Number(order.total || 0)
 
-  const statusObj = statuses?.find(s => s.id === order?.status) || { label: order?.status || '' }
-
-  function doPrint() {
-    const win = window.open('', '_blank', 'width=400,height=700')
-    win.document.write(`
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8"/>
-<title>فاتورة ${order.order_number}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;900&display=swap" rel="stylesheet"/>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Inter:wght@400;600;700;800&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     font-family: 'Almarai', sans-serif;
     background: #fff;
-    color: #111;
-    width: 80mm;
-    max-width: 80mm;
+    color: #1a1a2e;
+    width: 148mm;
+    min-height: 210mm;
     margin: 0 auto;
-    padding: 8mm 6mm;
-    font-size: 12px;
+    padding: 0;
+    font-size: 13px;
     direction: rtl;
   }
-  .center { text-align: center; }
-  .divider { border: none; border-top: 1px dashed #bbb; margin: 8px 0; }
-  .divider-solid { border: none; border-top: 1px solid #111; margin: 8px 0; }
-  .logo-area { text-align: center; margin-bottom: 8px; }
-  .store-name {
-    font-size: 22px;
-    font-weight: 900;
+  .page {
+    width: 148mm;
+    min-height: 210mm;
+    padding: 20mm 16mm 16mm;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Decorative top bar */
+  .top-accent {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6mm;
+    background: linear-gradient(135deg, #0d9488, #00e4b8, #06b6d4);
+  }
+  .top-accent::after {
+    content: '';
+    position: absolute;
+    bottom: -3mm; left: 0; right: 0;
+    height: 3mm;
+    background: linear-gradient(180deg, rgba(0,228,184,0.12), transparent);
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8mm;
+    padding-bottom: 5mm;
+    border-bottom: 1.5px solid #e5e7eb;
+  }
+  .brand { display: flex; flex-direction: column; gap: 1mm; }
+  .brand-name {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0d9488;
     letter-spacing: -0.02em;
     line-height: 1;
-    margin-bottom: 2px;
   }
-  .store-sub { font-size: 10px; color: #666; letter-spacing: 0.08em; }
-  .receipt-title {
-    font-size: 11px;
+  .brand-sub {
+    font-size: 10px;
+    color: #6b7280;
+    letter-spacing: 0.08em;
+  }
+  .invoice-meta { text-align: left; direction: ltr; }
+  .invoice-label {
+    font-size: 9px;
+    color: #9ca3af;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     font-weight: 700;
-    text-align: center;
+    margin-bottom: 1mm;
+  }
+  .invoice-num {
+    font-family: 'Inter', monospace;
+    font-size: 16px;
+    font-weight: 800;
+    color: #1a1a2e;
+    letter-spacing: 0.03em;
+  }
+  .invoice-date {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 1mm;
+  }
+  .status-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 9px;
+    font-weight: 700;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    margin-top: 2mm;
+  }
+
+  /* Customer info */
+  .customer-box {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 4mm 5mm;
+    margin-bottom: 6mm;
+  }
+  .customer-title {
+    font-size: 9px;
+    color: #9ca3af;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    margin: 6px 0;
-    color: #444;
+    margin-bottom: 2mm;
   }
-  .order-num {
+  .customer-name {
     font-size: 15px;
-    font-weight: 900;
-    text-align: center;
-    font-family: monospace;
-    letter-spacing: 0.06em;
-    margin: 4px 0;
+    font-weight: 800;
+    color: #1a1a2e;
+    margin-bottom: 1mm;
   }
-  .info-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
-  .info-label { color: #666; }
-  .info-val { font-weight: 600; }
-  .items-header {
-    display: flex; justify-content: space-between;
-    font-size: 10px; font-weight: 700;
-    color: #444; letter-spacing: 0.05em;
-    padding: 4px 0 2px;
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 4px;
+  .customer-detail {
+    font-size: 11px;
+    color: #6b7280;
+    line-height: 1.5;
   }
-  .item-row {
-    display: flex; justify-content: space-between;
-    padding: 3px 0; font-size: 11px;
-    border-bottom: 1px dotted #eee;
-    align-items: flex-start;
-    gap: 6px;
+
+  /* Items table */
+  .items-section { margin-bottom: 6mm; }
+  .section-title {
+    font-size: 9px;
+    color: #9ca3af;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 3mm;
   }
-  .item-num { color: #888; min-width: 16px; font-size: 10px; }
-  .item-name { flex: 1; }
-  .item-qty { color: #555; min-width: 24px; text-align: center; }
-  .item-price { font-weight: 700; min-width: 48px; text-align: left; }
-  .totals-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
-  .total-final {
-    display: flex; justify-content: space-between;
-    font-size: 15px; font-weight: 900;
-    padding: 5px 0;
-  }
-  .total-final span:last-child { font-family: monospace; }
-  .status-badge {
-    display: inline-block;
-    padding: 3px 12px;
-    border: 1px solid #111;
-    border-radius: 99px;
+  .items-table { width: 100%; border-collapse: collapse; }
+  .items-table th {
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    color: #6b7280;
+    padding: 2.5mm 0;
+    border-bottom: 1.5px solid #e5e7eb;
+    text-align: right;
   }
-  .barcode-area {
-    text-align: center;
-    font-family: monospace;
-    font-size: 9px;
-    color: #999;
-    letter-spacing: 0.2em;
-    margin: 4px 0;
-  }
-  .barcode-text {
-    font-size: 24px;
-    letter-spacing: 0.15em;
-    line-height: 1;
-    color: #111;
-  }
-  .thank-you {
-    text-align: center;
+  .items-table th:first-child { width: 8mm; text-align: center; }
+  .items-table th:nth-child(3) { text-align: center; width: 16mm; }
+  .items-table th:last-child { text-align: left; width: 28mm; }
+  .items-table td {
+    padding: 2.5mm 0;
     font-size: 12px;
-    font-weight: 700;
-    margin-top: 4px;
-    color: #111;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: top;
   }
-  .small-note { text-align: center; font-size: 9px; color: #999; margin-top: 3px; }
-  @media print {
-    body { margin: 0; padding: 6mm 5mm; }
-    @page { margin: 0; size: 80mm auto; }
+  .items-table td:first-child {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+  }
+  .items-table td:nth-child(3) {
+    text-align: center;
+    color: #6b7280;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+  }
+  .items-table td:last-child {
+    text-align: left;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    color: #1a1a2e;
+  }
+  .item-name { font-weight: 600; }
+  .item-size { font-size: 10px; color: #9ca3af; }
+  .item-note {
+    font-size: 10px;
+    color: #6b7280;
+    font-style: italic;
+    margin-top: 0.5mm;
+  }
+
+  /* Totals */
+  .totals-box {
+    margin-top: 4mm;
+    padding-top: 4mm;
+    border-top: 1.5px solid #e5e7eb;
+  }
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.5mm 0;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  .totals-row span:last-child {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+  }
+  .totals-row.discount span { color: #dc2626; }
+  .total-final {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 3mm;
+    padding: 4mm 5mm;
+    background: linear-gradient(135deg, #0d9488, #00e4b8);
+    border-radius: 8px;
+    color: #fff;
+  }
+  .total-final .label { font-size: 14px; font-weight: 800; }
+  .total-final .amount {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  /* Notes */
+  .notes-box {
+    margin-top: 5mm;
+    padding: 3mm 4mm;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #92400e;
+  }
+  .notes-label { font-weight: 700; margin-bottom: 1mm; font-size: 10px; }
+
+  /* Footer */
+  .footer {
+    margin-top: 8mm;
+    padding-top: 5mm;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+  }
+  .footer-thanks {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0d9488;
+    margin-bottom: 2mm;
+  }
+  .footer-brand {
+    font-size: 10px;
+    color: #9ca3af;
+    letter-spacing: 0.1em;
+  }
+  .footer-wave {
+    margin-top: 3mm;
+    font-size: 20px;
+    letter-spacing: 4px;
+    opacity: 0.15;
   }
 </style>
 </head>
 <body>
+<div class="page">
+  <div class="top-accent"></div>
 
-<!-- Store Header -->
-<div class="logo-area">
-  <div class="store-name">موج</div>
-  <div class="store-sub">للهدايا • UAE</div>
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-name">موج</div>
+      <div class="brand-sub">MAWJ GIFTS &bull; UAE</div>
+    </div>
+    <div class="invoice-meta">
+      <div class="invoice-label">INVOICE</div>
+      <div class="invoice-num">${order.order_number || '---'}</div>
+      <div class="invoice-date">${date}</div>
+      <div class="status-pill">${statusLabel}</div>
+    </div>
+  </div>
+
+  <!-- Customer -->
+  <div class="customer-box">
+    <div class="customer-title">بيانات العميل</div>
+    <div class="customer-name">${order.customer_name || 'عميل'}</div>
+    ${order.customer_phone ? `<div class="customer-detail" style="direction:ltr;text-align:right">${order.customer_phone}</div>` : ''}
+    ${order.customer_city ? `<div class="customer-detail">${order.customer_city}${order.customer_address ? ' &bull; ' + order.customer_address : ''}</div>` : ''}
+    ${order.tracking_number ? `<div class="customer-detail" style="margin-top:1mm"><span style="color:#9ca3af">رقم التتبع:</span> <span style="font-family:Inter,monospace;direction:ltr">${order.tracking_number}</span></div>` : ''}
+  </div>
+
+  <!-- Items -->
+  <div class="items-section">
+    <div class="section-title">المنتجات</div>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>المنتج</th>
+          <th>الكمية</th>
+          <th>السعر</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map((item, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>
+            <div class="item-name">${item.name || ''}</div>
+            ${item.size ? `<div class="item-size">${item.size}</div>` : ''}
+            ${item.engraving_notes ? `<div class="item-note">${item.engraving_notes}</div>` : ''}
+          </td>
+          <td>${item.qty || 1}</td>
+          <td>${((item.price || 0) * (item.qty || 1)).toLocaleString('ar-AE')} د.إ</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Totals -->
+  <div class="totals-box">
+    <div class="totals-row">
+      <span>المجموع الفرعي</span>
+      <span>${subtotal.toLocaleString('ar-AE')} د.إ</span>
+    </div>
+    ${discount > 0 ? `<div class="totals-row discount"><span>الخصم</span><span>-${discount.toLocaleString('ar-AE')} د.إ</span></div>` : ''}
+    ${order.delivery_cost ? `<div class="totals-row"><span>الشحن</span><span>${Number(order.delivery_cost).toLocaleString('ar-AE')} د.إ</span></div>` : ''}
+    <div class="total-final">
+      <span class="label">الإجمالي</span>
+      <span class="amount">${total.toLocaleString('ar-AE')} د.إ</span>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  ${order.notes ? `
+  <div class="notes-box">
+    <div class="notes-label">ملاحظات</div>
+    <div>${order.notes}</div>
+  </div>` : ''}
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-thanks">شكراً لتسوقكم معنا</div>
+    <div class="footer-brand">Mawj Gifts &bull; موج للهدايا &bull; UAE</div>
+    <div class="footer-wave">~ ~ ~ ~ ~ ~ ~</div>
+  </div>
 </div>
-
-<hr class="divider-solid"/>
-
-<div class="receipt-title">فاتورة / RECEIPT</div>
-<div class="order-num">#${order.order_number || '---'}</div>
-
-<hr class="divider"/>
-
-<!-- Order Info -->
-<div class="info-row"><span class="info-label">التاريخ</span><span class="info-val">${new Date(order.created_at || Date.now()).toLocaleDateString('ar-AE')}</span></div>
-${order.customer_name ? `<div class="info-row"><span class="info-label">العميل</span><span class="info-val">${order.customer_name}</span></div>` : ''}
-${order.customer_phone ? `<div class="info-row"><span class="info-label">الهاتف</span><span class="info-val" style="direction:ltr;text-align:left">${order.customer_phone}</span></div>` : ''}
-${order.customer_city ? `<div class="info-row"><span class="info-label">المدينة</span><span class="info-val">${order.customer_city}</span></div>` : ''}
-${order.tracking_number ? `<div class="info-row"><span class="info-label">رقم التتبع</span><span class="info-val" style="font-family:monospace;direction:ltr">${order.tracking_number}</span></div>` : ''}
-<div class="info-row"><span class="info-label">الحالة</span><span class="status-badge">${statusObj.label}</span></div>
-
-<hr class="divider"/>
-
-<!-- Items -->
-<div class="items-header">
-  <span>المنتج</span>
-  <span>الكمية</span>
-  <span>السعر</span>
-</div>
-${(order.items || []).map((item, i) => `
-<div class="item-row">
-  <span class="item-num">${i + 1}</span>
-  <span class="item-name">${item.name || ''}</span>
-  <span class="item-qty">×${item.qty || 1}</span>
-  <span class="item-price">${((item.price || 0) * (item.qty || 1)).toFixed(0)} د.إ</span>
-</div>`).join('')}
-
-<hr class="divider"/>
-
-<!-- Totals -->
-${order.delivery_cost ? `<div class="totals-row"><span>الشحن</span><span>${Number(order.delivery_cost).toFixed(0)} د.إ</span></div>` : ''}
-${order.discount_amount ? `<div class="totals-row"><span>خصم</span><span>-${Number(order.discount_amount).toFixed(0)} د.إ</span></div>` : ''}
-
-<div class="total-final">
-  <span>الإجمالي</span>
-  <span>${Number(order.total || 0).toFixed(0)} د.إ</span>
-</div>
-
-<hr class="divider-solid"/>
-
-<!-- Barcode-style order number -->
-<div class="barcode-area">
-  <div class="barcode-text">${(order.order_number || '').replace(/\D/g, '').split('').join(' ')}</div>
-  <div>${order.order_number || ''}</div>
-</div>
-
-<hr class="divider"/>
-
-<!-- Footer -->
-${order.notes ? `<div class="small-note">ملاحظة: ${order.notes}</div><hr class="divider"/>` : ''}
-<div class="thank-you">شكراً لتسوقكم معنا </div>
-<div class="small-note">Mawj Gifts • موج للهدايا</div>
-<div class="small-note" style="margin-top:8px;color:#ccc">— — — — — — — — — — — —</div>
-
-<script>
-  window.onload = function() {
-    window.print()
-    setTimeout(() => window.close(), 800)
-  }
-</script>
 </body>
-</html>`)
-    win.document.close()
+</html>`
+}
+
+export default function PrintReceipt({ order, statuses }) {
+  const [loading, setLoading] = useState(false)
+  const statusObj = statuses?.find(s => s.id === order?.status) || { label: order?.status || '' }
+
+  async function downloadPDF() {
+    if (loading) return
+    setLoading(true)
+    try {
+      const html2pdf = (await import('html2pdf.js')).default
+
+      const container = document.createElement('div')
+      container.style.position = 'fixed'
+      container.style.left = '-9999px'
+      container.style.top = '0'
+      container.innerHTML = buildReceiptHTML(order, statusObj.label)
+      document.body.appendChild(container)
+
+      const element = container.querySelector('.page')
+
+      await html2pdf().set({
+        margin: 0,
+        filename: `فاتورة-${order.order_number || 'mawj'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' },
+      }).from(element).save()
+
+      document.body.removeChild(container)
+    } catch (err) {
+      console.error('PDF generation failed:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <button
-      onClick={doPrint}
-      title="طباعة الفاتورة"
+      onClick={downloadPDF}
+      disabled={loading}
+      title="تحميل الفاتورة PDF"
       style={{
         display:'inline-flex', alignItems:'center', gap:7,
-        padding:'9px 20px', borderRadius:'var(--radius-pill)',
-        background:'var(--bg-hover)', backdropFilter:'blur(12px)',
-        border:'1.5px solid var(--border)',
-        color:'var(--text-sec)', fontSize:13, fontWeight:600,
-        cursor:'pointer', fontFamily:'inherit',
+        padding:'9px 20px', borderRadius:99,
+        background: loading ? 'var(--bg-hover)' : 'linear-gradient(135deg, #0d9488, #00e4b8)',
+        border:'none',
+        color: loading ? 'var(--text-muted)' : '#fff',
+        fontSize:13, fontWeight:700,
+        cursor: loading ? 'wait' : 'pointer',
+        fontFamily:'inherit',
         transition:'all 0.2s ease',
+        opacity: loading ? 0.7 : 1,
       }}
-      className="ghost-btn"
     >
-      ️ طباعة الفاتورة
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      {loading ? 'جاري التحميل...' : 'تحميل PDF'}
     </button>
   )
 }
