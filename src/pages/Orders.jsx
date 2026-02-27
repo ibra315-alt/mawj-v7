@@ -11,7 +11,7 @@ import Confetti from '../components/Confetti'
 export { calcOrderProfit, ORDER_STATUSES }
 
 function getStatus(id) {
-  return ORDER_STATUSES.find(s => s.id === id) || { id, label: id || '—', color: '#6b7280', bg: 'rgba(107,114,128,0.1)' }
+  return ORDER_STATUSES.find(s => s.id === id) || { id, label: id || '—', color: 'var(--text-muted)', bg: 'rgba(107,114,128,0.1)' }
 }
 
 /* ═══════════════════════════════════════════
@@ -316,7 +316,7 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
     <div
       style={{
         background:'var(--bg-surface)', borderRadius:'var(--r-lg)',
-        borderInlineStart:`3px solid ${isRepl ? '#f59e0b' : status.color}`,
+        borderInlineStart:`3px solid ${isRepl ? 'var(--warning)' : status.color}`,
         boxShadow:'var(--card-shadow)', overflow:'hidden',
         transition:'box-shadow 150ms, transform 150ms',
         display:'flex', flexDirection:'column',
@@ -354,8 +354,8 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
             </span>
             {isRepl && (
               <span style={{
-                fontSize:10, background:'rgba(245,158,11,0.15)',
-                color:'#f59e0b', borderRadius:4, padding:'1px 6px', fontWeight:700,
+                fontSize:10, background:'rgba(var(--warning-rgb),0.15)',
+                color:'var(--warning)', borderRadius:4, padding:'1px 6px', fontWeight:700,
               }}>
                 استبدال
               </span>
@@ -382,7 +382,7 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
         {profit !== 0 && (
           <div style={{
             fontSize:13, fontWeight:700, fontFamily:'Inter,sans-serif',
-            color: profit >= 0 ? '#10b981' : 'var(--danger)',
+            color: profit >= 0 ? 'var(--success)' : 'var(--danger)',
           }}>
             ربح: {profit > 0 ? '+' : ''}{formatCurrency(profit)}
           </div>
@@ -405,7 +405,7 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
             <IcEdit size={13}/>
           </button>
           <button onClick={onDelete} title="حذف" style={{
-            padding:'6px 8px', background:'none', border:'1px solid rgba(239,68,68,0.2)',
+            padding:'6px 8px', background:'none', border:'1px solid rgba(var(--danger-rgb),0.2)',
             borderRadius:'var(--r-sm)', color:'var(--danger)', cursor:'pointer',
             display:'flex', alignItems:'center', fontSize:12, opacity:0.7,
           }}>
@@ -418,7 +418,7 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
               style={{
                 padding:'6px 8px', background:'rgba(37,211,102,0.08)',
                 border:'1px solid rgba(37,211,102,0.25)', borderRadius:'var(--r-sm)',
-                color:'#25d166', display:'flex', alignItems:'center',
+                color:'var(--whatsapp)', display:'flex', alignItems:'center',
                 textDecoration:'none', fontSize:12,
               }}
             >
@@ -436,8 +436,8 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
                 onClick={() => onAdvance('not_delivered')}
                 style={{
                   padding:'7px 12px', borderRadius:'var(--r-sm)',
-                  background:'rgba(239,68,68,0.08)', border:'1.5px solid rgba(239,68,68,0.25)',
-                  color:'#ef4444', fontSize:12, fontWeight:700,
+                  background:'rgba(var(--danger-rgb),0.08)', border:'1.5px solid rgba(var(--danger-rgb),0.25)',
+                  color:'var(--danger)', fontSize:12, fontWeight:700,
                   cursor:'pointer', fontFamily:'inherit',
                   display:'flex', alignItems:'center', gap:4,
                 }}
@@ -448,11 +448,11 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
                 onClick={() => onAdvance('delivered')}
                 style={{
                   padding:'7px 14px', borderRadius:'var(--r-sm)',
-                  background:'linear-gradient(135deg,#10b981,#059669)',
+                  background:'linear-gradient(135deg,var(--success),var(--success-light))',
                   border:'none', color:'#fff', fontSize:13, fontWeight:800,
                   cursor:'pointer', fontFamily:'inherit',
                   display:'flex', alignItems:'center', gap:4,
-                  boxShadow:'0 2px 8px rgba(16,185,129,0.3)',
+                  boxShadow:'0 2px 8px rgba(var(--success-rgb),0.3)',
                 }}
               >
                 ✓ مسلّم
@@ -482,8 +482,8 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
               onClick={onReplacement}
               style={{
                 padding:'7px 12px', borderRadius:'var(--r-sm)',
-                background:'rgba(245,158,11,0.08)', border:'1.5px solid rgba(245,158,11,0.25)',
-                color:'#f59e0b', fontSize:12, fontWeight:700,
+                background:'rgba(var(--warning-rgb),0.08)', border:'1.5px solid rgba(var(--warning-rgb),0.25)',
+                color:'var(--warning)', fontSize:12, fontWeight:700,
                 cursor:'pointer', fontFamily:'inherit',
                 display:'flex', alignItems:'center', gap:4,
               }}
@@ -655,8 +655,8 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           {isRepl && (
             <div style={{
               marginBottom:16, padding:'12px 14px',
-              background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.3)',
-              borderRadius:'var(--r-md)', fontSize:13, color:'#f59e0b', fontWeight:700,
+              background:'rgba(var(--warning-rgb),0.1)', border:'1.5px solid rgba(var(--warning-rgb),0.3)',
+              borderRadius:'var(--r-md)', fontSize:13, color:'var(--warning)', fontWeight:700,
             }}>
               طلب استبدال مجاني — الربح سيكون سالباً
             </div>
@@ -666,8 +666,8 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           {phoneWarning && (
             <div style={{
               marginBottom:12, padding:'10px 14px',
-              background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.35)',
-              borderRadius:'var(--r-md)', fontSize:12, color:'#f59e0b',
+              background:'rgba(var(--warning-rgb),0.1)', border:'1.5px solid rgba(var(--warning-rgb),0.35)',
+              borderRadius:'var(--r-md)', fontSize:12, color:'var(--warning)',
             }}>
               <b>رقم الهاتف موجود في طلب مفتوح:</b> {phoneWarning.customer_name || 'عميل'} — {phoneWarning.order_number}
             </div>
@@ -720,7 +720,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
               <div style={{
                 padding:'12px 14px', marginBottom:8,
                 background:'var(--bg-surface)', borderRadius:'var(--r-md)',
-                border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(56,189,248,0.08)',
+                border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(var(--action-rgb),0.08)',
               }}>
                 <div style={{ fontSize:11, color:'var(--action)', fontWeight:700, marginBottom:8 }}>
                   {selectedProduct.name} — اختر الحجم:
@@ -798,8 +798,8 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           {/* Live profit summary */}
           <div style={{
             padding:'14px 16px', borderRadius:'var(--r-md)', marginBottom:16,
-            background: calc.gross_profit < 0 ? 'rgba(239,68,68,0.06)' : 'rgba(56,189,248,0.06)',
-            border:`1.5px solid ${calc.gross_profit < 0 ? 'rgba(239,68,68,0.2)' : 'rgba(56,189,248,0.2)'}`,
+            background: calc.gross_profit < 0 ? 'rgba(var(--danger-rgb),0.06)' : 'rgba(var(--action-rgb),0.06)',
+            border:`1.5px solid ${calc.gross_profit < 0 ? 'rgba(var(--danger-rgb),0.2)' : 'rgba(var(--action-rgb),0.2)'}`,
           }}>
             <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 16px', fontSize:13 }}>
               <span style={{ color:'var(--text-sec)' }}>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(calc.subtotal)}</b></span>
@@ -826,7 +826,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           display:'flex', gap:10, justifyContent:'flex-end',
         }}>
           <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
-          <Btn loading={saving} onClick={handleSave} style={isRepl ? { background:'#f59e0b', color:'#000' } : {}}>
+          <Btn loading={saving} onClick={handleSave} style={isRepl ? { background:'var(--warning)', color:'#000' } : {}}>
             <IcSave size={15}/> {isEdit ? 'حفظ التعديلات' : isRepl ? 'إرسال الاستبدال' : 'إضافة الطلب'}
           </Btn>
         </div>
@@ -905,7 +905,7 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
               <Badge color={status.color}>{status.label}</Badge>
-              {order.is_replacement && <Badge color="#f59e0b">استبدال</Badge>}
+              {order.is_replacement && <Badge color="var(--warning)">استبدال</Badge>}
             </div>
           </div>
 
@@ -947,8 +947,8 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
           {/* Financial summary */}
           <div style={{
             padding:'12px 16px', borderRadius:'var(--r-md)',
-            background: profit < 0 ? 'rgba(239,68,68,0.06)' : 'rgba(56,189,248,0.06)',
-            border:`1px solid ${profit < 0 ? 'rgba(239,68,68,0.15)' : 'rgba(56,189,248,0.15)'}`,
+            background: profit < 0 ? 'rgba(var(--danger-rgb),0.06)' : 'rgba(var(--action-rgb),0.06)',
+            border:`1px solid ${profit < 0 ? 'rgba(var(--danger-rgb),0.15)' : 'rgba(var(--action-rgb),0.15)'}`,
             display:'flex', flexWrap:'wrap', gap:'6px 18px',
           }}>
             <span style={{ fontSize:13, color:'var(--text-sec)' }}>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(order.subtotal)}</b></span>
@@ -992,7 +992,7 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {order.customer_phone && (
               <div style={{ position:'relative' }}>
-                <Btn variant="ghost" onClick={() => setWaMenuOpen(p=>!p)} style={{ color:'#25d166', borderColor:'rgba(37,211,102,0.3)' }}>
+                <Btn variant="ghost" onClick={() => setWaMenuOpen(p=>!p)} style={{ color:'var(--whatsapp)', borderColor:'rgba(37,211,102,0.3)' }}>
                   <IcWhatsapp size={15}/> واتساب ▾
                 </Btn>
                 {waMenuOpen && (
@@ -1019,7 +1019,7 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
               </div>
             )}
             {order.status === 'delivered' && !order.is_replacement && (
-              <Btn variant="ghost" onClick={() => onReplacement?.(order)} style={{ color:'#f59e0b', borderColor:'rgba(245,158,11,0.3)' }}>
+              <Btn variant="ghost" onClick={() => onReplacement?.(order)} style={{ color:'var(--warning)', borderColor:'rgba(var(--warning-rgb),0.3)' }}>
                 <IcRefresh size={15}/> استبدال
               </Btn>
             )}

@@ -197,10 +197,10 @@ export default function App() {
       {!isOnline && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
-          background: 'rgba(239,68,68,0.95)',
+          background: 'rgba(var(--danger-rgb),0.95)',
           padding: '10px 16px', textAlign: 'center',
           fontSize: 13, fontWeight: 700, color: '#fff',
-          boxShadow: '0 2px 16px rgba(239,68,68,0.4)',
+          boxShadow: '0 2px 16px rgba(var(--danger-rgb),0.4)',
         }}>
           لا يوجد اتصال بالإنترنت — يعمل النظام في الوضع المحدود
         </div>
@@ -269,9 +269,9 @@ export default function App() {
         style={{
           position: 'fixed', bottom: 80, left: 16, zIndex: 700,
           width: 44, height: 44, borderRadius: '50%',
-          background: showAI ? 'rgba(239,68,68,0.9)' : 'var(--action)',
+          background: showAI ? 'rgba(var(--danger-rgb),0.9)' : 'var(--action)',
           border: 'none', cursor: 'pointer',
-          boxShadow: showAI ? '0 4px 20px rgba(239,68,68,0.5)' : '0 4px 20px var(--action-glow)',
+          boxShadow: showAI ? '0 4px 20px rgba(var(--danger-rgb),0.5)' : '0 4px 20px var(--action-glow)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.2s ease',
           WebkitTapHighlightColor: 'transparent',

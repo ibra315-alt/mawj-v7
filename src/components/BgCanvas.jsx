@@ -12,7 +12,7 @@ const PARTICLES = Array.from({ length: 12 }, (_, i) => ({
   delay: `${(i * 0.7) % 8}s`,
   duration: `${8 + (i % 4)}s`,
   size: i % 2 === 0 ? 2 : 3,
-  color: i % 2 === 0 ? 'rgba(56,189,248,0.5)' : 'rgba(59,130,246,0.4)',
+  color: i % 2 === 0 ? 'rgba(var(--action-rgb),0.5)' : 'rgba(var(--info-rgb),0.4)',
 }))
 
 export default function BgCanvas() {
@@ -56,7 +56,7 @@ export default function BgCanvas() {
       <div style={{
         position:'absolute', top:'-12%', right:'-8%',
         width:'min(60vw,600px)', height:'min(60vw,600px)', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(56,189,248,0.8), transparent 65%)',
+        background:'radial-gradient(circle, rgba(var(--action-rgb),0.8), transparent 65%)',
         filter:'blur(120px)', opacity: orbOpacity, willChange:'transform',
         animation:'auroraA 22s ease-in-out infinite alternate',
         transition:'opacity 0.5s ease',
@@ -66,7 +66,7 @@ export default function BgCanvas() {
       <div style={{
         position:'absolute', bottom:'-12%', left:'-8%',
         width:'min(55vw,550px)', height:'min(55vw,550px)', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(59,130,246,0.7), transparent 65%)',
+        background:'radial-gradient(circle, rgba(var(--info-rgb),0.7), transparent 65%)',
         filter:'blur(120px)', opacity: orbOpacity * 0.85, willChange:'transform',
         animation:'auroraB 26s ease-in-out infinite alternate',
         animationDelay:'-8s',

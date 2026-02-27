@@ -157,7 +157,7 @@ export default function Expenses() {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:16 }}>
         {[
           { label:'إجمالي المصاريف',   value: formatCurrency(total),        color:'var(--danger)' },
-          { label:'هذا الشهر',         value: formatCurrency(thisMonth),     color:'#f59e0b' },
+          { label:'هذا الشهر',         value: formatCurrency(thisMonth),     color:'var(--warning)' },
           { label:'غير مسترجع',        value: formatCurrency(unreimbursed),  color: unreimbursed > 0 ? 'var(--info-light)' : 'var(--text-muted)' },
         ].map(s => (
           <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
@@ -174,8 +174,8 @@ export default function Expenses() {
             key={p.id}
             onClick={() => setFilterPaid(filterPaid === p.id ? 'all' : p.id)}
             style={{
-              background: filterPaid === p.id ? 'rgba(56,189,248,0.06)' : 'var(--bg-surface)',
-              border:`1.5px solid ${filterPaid === p.id ? 'rgba(56,189,248,0.3)' : 'var(--border)'}`,
+              background: filterPaid === p.id ? 'rgba(var(--action-rgb),0.06)' : 'var(--bg-surface)',
+              border:`1.5px solid ${filterPaid === p.id ? 'rgba(var(--action-rgb),0.3)' : 'var(--border)'}`,
               borderRadius:'var(--r-md)', padding:'12px 14px',
               cursor:'pointer', transition:'all 120ms', boxShadow:'var(--card-shadow)',
             }}
@@ -294,7 +294,7 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
       {/* Main info */}
       <div style={{ flex:1, minWidth:130 }}>
         <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', marginBottom:2 }}>
-          {exp.is_subscription && <span style={{ fontSize:10, background:'rgba(56,189,248,0.12)', color:'var(--action)', borderRadius:4, padding:'1px 5px', marginInlineEnd:5, fontWeight:700 }}>اشتراك</span>}
+          {exp.is_subscription && <span style={{ fontSize:10, background:'rgba(var(--action-rgb),0.12)', color:'var(--action)', borderRadius:4, padding:'1px 5px', marginInlineEnd:5, fontWeight:700 }}>اشتراك</span>}
           {exp.title || exp.description || '—'}
         </div>
         <div style={{ fontSize:11, color:'var(--text-muted)', display:'flex', gap:8 }}>
@@ -308,10 +308,10 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
       <span style={{
         padding:'2px 8px', borderRadius:999, fontSize:11, fontWeight:700, flexShrink:0,
         background: exp.paid_by === 'company'
-          ? 'rgba(59,130,246,0.1)'
+          ? 'rgba(var(--info-rgb),0.1)'
           : 'rgba(139,92,246,0.1)',
         color: exp.paid_by === 'company'
-          ? '#3b82f6'
+          ? 'var(--info)'
           : 'var(--info-light)',
       }}>
         {paidByLabel(exp.paid_by)}
@@ -323,8 +323,8 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
           onClick={onToggleReimbursed}
           style={{
             padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', flexShrink:0,
-            background: exp.reimbursed ? 'rgba(56,189,248,0.12)' : 'rgba(245,158,11,0.1)',
-            color: exp.reimbursed ? 'var(--action)' : '#f59e0b',
+            background: exp.reimbursed ? 'rgba(var(--action-rgb),0.12)' : 'rgba(var(--warning-rgb),0.1)',
+            color: exp.reimbursed ? 'var(--action)' : 'var(--warning)',
           }}
           title={exp.reimbursed ? `استُرجع ${exp.reimbursement_date ? 'بتاريخ ' + exp.reimbursement_date : ''} — انقر لإلغاء` : 'انقر لتسجيل الاسترداد'}
         >

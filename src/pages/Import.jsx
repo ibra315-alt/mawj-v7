@@ -249,10 +249,10 @@ export default function ImportTool() {
       />
 
       {/* Warning banner */}
-      <div style={{ padding:'12px 16px', marginBottom:16, background:'rgba(245,158,11,0.08)', border:'1.5px solid rgba(245,158,11,0.25)', borderRadius:'var(--r-md)', display:'flex', gap:10, alignItems:'flex-start' }}>
-        <IcAlert size={18} style={{ color:'#f59e0b', flexShrink:0, marginTop:1 }}/>
+      <div style={{ padding:'12px 16px', marginBottom:16, background:'rgba(var(--warning-rgb),0.08)', border:'1.5px solid rgba(var(--warning-rgb),0.25)', borderRadius:'var(--r-md)', display:'flex', gap:10, alignItems:'flex-start' }}>
+        <IcAlert size={18} style={{ color:'var(--warning)', flexShrink:0, marginTop:1 }}/>
         <div style={{ fontSize:12, color:'var(--text-sec)', lineHeight:1.6 }}>
-          <b style={{ color:'#f59e0b' }}>قبل الاستيراد:</b> تأكد أن الجداول فارغة (orders, hayyak_remittances).
+          <b style={{ color:'var(--warning)' }}>قبل الاستيراد:</b> تأكد أن الجداول فارغة (orders, hayyak_remittances).
           الأداة تتحقق تلقائياً من الطلبات الموجودة وتتخطاها — لكن الأفضل البدء بقاعدة بيانات نظيفة.
         </div>
       </div>
@@ -293,7 +293,7 @@ export default function ImportTool() {
       </div>
 
       {error && (
-        <div style={{ padding:'12px 16px', marginBottom:16, background:'rgba(239,68,68,0.08)', border:'1.5px solid rgba(239,68,68,0.25)', borderRadius:'var(--r-md)', fontSize:13, color:'var(--danger)' }}>
+        <div style={{ padding:'12px 16px', marginBottom:16, background:'rgba(var(--danger-rgb),0.08)', border:'1.5px solid rgba(var(--danger-rgb),0.25)', borderRadius:'var(--r-md)', fontSize:13, color:'var(--danger)' }}>
           {error}
         </div>
       )}
@@ -306,12 +306,12 @@ export default function ImportTool() {
               { label:'أحجام المنتجات',  value: preview.products,              color:'var(--info-light)' },
               { label:'صنوف المخزون',     value: preview.inventory,             color:'var(--info-light)' },
               { label:'طلبات',            value: preview.orders,                color:'var(--action)' },
-              { label:'تحويلات',          value: preview.remittances,           color:'#10b981' },
+              { label:'تحويلات',          value: preview.remittances,           color:'var(--success)' },
               { label:'مسلّم',            value: preview.delivered,             color:'var(--action)' },
-              { label:'استبدال',          value: preview.replacements,          color:'#f59e0b' },
+              { label:'استبدال',          value: preview.replacements,          color:'var(--warning)' },
               { label:'لم يتم',           value: preview.not_delivered,         color:'var(--danger)' },
               { label:'الإيرادات',        value: formatCurrency(preview.revenue), color:'var(--action)', small:true },
-              { label:'الربح',            value: formatCurrency(preview.profit),  color:'#10b981',       small:true },
+              { label:'الربح',            value: formatCurrency(preview.profit),  color:'var(--success)',       small:true },
               { label:'نقد بنكي',         value: formatCurrency(preview.bank),    color:'var(--info-light)', small:true },
             ].map(s => (
               <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
@@ -331,7 +331,7 @@ export default function ImportTool() {
                   <div key={step.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:'var(--r-sm)' }}>
                     <div style={{
                       width:28, height:28, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:12,
-                      background: status === 'done' ? 'var(--action)' : status === 'running' ? 'rgba(56,189,248,0.15)' : status === 'error' ? 'var(--danger)' : 'var(--bg-surface)',
+                      background: status === 'done' ? 'var(--action)' : status === 'running' ? 'rgba(var(--action-rgb),0.15)' : status === 'error' ? 'var(--danger)' : 'var(--bg-surface)',
                       border: status ? 'none' : '1.5px solid var(--border)',
                       color: status === 'done' ? '#ffffff' : 'var(--text)',
                       animation: status === 'running' ? 'pulse 1s infinite' : 'none',
@@ -365,7 +365,7 @@ export default function ImportTool() {
         <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'14px 16px', fontFamily:'monospace', fontSize:12, maxHeight:320, overflowY:'auto', boxShadow:'var(--card-shadow)', border:'1px solid var(--border)' }}>
           {log.map((l, i) => (
             <div key={i} style={{
-              color: l.type === 'success' ? '#38BDF8' : l.type === 'error' ? '#ef4444' : l.type === 'warn' ? '#f59e0b' : '#a78bfa',
+              color: l.type === 'success' ? '#38BDF8' : l.type === 'error' ? 'var(--danger)' : l.type === 'warn' ? 'var(--warning)' : 'var(--info-light)',
               marginBottom:3, display:'flex', gap:10,
             }}>
               <span style={{ opacity:0.4, flexShrink:0 }}>{l.time}</span>
@@ -377,7 +377,7 @@ export default function ImportTool() {
 
       {/* Done state */}
       {done && (
-        <div style={{ marginTop:16, padding:'24px', background:'rgba(56,189,248,0.06)', border:'2px solid rgba(56,189,248,0.25)', borderRadius:'var(--r-md)', textAlign:'center' }}>
+        <div style={{ marginTop:16, padding:'24px', background:'rgba(var(--action-rgb),0.06)', border:'2px solid rgba(var(--action-rgb),0.25)', borderRadius:'var(--r-md)', textAlign:'center' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
           <div style={{ fontWeight:900, fontSize:18, color:'var(--action)', marginBottom:8 }}>اكتمل الاستيراد!</div>
           <div style={{ fontSize:13, color:'var(--text-sec)', marginBottom:20 }}>

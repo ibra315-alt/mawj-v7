@@ -20,7 +20,7 @@ export function Btn({ children, variant='primary', size='md', loading, onClick, 
   const va = {
     primary:    { bg:'var(--action)',      color:'#ffffff',          fw:800, shadow:'none', border:'none' },
     secondary:  { bg:'var(--bg-surface)',  color:'var(--text)',      fw:600, shadow:'var(--card-shadow)', border:'none' },
-    danger:     { bg:'rgba(239,68,68,0.08)', color:'var(--danger)', fw:700, shadow:'none', border:'none' },
+    danger:     { bg:'rgba(var(--danger-rgb),0.08)', color:'var(--danger)', fw:700, shadow:'none', border:'none' },
     ghost:      { bg:'transparent',        color:'var(--text-sec)',  fw:600, shadow:'none', border:'none' },
     violet:     { bg:'var(--info-soft)',    color:'var(--info-light)', fw:700, shadow:'none', border:'none' },
     pink:       { bg:'var(--action-soft)',  color:'var(--action)',   fw:700, shadow:'none', border:'none' },
@@ -221,14 +221,14 @@ export function StatCard({ label, value, color, trend, sub, icon }) {
     : value
 
   const glowColor = {
-    'var(--action)': 'rgba(56,189,248,0.12)',
-    'var(--violet)': 'rgba(59,130,246,0.12)',
+    'var(--action)': 'rgba(var(--action-rgb),0.12)',
+    'var(--violet)': 'rgba(var(--info-rgb),0.12)',
     'var(--violet-light)': 'rgba(96,165,250,0.12)',
     'var(--pink)': 'rgba(236,72,153,0.10)',
-    'var(--red)': 'rgba(239,68,68,0.10)',
-    'var(--green)': 'rgba(16,185,129,0.10)',
-    'var(--amber)': 'rgba(245,158,11,0.10)',
-  }[c] || 'rgba(56,189,248,0.08)'
+    'var(--red)': 'rgba(var(--danger-rgb),0.10)',
+    'var(--green)': 'rgba(var(--success-rgb),0.10)',
+    'var(--amber)': 'rgba(var(--warning-rgb),0.10)',
+  }[c] || 'rgba(var(--action-rgb),0.08)'
 
   return (
     <div className="hover-lift" style={{
@@ -285,7 +285,7 @@ export function StatCard({ label, value, color, trend, sub, icon }) {
           {trend !== undefined && (
             <span style={{
               color:trend>=0?'var(--green)':'var(--red)',fontWeight:700,
-              background:trend>=0?'rgba(16,185,129,0.08)':'rgba(255,71,87,0.08)',
+              background:trend>=0?'rgba(var(--success-rgb),0.08)':'rgba(255,71,87,0.08)',
               padding:'2px 6px',borderRadius:999,
             }}>
               {trend>=0?'↑':'↓'} {Math.abs(trend)}%
@@ -406,8 +406,8 @@ export function PageLoader() {
         <svg width="64" height="64" viewBox="0 0 64 64" style={{position:'absolute',animation:'spin 1s linear infinite'}}>
           <defs>
             <linearGradient id="spinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%"   stopColor="#38BDF8"/>
-              <stop offset="50%"  stopColor="#3B82F6"/>
+              <stop offset="0%"   stopColor="var(--action)"/>
+              <stop offset="50%"  stopColor="var(--info)"/>
               <stop offset="100%" stopColor="#0EA5E9"/>
             </linearGradient>
           </defs>
@@ -581,9 +581,9 @@ export function ToastContainer() {
   if (!toasts.length) return null
 
   const palette = {
-    success: { bg:'linear-gradient(135deg,#10B981,#059669)', color:'#fff',    icon:'' },
-    error:   { bg:'linear-gradient(135deg,#EF4444,#DC2626)', color:'#fff',    icon:'' },
-    warning: { bg:'linear-gradient(135deg,#F59E0B,#D97706)', color:'#fff',    icon:'' },
+    success: { bg:'linear-gradient(135deg,var(--success),var(--success-light))', color:'#fff',    icon:'' },
+    error:   { bg:'linear-gradient(135deg,var(--danger),var(--danger-light))', color:'#fff',    icon:'' },
+    warning: { bg:'linear-gradient(135deg,var(--warning),var(--warning-light))', color:'#fff',    icon:'' },
     info:    { bg:'linear-gradient(135deg,#38BDF8,#0EA5E9)', color:'#fff',    icon:'ℹ' },
   }
   return (

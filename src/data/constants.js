@@ -1,13 +1,13 @@
 // ─── COLORS ──────────────────────────────────────────────────
 export const COLORS = {
-  action: '#38BDF8',
-  info: '#3B82F6',
-  amber: '#f59e0b',
-  red: '#EF4444',
+  action: 'var(--action)',
+  info: 'var(--info)',
+  amber: 'var(--warning)',
+  red: 'var(--danger)',
   gold: '#e6b94a',
-  blue: '#3b82f6',
-  green: '#10b981',
-  gray: '#6b7280',
+  blue: 'var(--info)',
+  green: 'var(--success)',
+  gray: 'var(--text-muted)',
 }
 
 export const FONTS = {
