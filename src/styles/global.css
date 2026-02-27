@@ -176,7 +176,7 @@
 
   --text:         var(--warm-900);
   --text-sec:     var(--warm-600);
-  --text-muted:   var(--warm-400);
+  --text-muted:   var(--warm-500);
   --text-inverse: #ffffff;
 
   --border:        var(--warm-200);
@@ -254,7 +254,7 @@
 
   --text:         #EDF2F7;
   --text-sec:     #A0AEC0;
-  --text-muted:   #5A6577;
+  --text-muted:   #8A94A6;
   --text-inverse: var(--indigo-900);
 
   --border:        rgba(56,56,90,0.6);
@@ -360,6 +360,18 @@ body::after {
 
 input, select, textarea, button { font-family: inherit; }
 option { background: var(--option-bg); color: var(--option-color); }
+
+/* ── Focus ring — keyboard accessibility ── */
+:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px var(--action-faint);
+}
 
 /* ── Typography utilities ── */
 .t-display { font-size: var(--t-display); font-weight: 800; line-height: 1.1; font-family: 'Inter', sans-serif; }

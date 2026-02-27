@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
-import { subscribeToOrders } from '../data/db'
+import { subscribeOrders } from '../data/realtime'
 import { formatCurrency } from '../data/constants'
 import { PageHeader, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcArrowLeft, IcPlus, IcAlert, IcTruck } from '../components/Icons'
@@ -30,15 +30,20 @@ export default function Dashboard({ onNavigate }) {
 
   useEffect(() => {
     loadData()
-    const unsub = subscribeToOrders(() => loadData())
+    const unsub = subscribeOrders(() => loadData())
     return unsub
   }, [])
 
   async function loadData() {
     try {
+      // Only fetch last 90 days of data instead of entire history
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - 90)
+      const cutoffISO = cutoff.toISOString()
+
       const [allOrders, expenses] = await Promise.all([
-        DB.list('orders',   { orderBy: 'created_at' }),
-        DB.list('expenses', { orderBy: 'date' }),
+        DB.list('orders',   { orderBy: 'created_at', filters: [['created_at', 'gte', cutoffISO]] }),
+        DB.list('expenses', { orderBy: 'date', filters: [['date', 'gte', cutoffISO.split('T')[0]]] }),
       ])
 
       const now        = new Date()

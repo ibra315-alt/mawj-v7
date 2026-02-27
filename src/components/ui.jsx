@@ -76,18 +76,10 @@ export function Input({ label, error, icon, hint, containerStyle, style, ...prop
           background:'var(--input-bg)',
           border:`1.5px solid ${error ? 'var(--red)' : 'var(--input-border)'}`,
           borderRadius:'var(--r-sm)', color:'var(--text)',
-          fontSize:'var(--t-body)', outline:'none', boxSizing:'border-box',
+          fontSize:'var(--t-body)', boxSizing:'border-box',
           transition:'border-color 0.16s ease, box-shadow 0.16s ease',
           ...style,
         }}
-          onFocus={e=>{
-            e.target.style.borderColor='var(--input-focus)'
-            e.target.style.boxShadow='0 0 0 3px var(--action-faint)'
-          }}
-          onBlur={e=>{
-            e.target.style.borderColor=error?'var(--danger)':'var(--input-border)'
-            e.target.style.boxShadow='none'
-          }}
           {...props}
         />
       </div>
@@ -113,22 +105,14 @@ export function Select({ label, children, containerStyle, style, ...props }) {
         background:'var(--input-bg)',
         border:'1.5px solid var(--input-border)',
         borderRadius:'var(--r-sm)', color:'var(--text)',
-        fontSize:'var(--t-body)', outline:'none', cursor:'pointer',
+        fontSize:'var(--t-body)', cursor:'pointer',
         appearance:'none',
         backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2378756F'/%3E%3C/svg%3E")`,
-        backgroundRepeat:'no-repeat', backgroundPosition:'left 12px center',
+        backgroundRepeat:'no-repeat', backgroundPosition:'right 12px center',
         boxSizing:'border-box',
         transition:'border-color 0.16s ease, box-shadow 0.16s ease',
         ...style,
       }}
-        onFocus={e=>{
-          e.target.style.borderColor='var(--input-focus)'
-          e.target.style.boxShadow='0 0 0 3px var(--action-faint)'
-        }}
-        onBlur={e=>{
-          e.target.style.borderColor='var(--input-border)'
-          e.target.style.boxShadow='none'
-        }}
         {...props}
       >{children}</select>
     </div>
@@ -151,19 +135,11 @@ export function Textarea({ label, containerStyle, style, ...props }) {
         background:'var(--input-bg)',
         border:'1.5px solid var(--input-border)',
         borderRadius:'var(--r-sm)', color:'var(--text)',
-        fontSize:'var(--t-body)', outline:'none', lineHeight:1.65,
+        fontSize:'var(--t-body)', lineHeight:1.65,
         boxSizing:'border-box',
         transition:'border-color 0.16s ease, box-shadow 0.16s ease',
         ...style,
       }}
-        onFocus={e=>{
-          e.target.style.borderColor='var(--input-focus)'
-          e.target.style.boxShadow='0 0 0 3px var(--action-faint)'
-        }}
-        onBlur={e=>{
-          e.target.style.borderColor='var(--input-border)'
-          e.target.style.boxShadow='none'
-        }}
         {...props}
       />
     </div>
@@ -452,9 +428,11 @@ export function Modal({ open, onClose, title, children, width=580, footer }) {
 
   if (!open) return null
 
+  const modalTitleId = `modal-title-${title?.replace(/\s/g,'-') || 'dialog'}`
+
   if (mobile) {
     return createPortal(
-      <div style={{
+      <div role="dialog" aria-modal="true" aria-labelledby={modalTitleId} style={{
         position:'fixed', inset:0, zIndex:99999,
         background:'var(--bg)',
         display:'flex', flexDirection:'column',
@@ -477,7 +455,7 @@ export function Modal({ open, onClose, title, children, width=580, footer }) {
           }}>
             {String.fromCharCode(8592)} {String.fromCharCode(1585,1580,1608,1593)}
           </button>
-          <h2 style={{
+          <h2 id={modalTitleId} style={{
             fontSize:16, fontWeight:900, margin:0,
             color:'var(--text)', letterSpacing:'-0.01em',
           }}>{title}</h2>
@@ -517,7 +495,7 @@ export function Modal({ open, onClose, title, children, width=580, footer }) {
       }}
       onClick={e=>{ if(e.target===e.currentTarget) onClose() }}
     >
-      <div style={{
+      <div role="dialog" aria-modal="true" aria-labelledby={modalTitleId} style={{
         width:'100%', maxWidth:width,
         maxHeight:'88dvh',
         display:'flex', flexDirection:'column',
@@ -542,7 +520,7 @@ export function Modal({ open, onClose, title, children, width=580, footer }) {
             justifyContent:'center', fontSize:13, flexShrink:0,
             WebkitTapHighlightColor:'transparent',
           }}>{String.fromCharCode(10005)}</button>
-          <h2 style={{fontSize:'var(--t-body)',fontWeight:800,letterSpacing:'-0.01em',margin:0,color:'var(--text)'}}>{title}</h2>
+          <h2 id={modalTitleId} style={{fontSize:'var(--t-body)',fontWeight:800,letterSpacing:'-0.01em',margin:0,color:'var(--text)'}}>{title}</h2>
         </div>
         <div style={{flex:1,overflowY:'auto',overflowX:'hidden',padding:'var(--s5)',WebkitOverflowScrolling:'touch'}}>
           {children}
@@ -587,7 +565,7 @@ export function ToastContainer() {
     info:    { bg:'linear-gradient(135deg,#38BDF8,#0EA5E9)', color:'#fff',    icon:'ℹ' },
   }
   return (
-    <div style={{
+    <div role="status" aria-live="polite" style={{
       position:'fixed',bottom:80,left:'50%',transform:'translateX(-50%)',
       zIndex:9999,display:'flex',flexDirection:'column',gap:8,
       alignItems:'center',pointerEvents:'none',
@@ -595,7 +573,7 @@ export function ToastContainer() {
       {toasts.map(t => {
         const v = palette[t.type] || palette.success
         return (
-          <div key={t.id} style={{
+          <div key={t.id} role="alert" style={{
             padding:'10px 20px',borderRadius:999,
             fontSize:'var(--t-sm)',fontWeight:700,
             background:v.bg,color:v.color,

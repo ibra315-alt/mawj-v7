@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { supabase, Auth } from './data/db'
 import { loadAndApplyAppearance, saveAppearance, DEFAULT_PREFS } from './data/appearance'
 import { unsubscribeAll } from './data/realtime'
-import { ToastContainer, toast } from './components/ui'
+import { ToastContainer, toast, PageLoader } from './components/ui'
 import Layout from './components/Layout'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Orders from './pages/Orders'
-import Customers from './pages/Customers'
-import Expenses from './pages/Expenses'
-import Reports from './pages/Reports'
-import Partners from './pages/Partners'
-import Inventory from './pages/Inventory'
-import Suppliers from './pages/Suppliers'
-import Accounting from './pages/Accounting'
-import SettingsPage from './pages/Settings'
-import Import from './pages/Import'
-import Hayyak from './pages/Hayyak'
-import AgentPage from './pages/AgentPage'
 import MawjLogo from './components/Logo'
 import CursorSpotlight from './components/CursorSpotlight'
-import AIAssistant from './components/AIAssistant'
+
+// ── Lazy-loaded pages (code splitting) ──
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Orders = lazy(() => import('./pages/Orders'))
+const Customers = lazy(() => import('./pages/Customers'))
+const Expenses = lazy(() => import('./pages/Expenses'))
+const Reports = lazy(() => import('./pages/Reports'))
+const Partners = lazy(() => import('./pages/Partners'))
+const Inventory = lazy(() => import('./pages/Inventory'))
+const Suppliers = lazy(() => import('./pages/Suppliers'))
+const Accounting = lazy(() => import('./pages/Accounting'))
+const SettingsPage = lazy(() => import('./pages/Settings'))
+const Import = lazy(() => import('./pages/Import'))
+const Hayyak = lazy(() => import('./pages/Hayyak'))
+const AgentPage = lazy(() => import('./pages/AgentPage'))
+const AIAssistant = lazy(() => import('./components/AIAssistant'))
 
 /* ══════════════════════════════════════════════════
    ROLE-BASED ACCESS CONTROL
@@ -51,6 +53,7 @@ export default function App() {
   const [showAI, setShowAI]     = useState(false)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState(null)
+  const [swWaiting, setSwWaiting] = useState(null)
 
   // ── Sync data-theme attribute ──
   useEffect(() => {
@@ -72,6 +75,29 @@ export default function App() {
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
+
+  // ── Service worker update detection ──
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    navigator.serviceWorker.ready.then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const sw = reg.installing
+        if (!sw) return
+        sw.addEventListener('statechange', () => {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            setSwWaiting(sw)
+          }
+        })
+      })
+    })
+  }, [])
+
+  function handleSwUpdate() {
+    if (!swWaiting) return
+    swWaiting.postMessage('SKIP_WAITING')
+    setSwWaiting(null)
+    window.location.reload()
+  }
 
   // ── Cleanup realtime on unmount ──
   useEffect(() => () => unsubscribeAll(), [])
@@ -109,8 +135,9 @@ export default function App() {
       toast('ليس لديك صلاحية للوصول لهذه الصفحة', 'error')
       return
     }
+    // Only remount if navigating to a different page
+    if (id !== page) setPageKey(k => k + 1)
     setPage(id)
-    setPageKey(k => k + 1)
     localStorage.setItem('mawj-page', id)
   }
 
@@ -206,10 +233,28 @@ export default function App() {
         </div>
       )}
 
+      {/* ── SW update banner ── */}
+      {swWaiting && (
+        <div style={{
+          position: 'fixed', top: isOnline ? 0 : 40, left: 0, right: 0, zIndex: 99998,
+          background: 'linear-gradient(135deg, var(--action), var(--action-deep))',
+          padding: '10px 16px', textAlign: 'center',
+          fontSize: 13, fontWeight: 700, color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+        }}>
+          <span>تحديث جديد متاح</span>
+          <button onClick={handleSwUpdate} style={{
+            background: '#fff', color: 'var(--action-deep)', border: 'none',
+            borderRadius: 999, padding: '4px 14px', fontSize: 12, fontWeight: 800,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>تحديث الآن</button>
+        </div>
+      )}
+
       {/* ── PWA install — compact square ── */}
       {installPrompt && (
         <div style={{
-          position: 'fixed', bottom: 140, left: 16, zIndex: 9999,
+          position: 'fixed', bottom: 140, insetInlineStart: 16, zIndex: 9999,
           width: 174,
           background: 'var(--bg-surface)',
           boxShadow: 'var(--float-shadow)',
@@ -221,7 +266,7 @@ export default function App() {
           direction: 'rtl',
         }}>
           <button onClick={() => setInstallPrompt(null)} style={{
-            position: 'absolute', top: 6, left: 6,
+            position: 'absolute', top: 6, insetInlineEnd: 6,
             background: 'none', border: 'none', color: 'var(--text-muted)',
             cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 3,
             borderRadius: 'var(--r-sm)', WebkitTapHighlightColor: 'transparent',
@@ -258,7 +303,9 @@ export default function App() {
         theme={theme}
         toggleTheme={toggleTheme}
       >
-        {renderPage()}
+        <Suspense fallback={<PageLoader />}>
+          {renderPage()}
+        </Suspense>
       </Layout>
 
       {/* ── Floating AI button ── */}
@@ -267,7 +314,7 @@ export default function App() {
         title="موج AI"
         className="ai-float-btn"
         style={{
-          position: 'fixed', bottom: 80, left: 16, zIndex: 700,
+          position: 'fixed', bottom: 80, insetInlineStart: 16, zIndex: 700,
           width: 44, height: 44, borderRadius: '50%',
           background: showAI ? 'rgba(var(--danger-rgb),0.9)' : 'var(--action)',
           border: 'none', cursor: 'pointer',
@@ -277,7 +324,7 @@ export default function App() {
           WebkitTapHighlightColor: 'transparent',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={showAI ? '#fff' : '#fff'} strokeWidth="2.2" strokeLinecap="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
           {showAI
             ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
             : <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></>
@@ -288,7 +335,11 @@ export default function App() {
       {/* ── Globals ── */}
       <ToastContainer />
       {theme === 'dark' && <CursorSpotlight />}
-      {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
+      {showAI && (
+        <Suspense fallback={null}>
+          <AIAssistant onClose={() => setShowAI(false)} />
+        </Suspense>
+      )}
 
       <style>{`
         @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }

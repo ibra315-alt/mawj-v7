@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
 import { Btn, Modal, Input, Select, Textarea, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcEdit, IcDelete } from '../components/Icons'
+import useDeleteRecord from '../hooks/useDeleteRecord'
 
 /* ═══════════════════════════════════════════
    EXPENSE CATEGORIES
@@ -39,10 +40,9 @@ export default function Expenses() {
   const [loading,     setLoading]     = useState(true)
   const [showForm,    setShowForm]    = useState(false)
   const [editItem,    setEditItem]    = useState(null)
-  const [deleteId,    setDeleteId]    = useState(null)
-  const [deleting,    setDeleting]    = useState(false)
   const [filterCat,   setFilterCat]   = useState('all')
   const [filterPaid,  setFilterPaid]  = useState('all')
+  const { deleteId, setDeleteId, deleting, handleDelete } = useDeleteRecord('expenses', setExpenses)
 
   useEffect(() => { load() }, [])
 
@@ -52,17 +52,6 @@ export default function Expenses() {
       setExpenses(data.reverse())
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }
-
-  async function handleDelete() {
-    setDeleting(true)
-    try {
-      await DB.delete('expenses', deleteId)
-      setExpenses(p => p.filter(e => e.id !== deleteId))
-      setDeleteId(null)
-      toast('تم الحذف')
-    } catch { toast('فشل الحذف', 'error') }
-    finally { setDeleting(false) }
   }
 
   async function toggleReimbursed(exp) {
@@ -98,36 +87,46 @@ export default function Expenses() {
     } catch { toast('فشل التحديث', 'error') }
   }
 
-  const filtered = expenses.filter(e => {
+  const filtered = useMemo(() => expenses.filter(e => {
     const matchCat  = filterCat  === 'all' || e.category === filterCat
     const matchPaid = filterPaid === 'all' || e.paid_by  === filterPaid
     return matchCat && matchPaid
-  })
+  }), [expenses, filterCat, filterPaid])
 
   // Stats
-  const now       = new Date()
-  const total     = filtered.reduce((s, e) => s + (e.amount || 0), 0)
-  const thisMonth = expenses.filter(e => {
-    const d = new Date(e.date)
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-  }).reduce((s, e) => s + (e.amount || 0), 0)
-  const unreimbursed = expenses
-    .filter(e => e.paid_by !== 'company' && !e.reimbursed)
-    .reduce((s, e) => s + (e.amount || 0), 0)
+  const { total, thisMonth, unreimbursed } = useMemo(() => {
+    const now = new Date()
+    return {
+      total: filtered.reduce((s, e) => s + (e.amount || 0), 0),
+      thisMonth: expenses.filter(e => {
+        const d = new Date(e.date)
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      }).reduce((s, e) => s + (e.amount || 0), 0),
+      unreimbursed: expenses
+        .filter(e => e.paid_by !== 'company' && !e.reimbursed)
+        .reduce((s, e) => s + (e.amount || 0), 0),
+    }
+  }, [expenses, filtered])
 
-  // Per-person totals
-  const byPerson = PAID_BY.map(p => ({
-    ...p,
-    total:       expenses.filter(e => e.paid_by === p.id).reduce((s, e) => s + (e.amount || 0), 0),
-    unreimbursed: expenses.filter(e => e.paid_by === p.id && !e.reimbursed).reduce((s, e) => s + (e.amount || 0), 0),
-    count:       expenses.filter(e => e.paid_by === p.id).length,
-  }))
+  // Per-person totals — single pass instead of 6 separate filters
+  const byPerson = useMemo(() => {
+    const map = {}
+    PAID_BY.forEach(p => { map[p.id] = { ...p, total: 0, unreimbursed: 0, count: 0 } })
+    expenses.forEach(e => {
+      const m = map[e.paid_by] || map['company']
+      m.total += (e.amount || 0)
+      m.count++
+      if (!e.reimbursed) m.unreimbursed += (e.amount || 0)
+    })
+    return PAID_BY.map(p => map[p.id])
+  }, [expenses])
 
   // Category breakdown
-  const byCat = EXPENSE_CATEGORIES
+  const byCat = useMemo(() => EXPENSE_CATEGORIES
     .map(c => ({ cat: c, total: expenses.filter(e => e.category === c).reduce((s, e) => s + (e.amount || 0), 0) }))
     .filter(c => c.total > 0)
-    .sort((a, b) => b.total - a.total)
+    .sort((a, b) => b.total - a.total),
+  [expenses])
 
   const maxCat = byCat[0]?.total || 1
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { DB, Settings, generateOrderNumber, subscribeToOrders } from '../data/db'
+import { DB, Settings, generateOrderNumber } from '../data/db'
+import { subscribeOrders } from '../data/realtime'
 import { formatCurrency, formatDate, SOURCE_LABELS, UAE_CITIES } from '../data/constants'
 import { calcOrderProfit, ORDER_STATUSES, PIPELINE_STATUSES, getStatusInfo, getNextStatus } from '../data/finance'
 import { Btn, Badge, Input, Select, Textarea, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
@@ -34,7 +35,7 @@ export default function Orders({ user }) {
 
   useEffect(() => {
     loadAll()
-    const unsub = subscribeToOrders(() => loadOrders())
+    const unsub = subscribeOrders(() => loadOrders())
     return unsub
   }, [])
 

@@ -3,6 +3,7 @@ import { DB } from '../data/db'
 import { formatCurrency } from '../data/constants'
 import { Btn, Card, Badge, Modal, Input, Select, Textarea, Spinner, Empty, PageHeader, ConfirmModal, StatCard, toast } from '../components/ui'
 import { IcPlus, IcDelete, IcEdit, IcAlert, IcInventory } from '../components/Icons'
+import useDeleteRecord from '../hooks/useDeleteRecord'
 
 export default function Inventory() {
   const [items, setItems] = useState([])
@@ -10,13 +11,14 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [deleteId, setDeleteId] = useState(null)
-  const [deleting, setDeleting] = useState(false)
   const [search, setSearch] = useState('')
   const [filterLow, setFilterLow]       = useState(false)
   const [movements, setMovements]       = useState([]) // { itemId, itemName, delta, qty, note, time }
   const [showMoves, setShowMoves]       = useState(false)
   const [movesItem, setMovesItem]       = useState(null) // filter movements by item
+  const [adjustId, setAdjustId]         = useState(null) // stock adjustment modal
+  const [adjustDelta, setAdjustDelta]   = useState('')
+  const [adjustNote, setAdjustNote]     = useState('')
 
   useEffect(() => { loadData() }, [])
 
@@ -32,16 +34,7 @@ export default function Inventory() {
     finally { setLoading(false) }
   }
 
-  async function handleDelete() {
-    setDeleting(true)
-    try {
-      await DB.delete('inventory', deleteId)
-      setItems(prev => prev.filter(i => i.id !== deleteId))
-      setDeleteId(null)
-      toast('تم الحذف')
-    } catch { toast('فشل الحذف', 'error') }
-    finally { setDeleting(false) }
-  }
+  const { deleteId, setDeleteId, deleting, handleDelete } = useDeleteRecord('inventory', setItems)
 
   async function adjustStock(id, delta, note='') {
     const item = items.find(i => i.id === id)
@@ -55,18 +48,23 @@ export default function Inventory() {
     } catch { toast('فشل التحديث', 'error') }
   }
 
-  async function adjustStockWithNote(id) {
-    const item = items.find(i => i.id === id)
-    if (!item) return
-    const raw = prompt(`تعديل مخزون: ${item.name}
-أدخل الكمية (+ للإضافة، - للخصم):`)
-    if (!raw) return
-    const delta = parseInt(raw)
-    if (isNaN(delta) || delta === 0) { toast('كمية غير صحيحة', 'error'); return }
-    const note = prompt('ملاحظة (اختياري):') || (delta > 0 ? 'إضافة مخزون' : 'خصم مخزون')
-    await adjustStock(id, delta, note)
-    toast(`تم تعديل المخزون: ${delta > 0 ? '+' : ''}${delta}`)
+  function openAdjustModal(id) {
+    setAdjustId(id)
+    setAdjustDelta('')
+    setAdjustNote('')
   }
+
+  async function handleAdjustSubmit() {
+    const delta = parseInt(adjustDelta)
+    if (isNaN(delta) || delta === 0) { toast('كمية غير صحيحة', 'error'); return }
+    const note = adjustNote || (delta > 0 ? 'إضافة مخزون' : 'خصم مخزون')
+    await adjustStock(adjustId, delta, note)
+    toast(`تم تعديل المخزون: ${delta > 0 ? '+' : ''}${delta}`)
+    setAdjustId(null)
+  }
+
+  // Keep old name for backward compat in JSX
+  const adjustStockWithNote = openAdjustModal
 
   const filtered = items.filter(i => {
     const matchSearch = !search || i.name.includes(search) || i.sku?.includes(search) || i.category?.includes(search)
@@ -242,6 +240,34 @@ export default function Inventory() {
         }}
       />
       <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} loading={deleting} message="سيتم حذف المنتج نهائياً." />
+
+      {/* Stock adjustment modal — replaces window.prompt() */}
+      <Modal
+        open={!!adjustId}
+        onClose={() => setAdjustId(null)}
+        title={`تعديل مخزون: ${items.find(i => i.id === adjustId)?.name || ''}`}
+        width={380}
+        footer={<>
+          <Btn variant="ghost" onClick={() => setAdjustId(null)}>إلغاء</Btn>
+          <Btn onClick={handleAdjustSubmit}>تأكيد التعديل</Btn>
+        </>}
+      >
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          <Input
+            label="الكمية (+ للإضافة، - للخصم)"
+            type="number"
+            value={adjustDelta}
+            onChange={e => setAdjustDelta(e.target.value)}
+            placeholder="مثال: 5 أو -3"
+          />
+          <Input
+            label="ملاحظة (اختياري)"
+            value={adjustNote}
+            onChange={e => setAdjustNote(e.target.value)}
+            placeholder="سبب التعديل..."
+          />
+        </div>
+      </Modal>
     </div>
   )
 }
