@@ -29,11 +29,16 @@ const SECTIONS = [
 
 export default function Settings({ user }) {
   const isAdmin = user?.role === 'admin'
-  const visibleSections = SECTIONS.filter(s => !s.adminOnly || isAdmin)
+  const allSections = SECTIONS.filter(s => !s.adminOnly || isAdmin)
   const [section, setSection] = useState('business')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [searchQ, setSearchQ] = useState('')
   const [data, setData] = useState({ business:{}, statuses:[], products:[], templates:{}, partners:[], ai_settings:{}, financial:{} })
+
+  const visibleSections = searchQ
+    ? allSections.filter(s => s.label.includes(searchQ) || s.desc.includes(searchQ))
+    : allSections
 
   useEffect(() => { loadAll() }, [])
 
@@ -168,15 +173,34 @@ export default function Settings({ user }) {
       {/* ── Desktop layout: sidebar + panel ── */}
       <div style={{display:'flex',gap:20,alignItems:'flex-start'}} className="settings-layout">
 
-        {/* Sidebar */}
+        {/* Sidebar — Glass */}
         <div style={{
-          width:220, flexShrink:0,
-          background:'var(--bg-hover)',
-          border:'none',
+          width:230, flexShrink:0,
+          background:'var(--bg-surface)',
+          backdropFilter:'var(--glass-blur)',
+          WebkitBackdropFilter:'var(--glass-blur)',
+          border:'1px solid var(--border)',
+          borderTopColor:'var(--glass-edge)',
           borderRadius:'var(--radius-lg)',
-          padding:8,
+          padding:10,
           position:'sticky', top:16,
+          boxShadow:'var(--card-shadow)',
         }} className="settings-sidebar">
+          {/* Search */}
+          <div style={{marginBottom:10,position:'relative'}}>
+            <input
+              value={searchQ}
+              onChange={e=>setSearchQ(e.target.value)}
+              placeholder="بحث في الإعدادات..."
+              style={{
+                width:'100%',padding:'9px 12px 9px 32px',
+                background:'var(--bg-hover)',border:'1px solid var(--border)',
+                borderRadius:'var(--r-md)',color:'var(--text)',fontSize:12,
+                fontFamily:'inherit',outline:'none',
+              }}
+            />
+            <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',fontSize:14,color:'var(--text-muted)',pointerEvents:'none'}}>🔍</span>
+          </div>
           {visibleSections.map(s => {
             const active = section === s.id
             return (
@@ -207,9 +231,13 @@ export default function Settings({ user }) {
           <div style={{
             display:'flex', alignItems:'center', gap:12, marginBottom:20,
             padding:'14px 18px',
-            background:'var(--bg-hover)',
-            border:'none',
+            background:'var(--bg-surface)',
+            backdropFilter:'var(--glass-blur)',
+            WebkitBackdropFilter:'var(--glass-blur)',
+            border:'1px solid var(--border)',
+            borderTopColor:'var(--glass-edge)',
             borderRadius:'var(--r-lg)',
+            boxShadow:'var(--card-shadow)',
           }}>
             <div style={{
               width:44,height:44,borderRadius:'var(--r-md)',
@@ -231,12 +259,16 @@ export default function Settings({ user }) {
         {visibleSections.map(s => (
           <button key={s.id} onClick={()=>{ setSection(s.id); setMobileOpen(true) }} style={{
             width:'100%', display:'flex', alignItems:'center', gap:14,
-            padding:'14px 16px', marginBottom:8,
-            background:'var(--bg-hover)',
-            border:'none',
+            padding:'14px 16px', marginBottom:10,
+            background:'var(--bg-surface)',
+            backdropFilter:'var(--glass-blur)',
+            WebkitBackdropFilter:'var(--glass-blur)',
+            border:'1px solid var(--border)',
+            borderTopColor:'var(--glass-edge)',
             borderRadius:'var(--r-lg)',
             cursor:'pointer', fontFamily:'inherit',
             transition:'all 0.15s ease',
+            boxShadow:'var(--card-shadow)',
           }} className="mawj-card mawj-card-hover">
             <div style={{
               width:44,height:44,borderRadius:'var(--r-md)',flexShrink:0,
@@ -753,22 +785,136 @@ function WhatsAppTab({ templates, updateData }) {
 
 
 function AppearanceTab() {
+  const ACCENT_PRESETS = [
+    { color:'#0A84FF', label:'أزرق', rgb:'10,132,255' },
+    { color:'#5856D6', label:'بنفسجي', rgb:'88,86,214' },
+    { color:'#00C9A7', label:'أخضر مائي', rgb:'0,201,167' },
+    { color:'#30D158', label:'أخضر', rgb:'48,209,88' },
+    { color:'#FF9500', label:'برتقالي', rgb:'255,149,0' },
+    { color:'#FF375F', label:'وردي', rgb:'255,55,95' },
+  ]
+
+  const [accent, setAccent] = useState(() => {
+    try { return localStorage.getItem('mawj_accent') || '#0A84FF' } catch { return '#0A84FF' }
+  })
+  const [fontSize, setFontSize] = useState(() => {
+    try { return localStorage.getItem('mawj_fontsize') || 'normal' } catch { return 'normal' }
+  })
+  const [animations, setAnimations] = useState(() => {
+    try { return localStorage.getItem('mawj_animations') !== 'false' } catch { return true }
+  })
+
+  function pickAccent(c) {
+    setAccent(c.color)
+    localStorage.setItem('mawj_accent', c.color)
+    document.documentElement.style.setProperty('--action', c.color)
+    document.documentElement.style.setProperty('--action-rgb', c.rgb)
+    document.documentElement.style.setProperty('--action-glow', `rgba(${c.rgb},0.20)`)
+    document.documentElement.style.setProperty('--action-soft', `rgba(${c.rgb},0.10)`)
+    document.documentElement.style.setProperty('--action-faint', `rgba(${c.rgb},0.05)`)
+    toast('تم تغيير لون النظام')
+  }
+
+  function toggleFontSize() {
+    const next = fontSize === 'normal' ? 'large' : 'normal'
+    setFontSize(next)
+    localStorage.setItem('mawj_fontsize', next)
+    document.documentElement.style.fontSize = next === 'large' ? '17px' : ''
+    toast(next === 'large' ? 'تم تكبير الخط' : 'تم إرجاع الخط الطبيعي')
+  }
+
+  function toggleAnimations() {
+    const next = !animations
+    setAnimations(next)
+    localStorage.setItem('mawj_animations', String(next))
+    if (!next) {
+      document.documentElement.style.setProperty('--dur-fast', '0ms')
+      document.documentElement.style.setProperty('--dur-base', '0ms')
+      document.documentElement.style.setProperty('--dur-slow', '0ms')
+      document.documentElement.style.setProperty('--dur-page', '0ms')
+    } else {
+      document.documentElement.style.removeProperty('--dur-fast')
+      document.documentElement.style.removeProperty('--dur-base')
+      document.documentElement.style.removeProperty('--dur-slow')
+      document.documentElement.style.removeProperty('--dur-page')
+    }
+    toast(next ? 'تم تفعيل الحركات' : 'تم إيقاف الحركات')
+  }
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
         <SectionTitle>التصميم</SectionTitle>
-        <ControlRow label="Liquid Glass" desc="تصميم موحّد بتأثيرات الزجاج الشفاف" last>
+        <ControlRow label="Liquid Glass" desc="تصميم موحّد بتأثيرات الزجاج الشفاف — Frosted Depth">
           <Badge color="var(--action)">مفعّل</Badge>
         </ControlRow>
+        <ControlRow label="الحركات والتأثيرات" desc="تفعيل أو إيقاف جميع حركات الانتقال" last>
+          <Toggle checked={animations} onChange={toggleAnimations} />
+        </ControlRow>
       </Card>
+
+      <Card>
+        <SectionTitle>لون النظام</SectionTitle>
+        <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:8}}>
+          {ACCENT_PRESETS.map(c => (
+            <button key={c.color} onClick={()=>pickAccent(c)} title={c.label} style={{
+              width:42,height:42,borderRadius:'var(--r-md)',
+              background:c.color, border: accent===c.color ? '3px solid var(--text)' : '2px solid transparent',
+              cursor:'pointer',
+              boxShadow: accent===c.color ? `0 0 16px ${c.color}50` : 'none',
+              transition:'all 0.15s ease',
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}>
+              {accent===c.color && <span style={{color:'#fff',fontSize:16,fontWeight:900}}>✓</span>}
+            </button>
+          ))}
+        </div>
+        <div style={{fontSize:11,color:'var(--text-muted)'}}>اختر اللون الرئيسي للنظام</div>
+      </Card>
+
       <Card>
         <SectionTitle>الخطوط</SectionTitle>
-        <ControlRow label="الخط العربي" desc="Almarai — مصمم للواجهات العربية" last>
+        <ControlRow label="الخط العربي" desc="Almarai — مصمم للواجهات العربية">
           <span style={{fontFamily:'Almarai,sans-serif',fontWeight:700,color:'var(--action)',fontSize:13}}>Almarai</span>
         </ControlRow>
         <ControlRow label="خط الأرقام" desc="Inter — واضح للأرقام والأكواد">
           <span style={{fontFamily:'Inter,sans-serif',fontWeight:700,color:'var(--info-light)',fontSize:13,direction:'ltr'}}>Inter</span>
         </ControlRow>
+        <ControlRow label="حجم الخط" desc={fontSize === 'large' ? 'كبير — مناسب للشاشات الكبيرة' : 'عادي — الحجم الافتراضي'} last>
+          <button onClick={toggleFontSize} style={{
+            padding:'6px 14px',borderRadius:'var(--r-md)',
+            background: fontSize==='large' ? 'var(--action)' : 'var(--bg-hover)',
+            color: fontSize==='large' ? '#fff' : 'var(--text-sec)',
+            border:'1px solid var(--border)',cursor:'pointer',fontFamily:'inherit',
+            fontSize:12,fontWeight:700,transition:'all 0.15s ease',
+          }}>
+            {fontSize === 'large' ? 'كبير ✓' : 'عادي'}
+          </button>
+        </ControlRow>
+      </Card>
+
+      {/* Live Preview */}
+      <Card>
+        <SectionTitle>معاينة حية</SectionTitle>
+        <div className="tilt-card glow-hover" style={{
+          background:'var(--bg-surface)',
+          backdropFilter:'var(--glass-blur)',
+          WebkitBackdropFilter:'var(--glass-blur)',
+          border:'1px solid var(--border)',
+          borderTopColor:'var(--glass-edge)',
+          borderRadius:'var(--r-lg)',
+          padding:16,position:'relative',overflow:'hidden',
+          boxShadow:'var(--card-shadow)',
+        }}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,transparent,var(--action),transparent)`,opacity:0.6}}/>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <div style={{width:40,height:40,borderRadius:'50%',background:'linear-gradient(135deg,var(--action),var(--info))',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:16,boxShadow:'0 0 12px rgba(var(--action-rgb),0.3)'}}>م</div>
+            <div>
+              <div style={{fontWeight:800,fontSize:'var(--t-body)',color:'var(--text)'}}>بطاقة معاينة</div>
+              <div style={{fontSize:'var(--t-label)',color:'var(--text-muted)',marginTop:2}}>هذا شكل البطاقات في النظام</div>
+            </div>
+          </div>
+        </div>
       </Card>
     </div>
   )

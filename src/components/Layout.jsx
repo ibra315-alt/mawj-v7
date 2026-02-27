@@ -142,10 +142,11 @@ export default function Layout({ page, onNavigate, user, onLogout, children }) {
             onClick={() => setCollapsed(c => !c)}
             style={{
               width:36, height:36, borderRadius:'var(--r-md)', flexShrink:0,
-              background:'var(--action-soft)',
+              background:'linear-gradient(135deg, var(--action-soft), rgba(var(--info-rgb),0.06))',
               display:'flex', alignItems:'center', justifyContent:'center',
               cursor:'pointer',
               transition:'all var(--dur-base) var(--ease-io)',
+              boxShadow:'0 0 20px rgba(var(--action-rgb),0.15)',
             }}
             title={collapsed ? 'توسيع' : 'تصغير'}
           >
@@ -211,6 +212,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }) {
                 background:'linear-gradient(135deg, var(--action), var(--info))',
                 display:'flex', alignItems:'center', justifyContent:'center',
                 fontWeight:800, fontSize:13, color:'#fff',
+                boxShadow:'0 0 14px rgba(var(--action-rgb),0.25)',
               }}>{user?.name?.[0] || 'م'}</div>
               <div style={{ overflow:'hidden', flex:1 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name || 'المستخدم'}</div>
@@ -383,7 +385,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }) {
         }
         @media (max-width: 768px) {
           .layout-main {
-            padding: 16px 14px 80px !important;
+            padding: 16px 14px calc(80px + env(safe-area-inset-bottom, 0px)) !important;
             max-width: 100% !important;
           }
         }

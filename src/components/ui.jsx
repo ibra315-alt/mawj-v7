@@ -209,29 +209,32 @@ export function StatCard({ label, value, color, trend, sub, icon }) {
   }[c] || 'rgba(var(--action-rgb),0.08)'
 
   return (
-    <div className="hover-lift" style={{
-      background:'var(--bg-hover)',
-      border:'none',
+    <div className="hover-lift tilt-card" style={{
+      background:'var(--bg-surface)',
+      backdropFilter:'var(--glass-blur)',
+      WebkitBackdropFilter:'var(--glass-blur)',
+      border:'1px solid var(--border)',
+      borderTopColor:'var(--glass-edge)',
       borderRadius:'var(--r-lg)', padding:'var(--s5)',
       position:'relative', overflow:'hidden',
       boxShadow:'var(--card-shadow)',
     }}>
       {/* Top accent line = color meaning */}
       <div style={{
-        position:'absolute',top:0,left:0,right:0,height:2,
+        position:'absolute',top:0,left:0,right:0,height:3,
         background:`linear-gradient(90deg,transparent,${c},transparent)`,
-        opacity:0.65,pointerEvents:'none',
+        opacity:0.7,pointerEvents:'none',
       }} />
       {/* Ambient glow orb */}
       <div style={{
         position:'absolute',top:-32,right:-32,width:100,height:100,
-        borderRadius:'50%',background:c,opacity:0.08,
+        borderRadius:'50%',background:c,opacity:0.12,
         filter:'blur(24px)',pointerEvents:'none',
       }} />
       {/* Bottom corner ambient */}
       <div style={{
         position:'absolute',bottom:-20,left:-20,width:80,height:80,
-        borderRadius:'50%',background:'var(--action)',opacity:0.04,
+        borderRadius:'50%',background:'var(--action)',opacity:0.08,
         filter:'blur(20px)',pointerEvents:'none',
       }} />
 

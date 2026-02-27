@@ -2,12 +2,12 @@ import React from 'react'
 
 /**
  * Shared UI primitives for Settings sub-tabs.
- * Extracted from Settings.jsx to reduce file size and enable reuse.
+ * Frosted Depth glass edition.
  */
 
 export function SectionTitle({ children, icon, style }) {
   return (
-    <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:800,fontSize:15,marginBottom:18,color:'var(--text)',paddingBottom:10,borderBottom:'none',...(style||{})}}>
+    <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:800,fontSize:15,marginBottom:18,color:'var(--text)',paddingBottom:12,borderBottom:'1px solid var(--border)',...(style||{})}}>
       {icon && <span style={{fontSize:18}}>{icon}</span>}
       {children}
     </div>
@@ -19,12 +19,12 @@ export function ControlRow({ label, desc, children, last }) {
     <div style={{
       display:'flex',alignItems:'center',justifyContent:'space-between',
       padding:'14px 0',
-      borderBottom: last ? 'none' : 'none',
+      borderBottom: last ? 'none' : '1px solid rgba(0,0,0,0.04)',
       gap:16,
     }}>
       <div style={{minWidth:0}}>
-        <div style={{fontWeight:600,fontSize:13,color:'var(--text)'}}>{label}</div>
-        {desc && <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{desc}</div>}
+        <div style={{fontWeight:600,fontSize:'var(--t-body)',color:'var(--text)'}}>{label}</div>
+        {desc && <div style={{fontSize:'var(--t-label)',color:'var(--text-muted)',marginTop:2}}>{desc}</div>}
       </div>
       <div style={{flexShrink:0}}>{children}</div>
     </div>
@@ -46,13 +46,16 @@ export function ControlBtn({ active, onClick, children, style={}, title }) {
   )
 }
 
-export function GlassRow({ children, style }) {
+export function GlassRow({ children, style, ...rest }) {
   return (
-    <div className="list-row" style={{
+    <div className="list-row" {...rest} style={{
       display:'flex',alignItems:'center',gap:12,
       padding:'10px 14px',
       background:'var(--bg-surface)',
-      border:'none',
+      backdropFilter:'var(--glass-blur)',
+      WebkitBackdropFilter:'var(--glass-blur)',
+      border:'1px solid var(--border)',
+      borderTopColor:'var(--glass-edge)',
       borderRadius:'var(--r-md)',
       ...style,
     }}>{children}</div>
@@ -63,9 +66,11 @@ export function InfoBox({ children, color='var(--action)', icon='' }) {
   return (
     <div style={{
       padding:'12px 16px',
-      background:`rgba(${color==='var(--action)'?'56,189,248':'37,99,235'},0.06)`,
-      border:`1px solid ${color==='var(--action)'?'rgba(var(--action-rgb),0.18)':'rgba(var(--info-rgb),0.18)'}`,
-      borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',
+      background:'var(--bg-surface)',
+      backdropFilter:'blur(12px)',
+      WebkitBackdropFilter:'blur(12px)',
+      border:`1px solid rgba(var(--action-rgb),0.15)`,
+      borderRadius:'var(--r-md)',fontSize:'var(--t-body)',color:'var(--text-sec)',
       display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
     }}>
       <span>{icon}</span>

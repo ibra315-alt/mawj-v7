@@ -239,7 +239,7 @@ export default function App() {
       {/* ── PWA install — compact square ── */}
       {installPrompt && (
         <div style={{
-          position: 'fixed', bottom: 140, insetInlineStart: 16, zIndex: 9999,
+          position: 'fixed', bottom: 140, insetInlineEnd: 16, zIndex: 9999,
           width: 174,
           background: 'var(--bg-surface)',
           boxShadow: 'var(--float-shadow)',
@@ -297,7 +297,7 @@ export default function App() {
         title="موج AI"
         className="ai-float-btn"
         style={{
-          position: 'fixed', bottom: 80, insetInlineStart: 16, zIndex: 700,
+          position: 'fixed', bottom: 80, insetInlineEnd: 16, zIndex: 700,
           width: 44, height: 44, borderRadius: '50%',
           background: showAI ? 'rgba(var(--danger-rgb),0.9)' : 'var(--action)',
           border: 'none', cursor: 'pointer',
