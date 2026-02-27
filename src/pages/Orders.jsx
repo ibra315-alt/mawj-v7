@@ -720,7 +720,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
               <div style={{
                 padding:'12px 14px', marginBottom:8,
                 background:'var(--bg-surface)', borderRadius:'var(--r-md)',
-                border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(0,228,184,0.08)',
+                border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(56,189,248,0.08)',
               }}>
                 <div style={{ fontSize:11, color:'var(--action)', fontWeight:700, marginBottom:8 }}>
                   {selectedProduct.name} — اختر الحجم:
@@ -798,8 +798,8 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           {/* Live profit summary */}
           <div style={{
             padding:'14px 16px', borderRadius:'var(--r-md)', marginBottom:16,
-            background: calc.gross_profit < 0 ? 'rgba(239,68,68,0.06)' : 'rgba(0,228,184,0.06)',
-            border:`1.5px solid ${calc.gross_profit < 0 ? 'rgba(239,68,68,0.2)' : 'rgba(0,228,184,0.2)'}`,
+            background: calc.gross_profit < 0 ? 'rgba(239,68,68,0.06)' : 'rgba(56,189,248,0.06)',
+            border:`1.5px solid ${calc.gross_profit < 0 ? 'rgba(239,68,68,0.2)' : 'rgba(56,189,248,0.2)'}`,
           }}>
             <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 16px', fontSize:13 }}>
               <span style={{ color:'var(--text-sec)' }}>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(calc.subtotal)}</b></span>

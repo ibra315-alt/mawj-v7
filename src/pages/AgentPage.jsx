@@ -523,9 +523,9 @@ ${TOOL_DEFS}`
 // ── Styling ───────────────────────────────────────────────────
 const S = {
   card:  { background: 'var(--bg-glass)', border: '1.5px solid var(--glass-border)', borderRadius: 'var(--r-lg,16px)', padding: 16 },
-  step:  (st) => ({ display: 'flex', gap: 10, padding: '10px 12px', background: st === 'done' ? 'rgba(0,228,184,0.05)' : st === 'error' ? 'rgba(239,68,68,0.05)' : st === 'confirm' ? 'rgba(245,158,11,0.08)' : 'var(--bg-hover)', border: `1px solid ${st === 'done' ? 'rgba(0,228,184,0.2)' : st === 'error' ? 'rgba(239,68,68,0.2)' : st === 'confirm' ? 'rgba(245,158,11,0.2)' : 'var(--bg-border)'}`, borderRadius: 'var(--r-md,12px)', transition: 'all 0.2s' }),
+  step:  (st) => ({ display: 'flex', gap: 10, padding: '10px 12px', background: st === 'done' ? 'rgba(56,189,248,0.05)' : st === 'error' ? 'rgba(239,68,68,0.05)' : st === 'confirm' ? 'rgba(245,158,11,0.08)' : 'var(--bg-hover)', border: `1px solid ${st === 'done' ? 'rgba(56,189,248,0.2)' : st === 'error' ? 'rgba(239,68,68,0.2)' : st === 'confirm' ? 'rgba(245,158,11,0.2)' : 'var(--bg-border)'}`, borderRadius: 'var(--r-md,12px)', transition: 'all 0.2s' }),
   pill:  (color) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, background: `${color}18`, color }),
-  btn:   (v = 'primary') => ({ padding: '8px 16px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', background: v === 'primary' ? 'linear-gradient(135deg,var(--teal),var(--violet))' : v === 'danger' ? 'rgba(239,68,68,0.1)' : v === 'confirm' ? 'rgba(245,158,11,0.15)' : 'var(--bg-hover)', color: v === 'primary' ? '#050c1a' : v === 'danger' ? 'var(--danger,#ef4444)' : v === 'confirm' ? '#f59e0b' : 'var(--text)', transition: 'all 0.15s' }),
+  btn:   (v = 'primary') => ({ padding: '8px 16px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', background: v === 'primary' ? 'linear-gradient(135deg,var(--action),var(--action-deep))' : v === 'danger' ? 'rgba(239,68,68,0.1)' : v === 'confirm' ? 'rgba(245,158,11,0.15)' : 'var(--bg-hover)', color: v === 'primary' ? '#050c1a' : v === 'danger' ? 'var(--danger,#ef4444)' : v === 'confirm' ? '#f59e0b' : 'var(--text)', transition: 'all 0.15s' }),
   input: { padding: '9px 13px', background: 'var(--bg-hover)', border: '1.5px solid var(--input-border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box' },
 }
 
@@ -821,14 +821,14 @@ export default function AgentPage({ user, onNavigate }) {
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,var(--teal),var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 0 24px rgba(0,228,184,0.3)' }}>🤖</div>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,var(--action),var(--action-deep))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 0 24px rgba(56,189,248,0.3)' }}>🤖</div>
           <div>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: 'var(--text)' }}>وكيل موج v2</h2>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>20 أداة · ذاكرة دائمة · واتساب · تحليل النظام</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {aiCfg?.model && <span style={S.pill('var(--teal)')}>{aiCfg.model.split('-').slice(0, 3).join('-')}</span>}
+          {aiCfg?.model && <span style={S.pill('var(--action)')}>{aiCfg.model.split('-').slice(0, 3).join('-')}</span>}
           <span style={S.pill(dryRun ? '#f59e0b' : 'var(--text-muted)')}>{dryRun ? '🧪 تجريبي' : '⚡ حي'}</span>
           <button onClick={() => setDryRun(d => !d)} style={{ ...S.btn(''), fontSize: 11, padding: '5px 10px' }}>
             {dryRun ? 'إلغاء التجريب' : 'وضع تجريبي'}
@@ -841,7 +841,7 @@ export default function AgentPage({ user, onNavigate }) {
       {/* Tabs */}
       <div style={{ display: 'flex', padding: '16px 20px 0', borderBottom: '1px solid var(--bg-border)', gap: 0, overflowX: 'auto' }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'memory') loadMemories() }} style={{ padding: '8px 14px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: tab === t.id ? 800 : 500, background: 'none', color: tab === t.id ? 'var(--teal)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--teal)' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+          <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'memory') loadMemories() }} style={{ padding: '8px 14px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: tab === t.id ? 800 : 500, background: 'none', color: tab === t.id ? 'var(--action)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--action)' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
             {t.icon} {t.label}
           </button>
         ))}
@@ -869,7 +869,7 @@ export default function AgentPage({ user, onNavigate }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: 8 }}>
               {QUICK_TASKS.map(q => (
                 <button key={q.label} onClick={() => runAgent(q.task, `${q.icon} ${q.label}`)} disabled={running} style={{ ...S.card, cursor: 'pointer', textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px', border: '1px solid var(--bg-border)', transition: 'border-color 0.15s', opacity: running ? 0.5 : 1 }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,228,184,0.4)'}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.4)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--bg-border)'}>
                   <div style={{ fontSize: 22 }}>{q.icon}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{q.label}</div>
@@ -890,7 +890,7 @@ export default function AgentPage({ user, onNavigate }) {
                     {s.type === 'tool' && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{TOOL_LABELS[s.tool] || s.tool}</span>
-                        <span style={{ ...S.pill(s.status === 'done' ? 'var(--teal)' : s.status === 'error' ? '#ef4444' : s.status === 'confirm' ? '#f59e0b' : s.status === 'cancelled' ? 'var(--text-muted)' : 'var(--violet-light)'), fontSize: 9 }}>
+                        <span style={{ ...S.pill(s.status === 'done' ? 'var(--action)' : s.status === 'error' ? '#ef4444' : s.status === 'confirm' ? '#f59e0b' : s.status === 'cancelled' ? 'var(--text-muted)' : 'var(--info-light)'), fontSize: 9 }}>
                           {s.status === 'done' ? '✓ تم' : s.status === 'error' ? '✗ خطأ' : s.status === 'confirm' ? '⚠️ تأكيد' : s.status === 'cancelled' ? 'ملغى' : '⏳'}
                         </span>
                         {MUTATION_TOOLS.has(s.tool) && <span style={S.pill('#ef4444')}>يعدّل</span>}
@@ -943,7 +943,7 @@ export default function AgentPage({ user, onNavigate }) {
       {/* ══ WORKFLOWS TAB ══ */}
       {tab === 'workflows' && (
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ ...S.card, background: 'rgba(0,228,184,0.04)', border: '1px solid rgba(0,228,184,0.2)' }}>
+          <div style={{ ...S.card, background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.2)' }}>
             <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 12, color: 'var(--text)' }}>➕ سير عمل جديد</div>
             <div style={{ display: 'grid', gap: 10 }}>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -981,13 +981,13 @@ export default function AgentPage({ user, onNavigate }) {
           {workflows.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>لا توجد سير عمل بعد.</div>}
 
           {workflows.map(wf => (
-            <div key={wf.id} style={{ ...S.card, border: `1.5px solid ${wf.enabled ? 'rgba(0,228,184,0.25)' : 'var(--bg-border)'}`, opacity: wf.enabled ? 1 : 0.75 }}>
+            <div key={wf.id} style={{ ...S.card, border: `1.5px solid ${wf.enabled ? 'rgba(56,189,248,0.25)' : 'var(--bg-border)'}`, opacity: wf.enabled ? 1 : 0.75 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 20 }}>{wf.icon || '⚡'}</span>
                     <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)' }}>{wf.name}</span>
-                    {wf.schedule && <span style={S.pill('var(--violet-light)')}>{wf.schedule.type === 'daily' ? `يومي ${wf.schedule.hour}:00` : wf.schedule.type === 'weekly' ? `أسبوعي / ${['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'][wf.schedule.day]}` : `شهري / يوم ${wf.schedule.day_of_month}`}</span>}
+                    {wf.schedule && <span style={S.pill('var(--info-light)')}>{wf.schedule.type === 'daily' ? `يومي ${wf.schedule.hour}:00` : wf.schedule.type === 'weekly' ? `أسبوعي / ${['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'][wf.schedule.day]}` : `شهري / يوم ${wf.schedule.day_of_month}`}</span>}
                     {wfRunning === wf.id && <span style={{ ...S.pill('#f59e0b'), animation: 'pulse 1s infinite' }}>⚡ يعمل</span>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -996,7 +996,7 @@ export default function AgentPage({ user, onNavigate }) {
                   {wf.last_run && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>آخر تشغيل: {new Date(wf.last_run).toLocaleString('ar-AE')}</div>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-                  <button onClick={() => toggleWorkflow(wf.id, !wf.enabled)} style={{ width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', background: wf.enabled ? 'var(--teal)' : 'var(--bg-hover)', position: 'relative', transition: 'background 150ms' }}>
+                  <button onClick={() => toggleWorkflow(wf.id, !wf.enabled)} style={{ width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', background: wf.enabled ? 'var(--action)' : 'var(--bg-hover)', position: 'relative', transition: 'background 150ms' }}>
                     <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: wf.enabled ? 3 : 'auto', right: wf.enabled ? 'auto' : 3, transition: 'all 150ms' }} />
                   </button>
                   <button onClick={() => { setWfRunning(wf.id); runAgent(wf.tasks.join(' ثم '), wf.name).finally(() => setWfRunning(null)) }} disabled={running} style={{ ...S.btn(''), fontSize: 10, padding: '4px 8px' }}>▶ تشغيل</button>
@@ -1018,7 +1018,7 @@ export default function AgentPage({ user, onNavigate }) {
             const { error } = await supabase.from('agent_memory').upsert({ key: 'memory_test', value: `اختبار ${new Date().toLocaleString('ar-AE')}`, category: 'general', importance: 1, access_count: 0, tags: [], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
             if (error) alert('خطأ: ' + error.message)
             else { await loadMemories(); alert('تم الحفظ ✓') }
-          }} style={{ ...S.btn(''), fontSize: 12, padding: '8px 14px', background: 'rgba(0,228,184,0.1)', color: 'var(--teal)' }}>🧪 اختبار الحفظ</button>
+          }} style={{ ...S.btn(''), fontSize: 12, padding: '8px 14px', background: 'rgba(56,189,248,0.1)', color: 'var(--action)' }}>🧪 اختبار الحفظ</button>
           </div>
           {memLoading && <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>جاري التحميل...</div>}
           {!memLoading && filteredMems.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>لا توجد ذاكرة بعد. شغّل الوكيل وسيحفظ ملاحظاته تلقائياً.</div>}
@@ -1038,9 +1038,9 @@ export default function AgentPage({ user, onNavigate }) {
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--teal)' }}>{m.key}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--action)' }}>{m.key}</span>
                       <span style={S.pill(m.importance >= 8 ? '#ef4444' : m.importance >= 5 ? '#f59e0b' : 'var(--text-muted)')}>أهمية {m.importance}</span>
-                      <span style={S.pill('var(--violet-light)')}>{m.category}</span>
+                      <span style={S.pill('var(--info-light)')}>{m.category}</span>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-sec)', lineHeight: 1.5 }}>{m.value}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{new Date(m.updated_at).toLocaleString('ar-AE')} · وصل {m.access_count || 0} مرة</div>
@@ -1081,7 +1081,7 @@ export default function AgentPage({ user, onNavigate }) {
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text)' }}>{t.label}</span>
-                    <span style={{ ...S.pill('var(--teal)'), fontFamily: 'monospace', direction: 'ltr' }}>{t.name}</span>
+                    <span style={{ ...S.pill('var(--action)'), fontFamily: 'monospace', direction: 'ltr' }}>{t.name}</span>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{t.description}</div>
                   <code style={{ fontSize: 10, color: 'var(--text-sec)', background: 'var(--bg-hover)', padding: '4px 8px', borderRadius: 4, display: 'block', direction: 'ltr', textAlign: 'left', wordBreak: 'break-all' }}>{t.sql_query.slice(0, 120)}{t.sql_query.length > 120 ? '...' : ''}</code>
@@ -1098,8 +1098,8 @@ export default function AgentPage({ user, onNavigate }) {
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
             {[
-              { label: 'إجمالي التكلفة', value: `$${costTracker.totalCost.toFixed(4)}`, icon: '💵', color: 'var(--teal)' },
-              { label: 'عدد التشغيلات', value: costTracker.totalRuns, icon: '⚡', color: 'var(--violet-light)' },
+              { label: 'إجمالي التكلفة', value: `$${costTracker.totalCost.toFixed(4)}`, icon: '💵', color: 'var(--action)' },
+              { label: 'عدد التشغيلات', value: costTracker.totalRuns, icon: '⚡', color: 'var(--info-light)' },
               { label: 'إجمالي الرموز', value: costTracker.totalTokens.toLocaleString(), icon: '🔢', color: 'var(--pink)' },
             ].map(stat => (
               <div key={stat.label} style={{ ...S.card, textAlign: 'center', padding: '14px 10px' }}>
@@ -1129,8 +1129,8 @@ export default function AgentPage({ user, onNavigate }) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-                {run.triggered_by && <span style={S.pill(run.triggered_by === 'whatsapp' ? '#25d366' : run.triggered_by === 'cron' ? '#f59e0b' : 'var(--teal)')}>{run.triggered_by === 'whatsapp' ? '💬' : run.triggered_by === 'cron' ? '⏰' : '👤'} {run.triggered_by}</span>}
-                <span style={S.pill(run.status === 'completed' ? 'var(--teal)' : '#ef4444')}>{run.status === 'completed' ? '✓' : '✗'}</span>
+                {run.triggered_by && <span style={S.pill(run.triggered_by === 'whatsapp' ? '#25d366' : run.triggered_by === 'cron' ? '#f59e0b' : 'var(--action)')}>{run.triggered_by === 'whatsapp' ? '💬' : run.triggered_by === 'cron' ? '⏰' : '👤'} {run.triggered_by}</span>}
+                <span style={S.pill(run.status === 'completed' ? 'var(--action)' : '#ef4444')}>{run.status === 'completed' ? '✓' : '✗'}</span>
               </div>
             </div>
           ))}

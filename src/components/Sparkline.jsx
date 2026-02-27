@@ -1,7 +1,7 @@
 import React from 'react'
 
 // Mini sparkline chart — last N data points
-export default function Sparkline({ data = [], color = '#00e4b8', width = 80, height = 32 }) {
+export default function Sparkline({ data = [], color = '#38BDF8', width = 80, height = 32 }) {
   if (!data || data.length < 2) return null
 
   const min = Math.min(...data)

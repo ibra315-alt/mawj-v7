@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 
-const COLORS = ['#00e4b8','#8b5cf6','#f59e0b','#10b981','#3b82f6','#ff4757','#ffffff']
+const COLORS = ['#38BDF8','#3B82F6','#f59e0b','#10b981','#0EA5E9','#ef4444','#ffffff']
 const COUNT  = 120
 
 export default function Confetti({ active }) {

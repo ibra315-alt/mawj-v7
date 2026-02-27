@@ -194,7 +194,7 @@ export default function Hayyak() {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'9px 8px', borderRadius:8, border:'none', cursor:'pointer',
-            background: tab === t.id ? 'linear-gradient(135deg,var(--teal),var(--violet))' : 'transparent',
+            background: tab === t.id ? 'linear-gradient(135deg,var(--action),var(--action-deep))' : 'transparent',
             color: tab === t.id ? '#050c1a' : 'var(--text-muted)',
             fontWeight: tab === t.id ? 800 : 500, fontSize:13,
             fontFamily:'inherit', transition:'all 0.2s', whiteSpace:'nowrap',
@@ -233,8 +233,8 @@ export default function Hayyak() {
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
               {[
                 { label:'إجمالي COD المحصّل',  value: formatCurrency(stats.totalCOD),     color:'var(--text)',   bg:'var(--bg-hover)' },
-                { label:'تم استلامه من حياك',  value: formatCurrency(stats.bankReceived),  color:'var(--action)', bg:'rgba(0,228,184,0.06)' },
-                { label:'COD المعلق',           value: formatCurrency(stats.pendingCOD),   color: stats.pendingCOD > 0 ? '#f59e0b' : 'var(--action)', bg: stats.pendingCOD > 0 ? 'rgba(245,158,11,0.08)' : 'rgba(0,228,184,0.06)' },
+                { label:'تم استلامه من حياك',  value: formatCurrency(stats.bankReceived),  color:'var(--action)', bg:'rgba(56,189,248,0.06)' },
+                { label:'COD المعلق',           value: formatCurrency(stats.pendingCOD),   color: stats.pendingCOD > 0 ? '#f59e0b' : 'var(--action)', bg: stats.pendingCOD > 0 ? 'rgba(245,158,11,0.08)' : 'rgba(56,189,248,0.06)' },
                 { label:'رسوم تحويل بنكي',      value: formatCurrency(stats.transferFees), color:'var(--danger)', bg:'rgba(239,68,68,0.06)' },
               ].map(s => (
                 <div key={s.label} style={{ padding:'12px 14px', background:s.bg, borderRadius:'var(--r-md)' }}>
@@ -322,7 +322,7 @@ export default function Hayyak() {
             : (
               <>
                 {/* Create remittance from selection */}
-                <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(0,228,184,0.05)', border:'1px solid rgba(0,228,184,0.15)', borderRadius:'var(--r-md)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
+                <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(56,189,248,0.05)', border:'1px solid rgba(56,189,248,0.15)', borderRadius:'var(--r-md)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
                   <span style={{ fontSize:12, color:'var(--text-sec)' }}>
                     استلمت تحويلاً من حياك؟
                   </span>
@@ -712,8 +712,8 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
                       onClick={() => toggleOrder(order.id)}
                       style={{
                         display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
-                        background: selected ? 'rgba(0,228,184,0.06)' : 'var(--bg-hover)',
-                        border:`1.5px solid ${selected ? 'rgba(0,228,184,0.25)' : 'var(--border)'}`,
+                        background: selected ? 'rgba(56,189,248,0.06)' : 'var(--bg-hover)',
+                        border:`1.5px solid ${selected ? 'rgba(56,189,248,0.25)' : 'var(--border)'}`,
                         borderRadius:'var(--r-md)', cursor:'pointer', transition:'all 120ms',
                       }}
                     >
@@ -767,8 +767,8 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
       {!isEdit && selectedIds.length > 0 && (
         <div style={{
           padding:'14px 16px', borderRadius:'var(--r-md)', marginBottom:14,
-          background: Math.abs(difference) < 5 ? 'rgba(0,228,184,0.06)' : 'rgba(245,158,11,0.08)',
-          border:`1.5px solid ${Math.abs(difference) < 5 ? 'rgba(0,228,184,0.2)' : 'rgba(245,158,11,0.3)'}`,
+          background: Math.abs(difference) < 5 ? 'rgba(56,189,248,0.06)' : 'rgba(245,158,11,0.08)',
+          border:`1.5px solid ${Math.abs(difference) < 5 ? 'rgba(56,189,248,0.2)' : 'rgba(245,158,11,0.3)'}`,
         }}>
           <div style={{ fontWeight:700, fontSize:12, color:'var(--text-muted)', marginBottom:10, letterSpacing:'0.05em', textTransform:'uppercase' }}>التحقق</div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 20px' }}>

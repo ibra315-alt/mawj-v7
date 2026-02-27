@@ -24,10 +24,10 @@ export const DARK_THEMES  = THEMES.filter(t => t.mode === 'dark')
 export const LIGHT_THEMES = THEMES.filter(t => t.mode === 'light')
 
 export const DEFAULT_PREFS = {
-  theme:'dark', mode:'dark', accent:'#00e4b8',
+  theme:'light', mode:'light', accent:'#38BDF8',
   font:"'Almarai', sans-serif",
   fontSize:'medium', radius:'rounded', density:'normal',
-  animations:true, noise:true, spotlight:true,
+  animations:true, noise:false, spotlight:false,
 }
 
 export function hexRgb(hex) {
@@ -38,14 +38,14 @@ export function hexRgb(hex) {
 function setVar(k,v) { if(v) document.documentElement.style.setProperty(k,v) }
 
 const ALL_THEME_VARS = [
-  '--bg','--bg-alt','--bg-card','--bg-glass','--bg-glass-hover','--bg-hover',
-  '--bg-border','--bg-surface','--sidebar-bg','--header-bg','--modal-bg',
-  '--violet','--violet-light','--violet-bright','--violet-glow','--violet-soft','--violet-faint',
-  '--teal','--teal-deep','--teal-glow','--teal-soft','--teal-faint',
-  '--pink','--pink-glow','--pink-soft','--text','--text-sec','--text-muted',
+  '--bg','--bg-alt','--bg-surface','--bg-elevated','--bg-hover','--bg-active',
+  '--text','--text-sec','--text-muted',
+  '--border','--border-strong',
+  '--sidebar-bg','--header-bg','--modal-bg',
   '--input-bg','--input-border','--input-focus',
-  '--glass-border','--glass-border-strong','--glass-border-teal',
-  '--shadow-card','--shadow-float','--shadow-violet','--shadow-teal',
+  '--card-shadow','--card-shadow-hover','--float-shadow','--modal-shadow',
+  '--action','--action-deep','--action-glow','--action-soft','--action-faint',
+  '--info','--info-light','--info-glow','--info-soft','--info-faint',
 ]
 
 export function applyThemeVars(themeId) {

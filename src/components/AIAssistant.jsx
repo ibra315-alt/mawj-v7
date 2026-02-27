@@ -410,7 +410,7 @@ export default function AIAssistant({ onClose, onNavigate }) {
       }),
       zIndex: 800,
       background:'var(--modal-bg)', backdropFilter:'blur(40px)', WebkitBackdropFilter:'blur(40px)',
-      border:'1.5px solid var(--glass-border-teal)',
+      border:'1px solid var(--border)',
       boxShadow:'var(--shadow-float)',
       display:'flex', flexDirection:'column',
       animation:'modalIn 0.28s ease both',
@@ -418,12 +418,12 @@ export default function AIAssistant({ onClose, onNavigate }) {
       boxSizing: 'border-box',
     }}>
       {/* Header */}
-      <div style={{padding:'10px 14px', borderBottom:'1px solid var(--bg-border)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,228,184,0.04)', flexShrink:0}}>
+      <div style={{padding:'10px 14px', borderBottom:'1px solid var(--bg-border)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--action-faint)', flexShrink:0}}>
         <div style={{display:'flex', alignItems:'center', gap:9}}>
-          <div style={{width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,var(--teal),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,boxShadow:'0 0 10px var(--teal-glow)'}}>🤖</div>
+          <div style={{width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,var(--action),var(--info))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,boxShadow:'0 0 10px var(--action-glow)'}}>🤖</div>
           <div>
             <div style={{fontWeight:800,fontSize:12.5,color:'var(--text)'}}>مساعد موج</div>
-            <div style={{fontSize:9,color:context?'var(--teal)':'#f59e0b',marginTop:1}}>
+            <div style={{fontSize:9,color:context?'var(--action)':'#f59e0b',marginTop:1}}>
               {context ? '● بيانات محمّلة' : '○ جارٍ التحميل...'}
               {hasActions && <span style={{color:'#f59e0b',marginInlineStart:6}}>· إجراءات مفعّلة</span>}
             </div>
@@ -483,10 +483,10 @@ export default function AIAssistant({ onClose, onNavigate }) {
                     maxWidth:'88%', padding:'8px 12px',
                     borderRadius: m.role==='user'?'15px 15px 15px 4px':'15px 15px 4px 15px',
                     background: m.role==='user'
-                      ? 'linear-gradient(135deg,var(--teal),var(--violet))'
-                      : 'var(--bg-glass)',
-                    border: m.role==='user'?'none':'1px solid var(--glass-border)',
-                    color: m.role==='user'?'#050c1a':'var(--text)',
+                      ? 'var(--action)'
+                      : 'var(--bg-hover)',
+                    border: m.role==='user'?'none':'1px solid var(--border)',
+                    color: m.role==='user'?'#ffffff':'var(--text)',
                     fontSize:12.5, lineHeight:1.65, fontWeight:m.role==='user'?700:400,
                     whiteSpace:'pre-wrap', wordBreak:'break-word',
                     opacity: m.pending_action ? 0.75 : 1,
@@ -500,7 +500,7 @@ export default function AIAssistant({ onClose, onNavigate }) {
               <div style={{padding:'9px 13px',background:'var(--bg-glass)',border:'1px solid var(--glass-border)',borderRadius:'15px 15px 4px 15px',display:'flex',gap:5,alignItems:'center',fontSize:11,color:'var(--text-muted)'}}>
                 {executing ? '⚡ جارٍ التنفيذ...' : (
                   [0,1,2].map(i=>(
-                    <div key={i} style={{width:5,height:5,borderRadius:'50%',background:'var(--teal)',animation:`bounce 1.2s ease infinite ${i*0.2}s`}}/>
+                    <div key={i} style={{width:5,height:5,borderRadius:'50%',background:'var(--action)',animation:`bounce 1.2s ease infinite ${i*0.2}s`}}/>
                   ))
                 )}
               </div>
@@ -542,9 +542,9 @@ export default function AIAssistant({ onClose, onNavigate }) {
           />
           <button onClick={()=>send()} disabled={loading||executing||!input.trim()} style={{
             width:34,height:34,borderRadius:'50%',flexShrink:0,
-            background:input.trim()?'linear-gradient(135deg,var(--teal),var(--violet))':'var(--bg-glass)',
+            background:input.trim()?'var(--action)':'var(--bg-hover)',
             border:'none',cursor:input.trim()?'pointer':'default',
-            color:input.trim()?'#050c1a':'var(--text-muted)',
+            color:input.trim()?'#ffffff':'var(--text-muted)',
             fontSize:14,display:'flex',alignItems:'center',justifyContent:'center',
           }}>➤</button>
         </div>
