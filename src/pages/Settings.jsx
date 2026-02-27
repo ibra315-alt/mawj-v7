@@ -27,7 +27,7 @@ const SECTIONS = [
   { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد',          icon:'💾' },
 ]
 
-export default function Settings({ theme, toggleTheme, user }) {
+export default function Settings({ user }) {
   const isAdmin = user?.role === 'admin'
   const visibleSections = SECTIONS.filter(s => !s.adminOnly || isAdmin)
   const [section, setSection] = useState('business')
@@ -97,7 +97,7 @@ export default function Settings({ theme, toggleTheme, user }) {
   const active = visibleSections.find(s=>s.id===section) || visibleSections[0]
 
   const contentProps = {
-    data, updateData, theme, toggleTheme, user,
+    data, updateData, user,
     statuses:    data.statuses,
     products:    data.products,
     templates:   data.templates,
@@ -752,29 +752,13 @@ function WhatsAppTab({ templates, updateData }) {
 ══════════════════════════════════════════════════ */
 
 
-function AppearanceTab({ theme, toggleTheme, user }) {
-  const [dark, setDark] = useState(
-    () => document.documentElement.getAttribute('data-theme') !== 'light'
-  )
-
-  function toggle() {
-    const next = !dark
-    setDark(next)
-    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
-    try { localStorage.setItem('mawj-theme', next ? 'dark' : 'light') } catch {}
-    toast(next ? 'تم تفعيل الوضع الداكن' : 'تم تفعيل الوضع الفاتح')
-  }
-
+function AppearanceTab() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <Card>
-        <SectionTitle>وضع العرض</SectionTitle>
-        <ControlRow
-          label={dark ? 'الوضع الداكن' : 'الوضع الفاتح'}
-          desc={dark ? 'خلفية داكنة — مريح للعين ليلاً' : 'خلفية فاتحة — واضح في الإضاءة الساطعة'}
-          last
-        >
-          <Toggle checked={dark} onChange={toggle} />
+        <SectionTitle>التصميم</SectionTitle>
+        <ControlRow label="Liquid Glass" desc="تصميم موحّد بتأثيرات الزجاج الشفاف" last>
+          <Badge color="var(--action)">مفعّل</Badge>
         </ControlRow>
       </Card>
       <Card>

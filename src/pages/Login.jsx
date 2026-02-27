@@ -2,18 +2,15 @@ import React, { useState } from 'react'
 import { Auth } from '../data/db'
 
 /* ══════════════════════════════════════════════════
-   LOGIN v10 — Maison
-   Clean · RTL-first · Sky blue accent
-   Light default · Premium warm
+   LOGIN v11 — Liquid Glass
+   Clean · RTL-first · Bright Blue accent
 ══════════════════════════════════════════════════ */
-export default function Login({ theme, toggleTheme }) {
+export default function Login() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [showPass, setShowPass] = useState(false)
-
-  const isDark = theme !== 'light'
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -50,43 +47,15 @@ export default function Login({ theme, toggleTheme }) {
         </div>
       </div>
 
-      {/* Theme toggle — top left in RTL = top right visually */}
-      {toggleTheme && (
-        <button
-          onClick={toggleTheme}
-          style={{
-            position: 'absolute', top: 20, left: 20,
-            padding: '8px 14px', borderRadius: 'var(--r-pill)',
-            background: 'var(--bg-surface)', border: 'none',
-            boxShadow: 'var(--card-shadow)',
-            color: 'var(--text-sec)', fontSize: 12,
-            fontFamily: 'inherit', fontWeight: 600,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'box-shadow 120ms ease',
-          }}
-        >
-          {isDark ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
-              <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
-              <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-            </svg>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-            </svg>
-          )}
-          {isDark ? 'فاتح' : 'داكن'}
-        </button>
-      )}
-
-      {/* Card */}
+      {/* Card — Liquid Glass */}
       <div style={{
         width: '100%', maxWidth: 400,
-        background: 'var(--bg-surface)',
+        background: 'var(--modal-bg)',
+        backdropFilter: 'var(--glass-blur-lg)',
+        WebkitBackdropFilter: 'var(--glass-blur-lg)',
         boxShadow: 'var(--float-shadow)',
+        border: '1px solid var(--border)',
+        borderTopColor: 'var(--glass-edge)',
         borderRadius: 'var(--r-xl)',
         overflow: 'hidden',
         animation: 'cardEntrance var(--dur-base) var(--ease-out) both',
