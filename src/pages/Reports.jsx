@@ -134,15 +134,27 @@ export default function Reports() {
   const totalYtdExp   = expCategories.reduce((s,[,v])=>s+v,0)
   const maxExpCat     = Math.max(...expCategories.map(([,v])=>v), 1)
 
+  // FIX: Product profitability includes hayyak fee allocation and respects order status
   const productMap = {}
-  orders.forEach(o => {
-    ;(o.items||[]).forEach(item => {
+  orders.filter(o => o.status !== 'cancelled').forEach(o => {
+    const items = o.items || []
+    const itemCount = items.reduce((s, i) => s + (parseInt(i.qty) || 1), 0)
+    const orderHayyak = parseFloat(o.hayyak_fee) || 0
+    items.forEach(item => {
       const key = `${item.name}${item.size?'—'+item.size:''}`
       if (!productMap[key]) productMap[key]={ name:item.name, size:item.size||'', qty:0, revenue:0, cost:0, profit:0 }
-      productMap[key].qty     += (item.qty||1)
-      productMap[key].revenue += (item.price||0)*(item.qty||1)
-      productMap[key].cost    += (item.cost||0)*(item.qty||1)
-      productMap[key].profit  += ((item.price||0)-(item.cost||0))*(item.qty||1)
+      const qty = parseInt(item.qty) || 1
+      const revenue = (parseFloat(item.price)||0) * qty
+      const cost = (parseFloat(item.cost)||0) * qty
+      const hayyakShare = itemCount > 0 ? (orderHayyak * qty / itemCount) : 0
+      productMap[key].qty += qty
+      productMap[key].revenue += revenue
+      productMap[key].cost += cost
+      if (o.is_replacement || o.status === 'not_delivered') {
+        productMap[key].profit -= (cost + hayyakShare)
+      } else {
+        productMap[key].profit += (revenue - cost - hayyakShare)
+      }
     })
   })
   const allProducts = Object.values(productMap).map(p => ({

@@ -178,8 +178,9 @@ function PnLTab({ orders, expenses, monthFilter, setMonthFilter }) {
   // Only count non-cancelled orders
   const activeOrders = filteredOrders.filter(o => o.status !== 'cancelled')
 
+  // FIX: Use total (post-discount) for revenue, not subtotal
   const revenue      = activeOrders.filter(o => !o.is_replacement && o.status !== 'not_delivered')
-                                   .reduce((s, o) => s + (o.subtotal || 0), 0)
+                                   .reduce((s, o) => s + (o.total || 0), 0)
   const discount     = activeOrders.reduce((s, o) => s + (o.discount || 0), 0)
   const netRevenue   = revenue - discount
   const productCost  = activeOrders.reduce((s, o) => s + (o.product_cost || 0), 0)
@@ -289,7 +290,13 @@ function CashTab({ orders, remittances, expenses, capital, withdrawals }) {
   const capitalWithdraw = capital.filter(c => c.type === 'withdrawal').reduce((s, c) => s + (c.amount || 0), 0)
   const totalOut        = companyExpenses + totalWithdraw + capitalWithdraw
 
-  const estimatedCash   = totalIn - totalOut
+  // Unreimbursed personal expenses (company owes partners)
+  const unreimbursed = expenses
+    .filter(e => e.paid_by && e.paid_by !== 'company' && !e.reimbursed)
+    .reduce((s, e) => s + (e.amount || 0), 0)
+
+  // FIX: Subtract unreimbursed as pending liability
+  const estimatedCash   = totalIn - totalOut - unreimbursed
 
   // Pending (not yet received but owed by Hayyak)
   const pendingCOD = orders
@@ -299,11 +306,6 @@ function CashTab({ orders, remittances, expenses, capital, withdrawals }) {
     .filter(o => o.status === 'delivered' && !o.hayyak_remittance_id)
     .reduce((s, o) => s + (o.hayyak_fee || 25), 0)
   const expectedFromHayyak = pendingCOD - pendingHayyakFees
-
-  // Unreimbursed personal expenses
-  const unreimbursed = expenses
-    .filter(e => e.paid_by && e.paid_by !== 'company' && !e.reimbursed)
-    .reduce((s, e) => s + (e.amount || 0), 0)
 
   return (
     <div>
@@ -401,7 +403,8 @@ function PartnersTab({ orders, expenses, capital, withdrawals, partners }) {
 
           const capitalIn     = myCapital.filter(c => c.type === 'deposit').reduce((s, c) => s + (c.amount || 0), 0)
           const capitalOut    = myCapital.filter(c => c.type === 'withdrawal').reduce((s, c) => s + (c.amount || 0), 0)
-          const totalWithdraw = myWithdraw.reduce((s, w) => s + (w.amount || 0), 0)
+          // FIX: Exclude reimbursement withdrawals — unreimbursed tracking already handles it
+          const totalWithdraw = myWithdraw.filter(w => w.type !== 'reimbursement').reduce((s, w) => s + (w.amount || 0), 0)
           const profitShare   = netProfit * share
           const expensePaid   = myExpenses.reduce((s, e) => s + (e.amount || 0), 0)
           const reimbursed    = myExpenses.filter(e => e.reimbursed).reduce((s, e) => s + (e.amount || 0), 0)
@@ -461,7 +464,8 @@ function MonthlyTab({ orders, expenses, remittances }) {
     const me = filterByMonth(expenses,    'date',        key)
     const mr = filterByMonth(remittances, 'date',        key)
 
-    const revenue     = mo.filter(o => !o.is_replacement && o.status !== 'not_delivered').reduce((s, o) => s + (o.subtotal || 0), 0)
+    // FIX: Use total (post-discount) for revenue
+    const revenue     = mo.filter(o => !o.is_replacement && o.status !== 'not_delivered').reduce((s, o) => s + (o.total || 0), 0)
     const productCost = mo.reduce((s, o) => s + (o.product_cost || 0), 0)
     const hayyakFees  = mo.reduce((s, o) => s + (o.hayyak_fee   || 0), 0)
     const grossProfit = mo.reduce((s, o) => s + (o.gross_profit || 0), 0)
