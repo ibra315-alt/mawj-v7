@@ -229,12 +229,12 @@ export default function Orders({ user }) {
 
       {/* ── Search ───────────────────────────────── */}
       <div style={{ position:'relative', marginBottom:16 }}>
-        <IcSearch size={15} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
+        <IcSearch size={15} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="بحث بالاسم أو رقم الطلب..."
           style={{
-            width:'100%', padding:'11px 36px 11px 12px',
+            width:'100%', padding:'11px 12px 11px 36px',
             background:'var(--bg-surface)', border:'1.5px solid var(--input-border)',
             borderRadius:'var(--r-md)', color:'var(--text)', fontSize:14,
             fontFamily:'inherit', outline:'none', boxSizing:'border-box',
@@ -686,7 +686,9 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
       <div
         onClick={onClose}
         style={{
-          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)',
+          position:'fixed', inset:0, background:'rgba(0,0,0,0.45)',
+          backdropFilter:'blur(12px) saturate(1.2)',
+          WebkitBackdropFilter:'blur(12px) saturate(1.2)',
           zIndex:1000, transition:'opacity 200ms',
         }}
       />
@@ -697,14 +699,16 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
         style={{
           position:'fixed', top:0, bottom:0, left:0, zIndex:1001,
           background:'var(--modal-bg)', boxShadow:'var(--modal-shadow)',
+          backdropFilter:'var(--glass-blur-lg)',
+          WebkitBackdropFilter:'var(--glass-blur-lg)',
           display:'flex', flexDirection:'column',
           animation:'slidePanelIn 250ms ease both',
-          overflowY:'auto', WebkitOverflowScrolling:'touch',
+          overflow:'hidden',
         }}
       >
         {/* Header */}
         <div style={{
-          position:'sticky', top:0, zIndex:2,
+          flexShrink:0,
           padding:'16px 20px', background:'var(--modal-bg)',
           borderBottom:'1px solid var(--border)',
           display:'flex', justifyContent:'space-between', alignItems:'center',
@@ -722,7 +726,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
         </div>
 
         {/* Body */}
-        <div style={{ flex:1, padding:'20px', overflowY:'auto' }}>
+        <div style={{ flex:1, padding:'20px', overflowY:'auto', minHeight:0, WebkitOverflowScrolling:'touch' }}>
           {/* Replacement warning */}
           {isRepl && (
             <div style={{
@@ -892,7 +896,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
 
         {/* Footer */}
         <div style={{
-          position:'sticky', bottom:0, zIndex:2,
+          flexShrink:0,
           padding:'14px 20px', background:'var(--modal-bg)',
           borderTop:'1px solid var(--border)',
           display:'flex', gap:10, justifyContent:'flex-end',

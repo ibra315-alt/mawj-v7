@@ -66,12 +66,12 @@ export function Input({ label, error, icon, hint, containerStyle, style, ...prop
       )}
       <div style={{position:'relative'}}>
         {icon && (
-          <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',pointerEvents:'none',display:'flex'}}>
+          <span style={{position:'absolute',insetInlineEnd:12,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',pointerEvents:'none',display:'flex'}}>
             {icon}
           </span>
         )}
         <input style={{
-          width:'100%', padding: icon ? '10px 38px 10px 14px' : '10px 14px',
+          width:'100%', padding:'10px 14px', paddingInlineEnd: icon ? 38 : 14,
           background:'var(--input-bg)',
           border:`1.5px solid ${error ? 'var(--red)' : 'var(--input-border)'}`,
           borderRadius:'var(--r-sm)', color:'var(--text)',
@@ -100,14 +100,14 @@ export function Select({ label, children, containerStyle, style, ...props }) {
         </label>
       )}
       <select style={{
-        width:'100%', padding:'10px 14px',
+        width:'100%', padding:'10px 14px 10px 32px',
         background:'var(--input-bg)',
         border:'1.5px solid var(--input-border)',
         borderRadius:'var(--r-sm)', color:'var(--text)',
         fontSize:'var(--t-body)', cursor:'pointer',
         appearance:'none',
         backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2378756F'/%3E%3C/svg%3E")`,
-        backgroundRepeat:'no-repeat', backgroundPosition:'right 12px center',
+        backgroundRepeat:'no-repeat', backgroundPosition:'left 12px center',
         boxSizing:'border-box',
         transition:'border-color 0.16s ease, box-shadow 0.16s ease',
         ...style,
