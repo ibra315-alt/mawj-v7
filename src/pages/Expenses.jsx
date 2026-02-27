@@ -286,7 +286,7 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
   return (
     <div style={{
       background:'var(--bg-surface)', borderRadius:'var(--r-md)',
-      borderRight:`3px solid ${needsRefund ? 'var(--info-light)' : exp.is_subscription ? 'var(--action)' : 'var(--danger)'}`,
+      borderInlineStart:`3px solid ${needsRefund ? 'var(--info-light)' : exp.is_subscription ? 'var(--action)' : 'var(--danger)'}`,
       boxShadow:'var(--card-shadow)', padding:'12px 14px',
       display:'flex', alignItems:'center', gap:12, flexWrap:'wrap',
       opacity: exp.reimbursed && isPersonal ? 0.65 : 1,
@@ -294,7 +294,7 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
       {/* Main info */}
       <div style={{ flex:1, minWidth:130 }}>
         <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', marginBottom:2 }}>
-          {exp.is_subscription && <span style={{ fontSize:10, background:'rgba(0,228,184,0.12)', color:'var(--action)', borderRadius:4, padding:'1px 5px', marginLeft:5, fontWeight:700 }}>اشتراك</span>}
+          {exp.is_subscription && <span style={{ fontSize:10, background:'rgba(0,228,184,0.12)', color:'var(--action)', borderRadius:4, padding:'1px 5px', marginInlineEnd:5, fontWeight:700 }}>اشتراك</span>}
           {exp.title || exp.description || '—'}
         </div>
         <div style={{ fontSize:11, color:'var(--text-muted)', display:'flex', gap:8 }}>

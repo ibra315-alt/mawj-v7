@@ -89,7 +89,7 @@ export default function Inventory() {
           <>
             {movements.length > 0 && (
               <Btn variant="secondary" onClick={() => { setMovesItem(null); setShowMoves(true) }}>
-                سجل الحركات {movements.length > 0 && <span style={{ marginRight:4, padding:'1px 6px', background:'var(--violet)', color:'#fff', borderRadius:99, fontSize:10 }}>{movements.length}</span>}
+                سجل الحركات {movements.length > 0 && <span style={{ marginInlineStart:4, padding:'1px 6px', background:'var(--violet)', color:'#fff', borderRadius:99, fontSize:10 }}>{movements.length}</span>}
               </Btn>
             )}
             <Btn onClick={() => { setEditItem(null); setShowForm(true) }}><IcPlus size={15} /> منتج جديد</Btn>
@@ -194,7 +194,7 @@ export default function Inventory() {
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>سعر البيع</div>
                     <div style={{ fontWeight: 800, color: 'var(--teal)', fontSize: 16 }}>{formatCurrency(item.sell_price)}</div>
                   </div>
-                  <div style={{ textAlign: 'left' }}>
+                  <div style={{ textAlign: 'start' }}>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>التكلفة</div>
                     <div style={{ fontWeight: 600, color: 'var(--text-sec)', fontSize: 14 }}>{formatCurrency(item.cost_price)}</div>
                   </div>

@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import BgCanvas from './BgCanvas'
 import {
   IcDashboard, IcOrders, IcCustomers, IcExpenses,
   IcReports, IcInventory, IcSettings, IcLogout,
-  IcTruck, IcMoreGrid, IcMoon, IcSun, IcClose,
+  IcTruck, IcMoon, IcSun, IcClose,
   IcSuppliers, IcPartners, IcAccounting, IcUpload,
 } from './Icons'
 
-// Inline agent icon (not in Icons.jsx yet)
+// Agent icon
 const IcAgent = (p) => (
   <svg {...p} width={p.size||20} height={p.size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="4"/>
@@ -21,32 +21,35 @@ const IcAgent = (p) => (
 )
 
 /* ══════════════════════════════════════════════════
-   LAYOUT v9.0
-   Desktop : Collapsed sidebar (64px) → expands on hover (224px)
-   Mobile  : Bottom bar 4 primary + More sheet
-   Motion  : Fluid crafted, 180ms, physical press
+   LAYOUT v10 — THE DOCK
+   Desktop : Floating glass pill at bottom-center
+   Mobile  : Floating pill + Wave center button
+   Content : Full-width, max-width 1200px centered
 ══════════════════════════════════════════════════ */
 
 const PRIMARY_NAV = [
   { id: 'dashboard', label: 'الرئيسية',  icon: IcDashboard },
   { id: 'orders',    label: 'الطلبات',    icon: IcOrders    },
-  { id: 'hayyak',   label: 'حياك',       icon: IcTruck     },
-  { id: 'reports',  label: 'التقارير',   icon: IcReports   },
+  { id: 'hayyak',    label: 'حياك',       icon: IcTruck     },
+  { id: 'reports',   label: 'التقارير',   icon: IcReports   },
 ]
 
-const MORE_NAV = [
-  { id: 'customers',   label: 'العملاء',   icon: IcCustomers   },
-  { id: 'inventory',   label: 'المخزون',   icon: IcInventory   },
-  { id: 'expenses',    label: 'المصاريف',  icon: IcExpenses    },
-  { id: 'suppliers',   label: 'الموردون', icon: IcSuppliers    },
-  { id: 'accounting',  label: 'المحاسبة', icon: IcAccounting  },
-  { id: 'import',      label: 'استيراد البيانات', icon: IcUpload  },
-  { id: 'partners',    label: 'الشركاء',  icon: IcPartners     },
-  { id: 'agent',      label: 'الوكيل',    icon: IcAgent       },
-  { id: 'settings',   label: 'الإعدادات', icon: IcSettings    },
+const SECONDARY_NAV = [
+  { id: 'customers',  label: 'العملاء',    icon: IcCustomers  },
+  { id: 'inventory',  label: 'المخزون',    icon: IcInventory  },
+  { id: 'expenses',   label: 'المصاريف',   icon: IcExpenses   },
+  { id: 'suppliers',  label: 'الموردون',   icon: IcSuppliers  },
 ]
 
-const ALL_NAV = [...PRIMARY_NAV, ...MORE_NAV]
+const TERTIARY_NAV = [
+  { id: 'accounting', label: 'المحاسبة',   icon: IcAccounting },
+  { id: 'partners',   label: 'الشركاء',    icon: IcPartners   },
+  { id: 'import',     label: 'استيراد',     icon: IcUpload     },
+  { id: 'agent',      label: 'الوكيل',     icon: IcAgent      },
+  { id: 'settings',   label: 'الإعدادات',  icon: IcSettings   },
+]
+
+const ALL_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV, ...TERTIARY_NAV]
 
 function useTheme() {
   const [dark, setDark] = useState(() => {
@@ -60,106 +63,121 @@ function useTheme() {
 }
 
 export default function Layout({ page, onNavigate, user, onLogout, children, theme: themeProp, toggleTheme: toggleThemeProp }) {
-  const [expanded, setExpanded]  = useState(false)
-  const [moreOpen, setMoreOpen]  = useState(false)
-  const [prevPage, setPrevPage]  = useState(page)
+  const [moreOpen, setMoreOpen]     = useState(false)
+  const [dockVisible, setDockVisible] = useState(true)
   const [darkInternal, toggleInternal] = useTheme()
+  const lastScrollY = useRef(0)
 
-  // Use external theme if provided, else internal
   const dark = themeProp !== undefined ? themeProp !== 'light' : darkInternal
   const toggleTheme = toggleThemeProp || toggleInternal
 
   const navigate = useCallback((id) => {
-    setPrevPage(page)
     onNavigate(id)
     setMoreOpen(false)
-  }, [page, onNavigate])
+  }, [onNavigate])
 
-  // Close more sheet on back button
+  // Auto-hide dock on scroll down, show on scroll up
   useEffect(() => {
-    const handler = (e) => { if (moreOpen) { e.preventDefault(); setMoreOpen(false) } }
-    window.addEventListener('popstate', handler)
-    return () => window.removeEventListener('popstate', handler)
+    const handleScroll = () => {
+      const currentY = window.scrollY
+      if (currentY > lastScrollY.current + 12 && currentY > 120) {
+        setDockVisible(false)
+      } else if (currentY < lastScrollY.current - 6 || currentY < 60) {
+        setDockVisible(true)
+      }
+      lastScrollY.current = currentY
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Show dock on bottom-edge hover (desktop)
+  useEffect(() => {
+    const handleMouse = (e) => {
+      if (e.clientY > window.innerHeight - 24) setDockVisible(true)
+    }
+    window.addEventListener('mousemove', handleMouse)
+    return () => window.removeEventListener('mousemove', handleMouse)
+  }, [])
+
+  // Close wave menu on Escape / back button
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape' && moreOpen) setMoreOpen(false) }
+    const handlePop = (e) => { if (moreOpen) { e.preventDefault(); setMoreOpen(false) } }
+    window.addEventListener('keydown', handleKey)
+    window.addEventListener('popstate', handlePop)
+    return () => { window.removeEventListener('keydown', handleKey); window.removeEventListener('popstate', handlePop) }
   }, [moreOpen])
 
   return (
-    <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)', width:'100%', overflowX:'hidden' }}>
+    <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background:'var(--bg)', width:'100%', overflowX:'hidden' }}>
 
-      {/* ── PREMIUM BACKGROUND ───────────────────────── */}
+      {/* ── PREMIUM BACKGROUND ── */}
       <BgCanvas/>
 
-      {/* ── DESKTOP SIDEBAR ──────────────────────────── */}
-      <aside
-        className="desktop-only"
-        style={{
-          width: 224,
-          background: 'var(--sidebar-bg)',
-          boxShadow: '0 0 0 1px var(--border)',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'fixed',
-          top: 0, right: 0, bottom: 0,
-          zIndex: 100,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
-      >
-        <DesktopSidebar
-          page={page} onNavigate={navigate} user={user} onLogout={onLogout}
-          expanded={true} dark={dark} toggleTheme={toggleTheme}
-        />
-      </aside>
-
-      {/* ── MAIN CONTENT ─────────────────────────────── */}
+      {/* ── MAIN CONTENT ── full-width, max-width centered ── */}
       <main
         key={page}
+        className="layout-main"
         style={{
-          position: 'relative',
-          zIndex: 1,
-          marginRight: 224,
-          width: 'calc(100vw - 224px)',
-          minWidth: 0,
-          minHeight: '100vh',
-          paddingRight: 32,
-          paddingTop: 32,
-          paddingLeft: 32,
-          animation: 'pageSlideIn var(--dur-page) var(--ease-out) both',
+          position:'relative', zIndex:1,
+          width:'100%', maxWidth:1200,
+          margin:'0 auto',
+          minHeight:'100vh',
+          animation:'pageSlideIn var(--dur-page) var(--ease-out) both',
         }}
       >
         {children}
       </main>
 
-      {/* ── MOBILE BOTTOM NAV ────────────────────────── */}
-      <MobileNav
+      {/* ── DESKTOP DOCK ── floating glass pill at bottom-center ── */}
+      <DesktopDock
         page={page} onNavigate={navigate}
-        moreOpen={moreOpen} onMoreToggle={() => setMoreOpen(o => !o)}
         dark={dark} toggleTheme={toggleTheme}
-        user={user} onLogout={onLogout}
+        onLogout={onLogout} visible={dockVisible}
       />
 
-      {/* Backdrop */}
+      {/* ── MOBILE DOCK ── floating pill + wave menu ── */}
+      <MobileDock
+        page={page} onNavigate={navigate}
+        dark={dark} toggleTheme={toggleTheme}
+        user={user} onLogout={onLogout}
+        moreOpen={moreOpen} setMoreOpen={setMoreOpen}
+        visible={dockVisible}
+      />
+
+      {/* Backdrop for wave menu */}
       {moreOpen && (
         <div
           onClick={() => setMoreOpen(false)}
           style={{
-            position: 'fixed', inset: 0,
-            background: 'var(--bg-overlay)',
-            zIndex: 149,
-            animation: 'fadeIn 180ms var(--ease-out)',
+            position:'fixed', inset:0,
+            background:'var(--bg-overlay)',
+            zIndex:149,
+            animation:'fadeIn 180ms var(--ease-out)',
           }}
         />
       )}
 
       <style>{`
         @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes waveMenuIn {
+          from { opacity:0; transform:translateY(20px) scale(0.95); }
+          to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+        @keyframes dockTooltip {
+          from { opacity:0; transform:translateX(-50%) translateY(4px); }
+          to   { opacity:1; transform:translateX(-50%) translateY(0); }
+        }
         @media (min-width: 769px) {
-          .mobile-only, .mobile-flex { display: none !important; }
-          .desktop-only { display: flex !important; }
+          .mobile-dock, .mobile-wave-menu { display: none !important; }
+          .desktop-dock { display: flex !important; }
+          .layout-main { padding: 32px 32px 88px !important; }
         }
         @media (max-width: 768px) {
-          .desktop-only { display: none !important; }
-          .mobile-only, .mobile-flex { display: flex !important; }
-          main { margin-right: 0 !important; width: 100vw !important; padding-bottom: calc(64px + env(safe-area-inset-bottom, 12px)) !important; padding-right: 0 !important; padding-top: 0 !important; padding-left: 0 !important; }
+          .desktop-dock { display: none !important; }
+          .mobile-dock { display: flex !important; }
+          .layout-main { padding: 16px 12px 88px !important; max-width: 100% !important; }
         }
       `}</style>
     </div>
@@ -167,301 +185,319 @@ export default function Layout({ page, onNavigate, user, onLogout, children, the
 }
 
 /* ══════════════════════════════════════════════════
-   DESKTOP SIDEBAR
+   DESKTOP DOCK — Floating glass pill at bottom-center
+   All nav items as icons, grouped with dividers
+   Labels appear on hover as tooltips
 ══════════════════════════════════════════════════ */
-function DesktopSidebar({ page, onNavigate, user, onLogout, expanded, dark, toggleTheme }) {
+function DesktopDock({ page, onNavigate, dark, toggleTheme, onLogout, visible }) {
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
-
-      {/* Logo */}
-      <div style={{
-        height: 64, flexShrink: 0,
-        display: 'flex', alignItems: 'center',
-        padding: `0 ${expanded ? 16 : 0}px`,
-        justifyContent: expanded ? 'flex-start' : 'center',
-        borderBottom: 'none',
-        gap: 10, overflow: 'hidden',
-        transition: 'padding 220ms ease',
-      }}>
-        <WaveLogo size={32} />
-        <div style={{
-          opacity: expanded ? 1 : 0,
-          transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
-          transition: 'opacity 160ms ease, transform 160ms ease',
-          whiteSpace: 'nowrap',
-          pointerEvents: expanded ? 'auto' : 'none',
-        }}>
-          <div style={{
-            fontSize: 16, fontWeight: 800,
-            background: 'linear-gradient(135deg, var(--action), var(--info-light))',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>مَوج</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, WebkitTextFillColor: 'var(--text-muted)' }}>إدارة المبيعات</div>
-        </div>
-      </div>
-
-      {/* Nav items */}
-      <nav style={{ flex:1, padding:'8px', display:'flex', flexDirection:'column', gap:2, overflowY:'auto', overflowX:'hidden' }}>
-        {ALL_NAV.map(item => (
-          <SidebarNavBtn
-            key={item.id} item={item}
-            active={page === item.id}
-            expanded={expanded}
-            onClick={() => onNavigate(item.id)}
-          />
-        ))}
-      </nav>
-
-      {/* Bottom controls */}
-      <div style={{ padding:'8px', borderTop:'none', display:'flex', flexDirection:'column', gap:2, flexShrink:0 }}>
-        <SidebarBottomBtn onClick={toggleTheme} label={dark ? 'فاتح' : 'داكن'} expanded={expanded}>
-          {dark ? <IcSun size={16}/> : <IcMoon size={16}/>}
-        </SidebarBottomBtn>
-
-        {/* User info — only when expanded */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px', borderRadius: 'var(--r-md)',
-          overflow: 'hidden',
-          opacity: expanded ? 1 : 0,
-          maxHeight: expanded ? 60 : 0,
-          transition: 'opacity 160ms ease, max-height 220ms ease',
-        }}>
-          <UserAvatar name={user?.name} size={28} />
-          <div style={{ minWidth:0, flex:1, overflow:'hidden' }}>
-            <div style={{ fontSize:12, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-              {user?.name || 'المستخدم'}
-            </div>
-            <div style={{ fontSize:10, color:'var(--text-muted)' }}>
-              {user?.role === 'admin' ? 'مدير النظام' : user?.role || 'مستخدم'}
-            </div>
-          </div>
-        </div>
-
-        <SidebarBottomBtn onClick={onLogout} label="خروج" expanded={expanded} danger>
-          <IcLogout size={16}/>
-        </SidebarBottomBtn>
-      </div>
+    <div
+      className="desktop-dock"
+      style={{
+        position:'fixed',
+        bottom: visible ? 16 : -80,
+        left:'50%', transform:'translateX(-50%)',
+        zIndex:200,
+        display:'none',
+        alignItems:'center', gap:2,
+        padding:'6px 12px',
+        background: dark ? 'rgba(6,10,20,0.88)' : 'rgba(255,255,255,0.88)',
+        backdropFilter:'blur(24px) saturate(1.8)',
+        WebkitBackdropFilter:'blur(24px) saturate(1.8)',
+        borderRadius:999,
+        border:`1px solid ${dark ? 'rgba(30,58,95,0.5)' : 'rgba(0,0,0,0.08)'}`,
+        boxShadow: dark
+          ? '0 8px 32px rgba(3,9,20,0.6), inset 0 1px 0 rgba(255,255,255,0.04)'
+          : '0 4px 24px rgba(15,14,12,0.12)',
+        transition:'bottom 300ms cubic-bezier(0.4,0,0.2,1)',
+      }}
+    >
+      {PRIMARY_NAV.map(item => (
+        <DockItem key={item.id} item={item} active={page === item.id} onClick={() => onNavigate(item.id)} />
+      ))}
+      <DockDivider />
+      {SECONDARY_NAV.map(item => (
+        <DockItem key={item.id} item={item} active={page === item.id} onClick={() => onNavigate(item.id)} />
+      ))}
+      <DockDivider />
+      {TERTIARY_NAV.map(item => (
+        <DockItem key={item.id} item={item} active={page === item.id} onClick={() => onNavigate(item.id)} />
+      ))}
+      <DockDivider />
+      <DockControl onClick={toggleTheme} title={dark ? 'وضع فاتح' : 'وضع داكن'}>
+        {dark ? <IcSun size={16}/> : <IcMoon size={16}/>}
+      </DockControl>
+      <DockControl onClick={onLogout} title="خروج" danger>
+        <IcLogout size={16}/>
+      </DockControl>
     </div>
   )
 }
 
-function SidebarNavBtn({ item, active, expanded, onClick }) {
+function DockItem({ item, active, onClick }) {
   const Icon = item.icon
-  const [pressed, setPressed] = useState(false)
+  const [hovered, setHovered] = useState(false)
 
   return (
-    <button
-      onClick={onClick}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      onMouseLeave={() => setPressed(false)}
-      title={!expanded ? item.label : undefined}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '9px 10px',
-        borderRadius: 'var(--r-md)', border: 'none',
-        background: active ? 'var(--action-soft)' : 'transparent',
-        color: active ? 'var(--action)' : 'var(--text-muted)',
-        fontWeight: active ? 700 : 500,
-        fontSize: 13, cursor: 'pointer',
-        width: '100%', textAlign: 'right',
-        fontFamily: 'inherit',
-        justifyContent: expanded ? 'flex-start' : 'center',
-        WebkitTapHighlightColor: 'transparent',
-        transform: pressed ? 'scale(0.97)' : 'scale(1)',
-        transition: 'background 120ms ease, color 120ms ease, transform 100ms ease',
-        position: 'relative', whiteSpace: 'nowrap', overflow: 'hidden',
-      }}
+    <div
+      style={{ position:'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {/* Active indicator line on right */}
+      <button
+        onClick={onClick}
+        title={item.label}
+        style={{
+          width:40, height:40,
+          borderRadius:'var(--r-md)',
+          border:'none',
+          background: active ? 'var(--action-soft)' : 'transparent',
+          color: active ? 'var(--action)' : 'var(--text-muted)',
+          cursor:'pointer',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          transition:'all 180ms cubic-bezier(0.34,1.56,0.64,1)',
+          transform: hovered && !active ? 'translateY(-4px) scale(1.15)' : 'scale(1)',
+          WebkitTapHighlightColor:'transparent',
+        }}
+      >
+        <Icon size={18} strokeWidth={active ? 2.2 : 1.8}/>
+      </button>
+
+      {/* Active indicator dot */}
       {active && (
         <div style={{
-          position: 'absolute', right: 0, top: '50%',
-          transform: 'translateY(-50%)',
-          width: 3, height: 18,
-          borderRadius: '0 3px 3px 0',
-          background: 'var(--action)',
-          boxShadow: '0 0 8px var(--action-glow)',
+          position:'absolute', bottom:-1, left:'50%',
+          transform:'translateX(-50%)',
+          width:4, height:4, borderRadius:'50%',
+          background:'var(--action)',
+          boxShadow:'0 0 8px var(--action-glow)',
         }}/>
       )}
 
-      <div style={{ flexShrink:0, display:'flex' }}>
-        <Icon size={17} strokeWidth={active ? 2.2 : 1.8}/>
-      </div>
-
-      <span style={{
-        opacity: expanded ? 1 : 0,
-        transform: expanded ? 'translateX(0)' : 'translateX(-4px)',
-        transition: 'opacity 140ms ease, transform 140ms ease',
-        overflow: 'hidden', textOverflow: 'ellipsis',
-      }}>
-        {item.label}
-      </span>
-    </button>
+      {/* Hover tooltip */}
+      {hovered && (
+        <div style={{
+          position:'absolute', bottom:'100%', left:'50%',
+          transform:'translateX(-50%)',
+          marginBottom:8,
+          padding:'5px 10px',
+          background:'var(--bg-surface)',
+          borderRadius:'var(--r-sm)',
+          boxShadow:'var(--float-shadow)',
+          border:'1px solid var(--border)',
+          fontSize:11, fontWeight:700,
+          color:'var(--text)',
+          whiteSpace:'nowrap',
+          pointerEvents:'none',
+          animation:'dockTooltip 120ms ease both',
+        }}>
+          {item.label}
+        </div>
+      )}
+    </div>
   )
 }
 
-function SidebarBottomBtn({ onClick, label, expanded, danger, children }) {
-  const [pressed, setPressed] = useState(false)
-  const [hov, setHov] = useState(false)
+function DockDivider() {
+  return (
+    <div style={{
+      width:1, height:20,
+      background:'var(--border)',
+      margin:'0 4px',
+      opacity:0.5,
+      flexShrink:0,
+    }}/>
+  )
+}
+
+function DockControl({ onClick, title, children, danger }) {
+  const [hovered, setHovered] = useState(false)
 
   return (
     <button
-      onClick={onClick}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      onMouseLeave={() => { setPressed(false); setHov(false) }}
-      onMouseEnter={() => setHov(true)}
+      onClick={onClick} title={title}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '9px 10px',
-        borderRadius: 'var(--r-md)', border: 'none',
-        background: danger
-          ? (hov ? 'rgba(239,68,68,0.08)' : 'transparent')
-          : (hov ? 'var(--bg-hover)' : 'transparent'),
+        width:36, height:36,
+        borderRadius:'var(--r-md)',
+        border:'none',
+        background: hovered
+          ? (danger ? 'rgba(239,68,68,0.12)' : 'var(--bg-hover)')
+          : 'transparent',
         color: danger ? 'var(--danger)' : 'var(--text-muted)',
-        cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-        width: '100%',
-        justifyContent: expanded ? 'flex-start' : 'center',
-        WebkitTapHighlightColor: 'transparent',
-        transform: pressed ? 'scale(0.97)' : 'scale(1)',
-        transition: 'background 120ms ease, transform 100ms ease',
+        cursor:'pointer',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        transition:'all 120ms ease',
+        WebkitTapHighlightColor:'transparent',
       }}
     >
-      <div style={{ flexShrink:0, display:'flex' }}>{children}</div>
-      <span style={{
-        opacity: expanded ? 1 : 0,
-        transform: expanded ? 'translateX(0)' : 'translateX(-4px)',
-        transition: 'opacity 140ms ease, transform 140ms ease',
-        whiteSpace: 'nowrap',
-      }}>{label}</span>
+      {children}
     </button>
   )
 }
 
 /* ══════════════════════════════════════════════════
-   MOBILE NAVIGATION
+   MOBILE DOCK — Floating pill with wave center button
+   4 primary items + center wave button
+   Wave button opens a grid of remaining nav items
 ══════════════════════════════════════════════════ */
-function MobileNav({ page, onNavigate, moreOpen, onMoreToggle, dark, toggleTheme, user, onLogout }) {
+function MobileDock({ page, onNavigate, dark, toggleTheme, user, onLogout, moreOpen, setMoreOpen, visible }) {
   return (
     <>
-      {/* Bottom bar */}
+      {/* Bottom floating dock pill */}
       <nav
-        className="mobile-flex"
+        className="mobile-dock"
         style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          height: 60,
-          background: 'var(--sidebar-bg)',
-          borderTop: 'none',
-          display: 'none',
-          zIndex: 150,
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          position:'fixed',
+          bottom: visible ? 12 : -80,
+          left:12, right:12,
+          height:56,
+          zIndex:200,
+          display:'none',
+          alignItems:'center',
+          justifyContent:'space-around',
+          padding:'0 4px',
+          background: dark ? 'rgba(6,10,20,0.92)' : 'rgba(255,255,255,0.92)',
+          backdropFilter:'blur(24px) saturate(1.8)',
+          WebkitBackdropFilter:'blur(24px) saturate(1.8)',
+          borderRadius:999,
+          border:`1px solid ${dark ? 'rgba(30,58,95,0.4)' : 'rgba(0,0,0,0.06)'}`,
+          boxShadow: dark
+            ? '0 8px 32px rgba(3,9,20,0.6)'
+            : '0 4px 24px rgba(15,14,12,0.12)',
+          transition:'bottom 300ms cubic-bezier(0.4,0,0.2,1)',
+          paddingBottom:'env(safe-area-inset-bottom, 0px)',
         }}
       >
-        {PRIMARY_NAV.map(item => (
-          <MobileTabBtn key={item.id} item={item} active={page === item.id} onNavigate={onNavigate}/>
+        {/* First 2 primary items */}
+        {PRIMARY_NAV.slice(0, 2).map(item => (
+          <MobileDockBtn key={item.id} item={item} active={page === item.id} onNavigate={onNavigate}/>
         ))}
-        <MobileMoreBtn active={moreOpen} onToggle={onMoreToggle}/>
+
+        {/* Center wave button */}
+        <WaveButton active={moreOpen} onToggle={() => setMoreOpen(o => !o)}/>
+
+        {/* Last 2 primary items */}
+        {PRIMARY_NAV.slice(2).map(item => (
+          <MobileDockBtn key={item.id} item={item} active={page === item.id} onNavigate={onNavigate}/>
+        ))}
       </nav>
 
-      {/* More sheet */}
-      <div
-        className="mobile-only"
-        style={{
-          position: 'fixed',
-          bottom: moreOpen ? 60 : '-100%',
-          left: 0, right: 0,
-          background: 'var(--modal-bg)',
-          boxShadow: 'var(--modal-shadow)',
-          borderRadius: '20px 20px 0 0',
-          zIndex: 150,
-          display: 'none',
-          flexDirection: 'column',
-          transition: 'bottom 240ms cubic-bezier(0.4,0,0.2,1)',
-          maxHeight: '75vh',
-          overflowY: 'auto',
-        }}
-      >
-        {/* Handle */}
-        <div style={{
-          width: 36, height: 4, borderRadius: 99,
-          background: 'var(--border-strong)',
-          margin: '12px auto 0',
-          flexShrink: 0,
-        }}/>
-
-        {/* Sheet header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 16px',
-          borderBottom: 'none',
-          flexShrink: 0,
-        }}>
-          {/* User */}
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <UserAvatar name={user?.name} size={32}/>
-            <div>
-              <div style={{ fontSize:13, fontWeight:700 }}>{user?.name || 'المستخدم'}</div>
-              <div style={{ fontSize:11, color:'var(--text-muted)' }}>
-                {user?.role === 'admin' ? 'مدير النظام' : 'مستخدم'}
+      {/* ── Wave menu — grid of remaining items ── */}
+      {moreOpen && (
+        <div
+          className="mobile-wave-menu"
+          style={{
+            position:'fixed',
+            bottom:82,
+            left:16, right:16,
+            zIndex:200,
+            background: dark ? 'rgba(8,15,28,0.96)' : 'rgba(255,255,255,0.96)',
+            backdropFilter:'blur(32px) saturate(1.8)',
+            WebkitBackdropFilter:'blur(32px) saturate(1.8)',
+            borderRadius:'var(--r-xl)',
+            border:`1px solid ${dark ? 'rgba(30,58,95,0.4)' : 'rgba(0,0,0,0.06)'}`,
+            boxShadow: dark
+              ? '0 16px 48px rgba(3,9,20,0.7)'
+              : '0 8px 32px rgba(15,14,12,0.15)',
+            padding:16,
+            animation:'waveMenuIn 200ms var(--ease-out) both',
+          }}
+        >
+          {/* User + controls header */}
+          <div style={{
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            marginBottom:16, paddingBottom:12,
+            borderBottom:'1px solid var(--border)',
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <UserAvatar name={user?.name} size={32}/>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700 }}>{user?.name || 'المستخدم'}</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)' }}>
+                  {user?.role === 'admin' ? 'مدير النظام' : 'مستخدم'}
+                </div>
               </div>
+            </div>
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={toggleTheme} style={{
+                width:36, height:36, borderRadius:'var(--r-md)',
+                border:'none', background:'var(--bg-hover)',
+                color:'var(--text-muted)', cursor:'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                WebkitTapHighlightColor:'transparent',
+              }}>
+                {dark ? <IcSun size={16}/> : <IcMoon size={16}/>}
+              </button>
+              <button onClick={() => setMoreOpen(false)} style={{
+                width:36, height:36, borderRadius:'var(--r-md)',
+                border:'none', background:'var(--bg-hover)',
+                color:'var(--text-muted)', cursor:'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                WebkitTapHighlightColor:'transparent',
+              }}>
+                <IcClose size={16}/>
+              </button>
             </div>
           </div>
 
-          {/* Controls */}
-          <div style={{ display:'flex', gap:8 }}>
-            <IconSheetBtn onClick={toggleTheme}>
-              {dark ? <IcSun size={16}/> : <IcMoon size={16}/>}
-            </IconSheetBtn>
-            <IconSheetBtn onClick={onMoreToggle}>
-              <IcClose size={16}/>
-            </IconSheetBtn>
+          {/* Nav grid — 3 columns */}
+          <div style={{
+            display:'grid', gridTemplateColumns:'repeat(3, 1fr)',
+            gap:8, marginBottom:12,
+          }}>
+            {[...SECONDARY_NAV, ...TERTIARY_NAV].map(item => {
+              const Icon = item.icon
+              const active = page === item.id
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  style={{
+                    display:'flex', flexDirection:'column',
+                    alignItems:'center', justifyContent:'center',
+                    gap:6, padding:'14px 8px',
+                    borderRadius:'var(--r-md)',
+                    border: active ? '1.5px solid var(--action)' : '1.5px solid transparent',
+                    background: active ? 'var(--action-soft)' : 'var(--bg-hover)',
+                    color: active ? 'var(--action)' : 'var(--text-sec)',
+                    cursor:'pointer', fontFamily:'inherit',
+                    fontSize:11, fontWeight: active ? 700 : 500,
+                    WebkitTapHighlightColor:'transparent',
+                    transition:'all 120ms ease',
+                  }}
+                >
+                  <Icon size={20} strokeWidth={active ? 2.2 : 1.8}/>
+                  {item.label}
+                </button>
+              )
+            })}
           </div>
-        </div>
 
-        {/* Nav list */}
-        <div style={{ padding: '8px 0' }}>
-          {MORE_NAV.map(item => {
-            const Icon = item.icon
-            const active = page === item.id
-            return (
-              <SheetNavRow
-                key={item.id}
-                active={active}
-                onClick={() => onNavigate(item.id)}
-                icon={<Icon size={18} strokeWidth={active ? 2.2 : 1.8}/>}
-                label={item.label}
-              />
-            )
-          })}
-        </div>
-
-        {/* Logout */}
-        <div style={{ padding: '0 12px 24px' }}>
+          {/* Logout */}
           <button
             onClick={onLogout}
             style={{
-              display: 'flex', alignItems: 'center', justifyContent:'center', gap: 8,
-              padding: '12px 16px',
-              borderRadius: 'var(--r-md)', border: 'none',
-              background: 'rgba(239,68,68,0.06)',
-              color: 'var(--danger)',
-              cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 13, fontWeight: 700,
-              width: '100%',
-              WebkitTapHighlightColor: 'transparent',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              gap:8, padding:'12px', width:'100%',
+              borderRadius:'var(--r-md)', border:'none',
+              background:'rgba(239,68,68,0.06)',
+              color:'var(--danger)',
+              cursor:'pointer', fontFamily:'inherit',
+              fontSize:13, fontWeight:700,
+              WebkitTapHighlightColor:'transparent',
             }}
           >
             <IcLogout size={16}/> تسجيل الخروج
           </button>
         </div>
-      </div>
+      )}
     </>
   )
 }
 
-function MobileTabBtn({ item, active, onNavigate }) {
+function MobileDockBtn({ item, active, onNavigate }) {
   const Icon = item.icon
   const [pressed, setPressed] = useState(false)
 
@@ -471,34 +507,39 @@ function MobileTabBtn({ item, active, onNavigate }) {
       onTouchStart={() => setPressed(true)}
       onTouchEnd={() => setPressed(false)}
       style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 3,
-        background: 'none', border: 'none',
+        flex:1, display:'flex', flexDirection:'column',
+        alignItems:'center', justifyContent:'center', gap:2,
+        background:'none', border:'none',
         color: active ? 'var(--action)' : 'var(--text-muted)',
-        cursor: 'pointer', fontFamily: 'inherit',
-        WebkitTapHighlightColor: 'transparent',
-        transform: pressed ? 'scale(0.88)' : 'scale(1)',
-        transition: 'color 120ms ease, transform 100ms ease',
-        position: 'relative', paddingTop: 6,
+        cursor:'pointer', fontFamily:'inherit',
+        transform: pressed ? 'scale(0.85)' : 'scale(1)',
+        transition:'all 120ms ease',
+        WebkitTapHighlightColor:'transparent',
+        padding:'6px 0',
+        position:'relative',
       }}
     >
-      {/* Active pill indicator */}
+      <Icon size={20} strokeWidth={active ? 2.2 : 1.8}/>
+      <span style={{ fontSize:9, fontWeight: active ? 700 : 400 }}>{item.label}</span>
       {active && (
         <div style={{
-          position: 'absolute', top: 0,
-          width: 24, height: 3,
-          borderRadius: '0 0 3px 3px',
-          background: 'var(--action)',
-          boxShadow: '0 2px 8px var(--action-glow)',
+          position:'absolute', bottom:0,
+          width:16, height:2,
+          borderRadius:2,
+          background:'var(--action)',
+          boxShadow:'0 0 8px var(--action-glow)',
         }}/>
       )}
-      <Icon size={20} strokeWidth={active ? 2.2 : 1.8}/>
-      <span style={{ fontSize: 10, fontWeight: active ? 700 : 400 }}>{item.label}</span>
     </button>
   )
 }
 
-function MobileMoreBtn({ active, onToggle }) {
+/* ══════════════════════════════════════════════════
+   WAVE BUTTON — Center dock button
+   Wave logo when closed, X when open
+   Gradient background with glow
+══════════════════════════════════════════════════ */
+function WaveButton({ active, onToggle }) {
   const [pressed, setPressed] = useState(false)
 
   return (
@@ -507,81 +548,35 @@ function MobileMoreBtn({ active, onToggle }) {
       onTouchStart={() => setPressed(true)}
       onTouchEnd={() => setPressed(false)}
       style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 3,
-        background: 'none', border: 'none',
-        color: active ? 'var(--action)' : 'var(--text-muted)',
-        cursor: 'pointer', fontFamily: 'inherit',
-        WebkitTapHighlightColor: 'transparent',
-        transform: pressed ? 'scale(0.88)' : 'scale(1)',
-        transition: 'color 120ms ease, transform 100ms ease',
-        position: 'relative', paddingTop: 6,
+        width:48, height:48,
+        borderRadius:'50%',
+        border:'none',
+        background: active
+          ? 'linear-gradient(135deg, var(--danger), #cc1020)'
+          : 'linear-gradient(135deg, var(--action), var(--action-deep))',
+        color: active ? '#fff' : '#031a13',
+        cursor:'pointer',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        boxShadow: active
+          ? '0 4px 16px rgba(239,68,68,0.4)'
+          : '0 4px 16px var(--action-glow)',
+        transform: pressed ? 'scale(0.88)' : active ? 'rotate(45deg)' : 'scale(1)',
+        transition:'all 200ms cubic-bezier(0.4,0,0.2,1)',
+        WebkitTapHighlightColor:'transparent',
+        margin:'0 4px',
+        flexShrink:0,
       }}
     >
-      {active && (
-        <div style={{
-          position: 'absolute', top: 0,
-          width: 24, height: 3,
-          borderRadius: '0 0 3px 3px',
-          background: 'var(--action)',
-          boxShadow: '0 2px 8px var(--action-glow)',
-        }}/>
+      {active ? (
+        <IcClose size={20} strokeWidth={2.5}/>
+      ) : (
+        <svg width={22} height={22} viewBox="0 0 32 32" fill="none">
+          <path d="M4 20c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+          <path d="M4 14c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity="0.4"/>
+        </svg>
       )}
-      <IcMoreGrid size={20}/>
-      <span style={{ fontSize: 10, fontWeight: active ? 700 : 400 }}>المزيد</span>
-    </button>
-  )
-}
-
-function SheetNavRow({ active, onClick, icon, label }) {
-  const [pressed, setPressed] = useState(false)
-
-  return (
-    <button
-      onClick={onClick}
-      onTouchStart={() => setPressed(true)}
-      onTouchEnd={() => setPressed(false)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 14,
-        padding: '13px 16px',
-        width: '100%', border: 'none',
-        background: active ? 'var(--action-soft)' : (pressed ? 'var(--bg-hover)' : 'transparent'),
-        color: active ? 'var(--action)' : 'var(--text-sec)',
-        cursor: 'pointer', fontFamily: 'inherit',
-        fontSize: 14, fontWeight: active ? 700 : 500,
-        textAlign: 'right',
-        WebkitTapHighlightColor: 'transparent',
-        transform: pressed ? 'scale(0.98)' : 'scale(1)',
-        transition: 'background 100ms ease, transform 80ms ease',
-      }}
-    >
-      <div style={{ flexShrink: 0 }}>{icon}</div>
-      <span>{label}</span>
-      {active && (
-        <div style={{
-          marginRight: 'auto', marginLeft: 0,
-          width: 6, height: 6, borderRadius: '50%',
-          background: 'var(--action)',
-        }}/>
-      )}
-    </button>
-  )
-}
-
-function IconSheetBtn({ onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        width: 36, height: 36,
-        borderRadius: 'var(--r-md)', border: 'none',
-        background: 'var(--bg-hover)', color: 'var(--text-sec)',
-        cursor: 'pointer', display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-        WebkitTapHighlightColor: 'transparent',
-      }}
-    >
-      {children}
     </button>
   )
 }
@@ -589,38 +584,13 @@ function IconSheetBtn({ onClick, children }) {
 /* ══════════════════════════════════════════════════
    SHARED COMPONENTS
 ══════════════════════════════════════════════════ */
-function WaveLogo({ size = 32 }) {
-  return (
-    <div style={{
-      width: size, height: size,
-      borderRadius: 'var(--r-sm)',
-      background: 'var(--action-soft)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0,
-    }}>
-      <svg width={size * .6} height={size * .6} viewBox="0 0 32 32" fill="none">
-        <defs>
-          <linearGradient id="wLogo" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#00e4b8"/>
-            <stop offset="1" stopColor="#3b82f6"/>
-          </linearGradient>
-        </defs>
-        <path d="M4 20c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
-          stroke="url(#wLogo)" strokeWidth="2.5" strokeLinecap="round"/>
-        <path d="M4 14c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
-          stroke="url(#wLogo)" strokeWidth="2.5" strokeLinecap="round" opacity="0.4"/>
-      </svg>
-    </div>
-  )
-}
-
 function UserAvatar({ name, size = 32 }) {
   return (
     <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg, var(--action), var(--info))',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontWeight: 800, fontSize: size * .4, color: '#031a13',
+      width:size, height:size, borderRadius:'50%', flexShrink:0,
+      background:'linear-gradient(135deg, var(--action), var(--info))',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      fontWeight:800, fontSize:size * .4, color:'#031a13',
     }}>
       {name?.[0] || 'م'}
     </div>

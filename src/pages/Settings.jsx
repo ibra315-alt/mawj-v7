@@ -181,7 +181,7 @@ export default function Settings({ theme, toggleTheme }) {
                   : 'transparent',
                 cursor:'pointer', fontFamily:'inherit',
                 transition:'all 0.15s ease', textAlign:'right',
-                borderRight: active ? '2.5px solid var(--teal)' : '2.5px solid transparent',
+                borderInlineStart: active ? '2.5px solid var(--teal)' : '2.5px solid transparent',
               }}>
                 <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
                 <div style={{minWidth:0,flex:1}}>

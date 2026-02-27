@@ -180,7 +180,7 @@ export default function App() {
       {/* ── PWA install — compact square, bottom-left above AI btn ── */}
       {installPrompt && (
         <div style={{
-          position: 'fixed', bottom: 136, left: 16, zIndex: 9999,
+          position: 'fixed', bottom: 140, left: 16, zIndex: 9999,
           width: 174,
           background: 'var(--bg-surface)',
           boxShadow: 'var(--float-shadow)',
@@ -232,10 +232,11 @@ export default function App() {
         {renderPage()}
       </Layout>
 
-      {/* ── Floating AI button ── */}
+      {/* ── Floating AI button — positioned above dock ── */}
       <button
         onClick={() => setShowAI(p => !p)}
         title="موج AI"
+        className="ai-float-btn"
         style={{
           position: 'fixed', bottom: 80, left: 16, zIndex: 700,
           width: 44, height: 44, borderRadius: '50%',

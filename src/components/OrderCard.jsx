@@ -77,7 +77,7 @@ export default function OrderCard({ order, statuses, onView, onEdit, onStatusCha
         <div>
           <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{formatCurrency(order.total)}</span>
           {order.discount_amount > 0 && (
-            <span style={{ fontSize: 11, color: 'var(--red)', marginRight: 6 }}>خصم {formatCurrency(order.discount_amount)}</span>
+            <span style={{ fontSize: 11, color: 'var(--red)', marginInlineStart: 6 }}>خصم {formatCurrency(order.discount_amount)}</span>
           )}
         </div>
         {order.profit !== undefined && (

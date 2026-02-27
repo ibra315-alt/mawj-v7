@@ -316,7 +316,7 @@ function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }
     <div
       style={{
         background:'var(--bg-surface)', borderRadius:'var(--r-lg)',
-        borderRight:`3px solid ${isRepl ? '#f59e0b' : status.color}`,
+        borderInlineStart:`3px solid ${isRepl ? '#f59e0b' : status.color}`,
         boxShadow:'var(--card-shadow)', overflow:'hidden',
         transition:'box-shadow 150ms, transform 150ms',
         display:'flex', flexDirection:'column',
@@ -709,7 +709,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
                     }}
                   >
                     {p.name}
-                    {!isSingle && <span style={{ fontSize:10, marginRight:5, opacity:0.6 }}>{isSelected ? '▲' : '▼'}</span>}
+                    {!isSingle && <span style={{ fontSize:10, marginInlineStart:5, opacity:0.6 }}>{isSelected ? '▲' : '▼'}</span>}
                   </button>
                 )
               })}
@@ -753,7 +753,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
                     <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
                       <div style={{ flex:1 }}>
                         <span style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{item.name}</span>
-                        {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginRight:5 }}>({item.size})</span>}
+                        {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:5 }}>({item.size})</span>}
                       </div>
                       <input type="number" value={item.price}
                         onChange={e => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
@@ -918,8 +918,8 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
                     <span style={{ fontWeight:700, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</span>
                     <div>
                       <span style={{ fontSize:13, fontWeight:700 }}>{item.name}</span>
-                      {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginRight:5 }}>({item.size})</span>}
-                      <span style={{ fontSize:12, color:'var(--text-muted)', marginRight:4 }}>× {item.qty}</span>
+                      {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:5 }}>({item.size})</span>}
+                      <span style={{ fontSize:12, color:'var(--text-muted)', marginInlineStart:4 }}>× {item.qty}</span>
                     </div>
                   </div>
                   {item.engraving_notes && (

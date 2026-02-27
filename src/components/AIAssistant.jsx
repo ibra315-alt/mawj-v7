@@ -425,7 +425,7 @@ export default function AIAssistant({ onClose, onNavigate }) {
             <div style={{fontWeight:800,fontSize:12.5,color:'var(--text)'}}>مساعد موج</div>
             <div style={{fontSize:9,color:context?'var(--teal)':'#f59e0b',marginTop:1}}>
               {context ? '● بيانات محمّلة' : '○ جارٍ التحميل...'}
-              {hasActions && <span style={{color:'#f59e0b',marginRight:6}}>· إجراءات مفعّلة</span>}
+              {hasActions && <span style={{color:'#f59e0b',marginInlineStart:6}}>· إجراءات مفعّلة</span>}
             </div>
             <div style={{fontSize:8,color:'var(--text-muted)',marginTop:1,direction:'ltr',textAlign:'left'}}>
               {model.startsWith('claude')?'Anthropic':model.startsWith('gemini')?'Google':model.startsWith('gpt')?'OpenAI':model.startsWith('deepseek')?'DeepSeek':'AI'} · {model.split('-').slice(0,3).join('-')}
