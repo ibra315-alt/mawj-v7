@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════
-   MAWJ SERVICE WORKER v10 — Maison Sky Blue
+   MAWJ SERVICE WORKER v11 — Force Sky Blue Light
    Strategy:
    - App shell (HTML/JS/CSS): Cache first, update in background
    - Fonts / static assets:   Cache forever (hashed filenames)
@@ -7,9 +7,9 @@
    - Navigation fallback:     Serve /index.html offline
 ══════════════════════════════════════════════════ */
 
-const CACHE_SHELL   = 'mawj-shell-v10'
-const CACHE_ASSETS  = 'mawj-assets-v10'
-const CACHE_FONTS   = 'mawj-fonts-v10'
+const CACHE_SHELL   = 'mawj-shell-v11'
+const CACHE_ASSETS  = 'mawj-assets-v11'
+const CACHE_FONTS   = 'mawj-fonts-v11'
 const ALL_CACHES    = [CACHE_SHELL, CACHE_ASSETS, CACHE_FONTS]
 
 self.addEventListener('install', e => {
