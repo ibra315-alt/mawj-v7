@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════
-   MAWJ SERVICE WORKER v11 — Force Sky Blue Light
+   MAWJ SERVICE WORKER v12 — Liquid Glass
    Strategy:
    - App shell (HTML/JS/CSS): Cache first, update in background
    - Fonts / static assets:   Cache forever (hashed filenames)
@@ -7,16 +7,16 @@
    - Navigation fallback:     Serve /index.html offline
 ══════════════════════════════════════════════════ */
 
-const CACHE_SHELL   = 'mawj-shell-v11'
-const CACHE_ASSETS  = 'mawj-assets-v11'
-const CACHE_FONTS   = 'mawj-fonts-v11'
+const CACHE_SHELL   = 'mawj-shell-v12'
+const CACHE_ASSETS  = 'mawj-assets-v12'
+const CACHE_FONTS   = 'mawj-fonts-v12'
 const ALL_CACHES    = [CACHE_SHELL, CACHE_ASSETS, CACHE_FONTS]
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_SHELL)
       .then(c => c.addAll(['/', '/index.html', '/manifest.json', '/logo.png', '/offline.html']))
-    // Note: skipWaiting() is triggered by the app via postMessage, not auto-called
+      .then(() => self.skipWaiting())
   )
 })
 
