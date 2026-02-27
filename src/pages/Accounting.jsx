@@ -90,7 +90,7 @@ export default function Accounting() {
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'9px 6px', borderRadius:8, border:'none', cursor:'pointer',
             background: tab === t.id ? 'linear-gradient(135deg,var(--action),var(--action-deep))' : 'transparent',
-            color: tab === t.id ? '#050c1a' : 'var(--text-muted)',
+            color: tab === t.id ? '#ffffff' : 'var(--text-muted)',
             fontWeight: tab === t.id ? 800 : 500, fontSize:12,
             fontFamily:'inherit', transition:'all 0.2s', whiteSpace:'nowrap',
           }}>{t.label}</button>
@@ -257,8 +257,8 @@ function PnLTab({ orders, expenses, monthFilter, setMonthFilter }) {
       {/* Net Profit highlight */}
       <div style={{
         padding:'16px 20px', borderRadius:'var(--r-md)',
-        background: netProfit >= 0 ? 'rgba(56,189,248,0.08)' : 'rgba(239,68,68,0.08)',
-        border:`2px solid ${netProfit >= 0 ? 'rgba(56,189,248,0.3)' : 'rgba(239,68,68,0.3)'}`,
+        background: netProfit >= 0 ? 'rgba(var(--action-rgb),0.08)' : 'rgba(var(--danger-rgb),0.08)',
+        border:`2px solid ${netProfit >= 0 ? 'rgba(var(--action-rgb),0.3)' : 'rgba(var(--danger-rgb),0.3)'}`,
         display:'flex', justifyContent:'space-between', alignItems:'center',
         marginBottom:12,
       }}>
@@ -312,8 +312,8 @@ function CashTab({ orders, remittances, expenses, capital, withdrawals }) {
       {/* Cash balance highlight */}
       <div style={{
         padding:'20px', borderRadius:'var(--r-md)',
-        background: estimatedCash >= 0 ? 'rgba(56,189,248,0.06)' : 'rgba(239,68,68,0.06)',
-        border:`2px solid ${estimatedCash >= 0 ? 'rgba(56,189,248,0.25)' : 'rgba(239,68,68,0.25)'}`,
+        background: estimatedCash >= 0 ? 'rgba(var(--action-rgb),0.06)' : 'rgba(var(--danger-rgb),0.06)',
+        border:`2px solid ${estimatedCash >= 0 ? 'rgba(var(--action-rgb),0.25)' : 'rgba(var(--danger-rgb),0.25)'}`,
         marginBottom:16, textAlign:'center',
       }}>
         <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:6 }}>الرصيد التقديري في البنك</div>
@@ -346,12 +346,12 @@ function CashTab({ orders, remittances, expenses, capital, withdrawals }) {
 
       {/* Pending */}
       {expectedFromHayyak > 0 && (
-        <div style={{ padding:'14px 16px', background:'rgba(245,158,11,0.06)', border:'1.5px solid rgba(245,158,11,0.25)', borderRadius:'var(--r-md)', marginBottom:12 }}>
-          <div style={{ fontWeight:700, fontSize:13, color:'#f59e0b', marginBottom:8 }}>⏳ في الطريق من حياك</div>
+        <div style={{ padding:'14px 16px', background:'rgba(var(--warning-rgb),0.06)', border:'1.5px solid rgba(var(--warning-rgb),0.25)', borderRadius:'var(--r-md)', marginBottom:12 }}>
+          <div style={{ fontWeight:700, fontSize:13, color:'var(--warning)', marginBottom:8 }}>⏳ في الطريق من حياك</div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 20px' }}>
             <span style={{ fontSize:13, color:'var(--text-sec)' }}>COD المعلق: <b style={{ fontFamily:'Inter,sans-serif', color:'var(--text)' }}>{formatCurrency(pendingCOD)}</b></span>
             <span style={{ fontSize:13, color:'var(--text-sec)' }}>رسوم حياك: <b style={{ fontFamily:'Inter,sans-serif', color:'var(--danger)' }}>−{formatCurrency(pendingHayyakFees)}</b></span>
-            <span style={{ fontSize:14, fontWeight:800, color:'#f59e0b', fontFamily:'Inter,sans-serif' }}>المتوقع: {formatCurrency(expectedFromHayyak)}</span>
+            <span style={{ fontSize:14, fontWeight:800, color:'var(--warning)', fontFamily:'Inter,sans-serif' }}>المتوقع: {formatCurrency(expectedFromHayyak)}</span>
           </div>
         </div>
       )}
@@ -414,7 +414,7 @@ function PartnersTab({ orders, expenses, capital, withdrawals, partners }) {
           return (
             <div key={partner.id} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', overflow:'hidden', boxShadow:'var(--card-shadow)' }}>
               {/* Header */}
-              <div style={{ padding:'14px 16px', background: netEquity >= 0 ? 'rgba(56,189,248,0.06)' : 'rgba(239,68,68,0.06)', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ padding:'14px 16px', background: netEquity >= 0 ? 'rgba(var(--action-rgb),0.06)' : 'rgba(var(--danger-rgb),0.06)', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <div>
                   <div style={{ fontWeight:800, fontSize:16 }}>{partner.name}</div>
                   <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{partner.share}% من الأرباح</div>
@@ -499,7 +499,7 @@ function MonthlyTab({ orders, expenses, remittances }) {
     { key:'grossProfit', label:'ربح إجمالي',     fmt: formatCurrency,           color: v => v >= 0 ? 'var(--action)' : 'var(--danger)' },
     { key:'opExpenses',  label:'مصاريف',         fmt: v => `−${formatCurrency(v)}`, color: () => 'var(--danger)' },
     { key:'netProfit',   label:'صافي الربح',     fmt: formatCurrency,           color: v => v >= 0 ? 'var(--action)' : 'var(--danger)' },
-    { key:'cashReceived',label:'نقد مستلم',      fmt: formatCurrency,           color: () => '#10b981' },
+    { key:'cashReceived',label:'نقد مستلم',      fmt: formatCurrency,           color: () => 'var(--success)' },
   ]
 
   if (rows.length === 0) {

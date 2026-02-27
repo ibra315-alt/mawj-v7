@@ -111,8 +111,8 @@ export default function Login({ theme, toggleTheme }) {
               <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
                 <defs>
                   <linearGradient id="llg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#38BDF8"/>
-                    <stop offset="1" stopColor="#3b82f6"/>
+                    <stop stopColor="var(--action)"/>
+                    <stop offset="1" stopColor="var(--info)"/>
                   </linearGradient>
                 </defs>
                 <path d="M4 20c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
@@ -242,7 +242,7 @@ export default function Login({ theme, toggleTheme }) {
             {error && (
               <div style={{
                 padding: '10px 14px',
-                background: 'rgba(239,68,68,0.08)',
+                background: 'rgba(var(--danger-rgb),0.08)',
                 borderRadius: 'var(--r-sm)',
                 fontSize: 12, color: 'var(--danger-light)',
                 textAlign: 'center',

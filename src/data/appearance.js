@@ -75,14 +75,15 @@ export async function loadAndApplyAppearance(userId) {
     let prefs=await Settings.get(userKey)
     if(!prefs) prefs=await Settings.get('global_appearance')
 
-    // Force-migrate v1: detect any old design prefs and reset to new defaults.
-    // Old prefs had accent=#00e4b8, or mode=dark with no _v2 marker.
-    // After migration, we set _v2=true so this only runs once.
-    if (prefs && !prefs._v2) {
-      prefs = { ...DEFAULT_PREFS, _v2: true }
+    // Force-migrate v3: overwrite ALL old saved prefs with new sky-blue / light defaults.
+    // v1/v2 migrations failed to fully propagate. v3 nukes everything and starts fresh.
+    if (!prefs || !prefs._v3) {
+      prefs = { ...DEFAULT_PREFS, _v3: true }
       const key = userId ? `appearance_${userId}` : 'appearance'
       Settings.set(key, prefs).catch(() => {})
       Settings.set('global_appearance', prefs).catch(() => {})
+      // Also clear any user-specific keys that may have old values
+      Settings.clearCache()
     }
 
     applyAppearance(prefs||DEFAULT_PREFS)

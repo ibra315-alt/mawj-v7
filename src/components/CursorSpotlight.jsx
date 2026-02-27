@@ -43,7 +43,7 @@ export default function CursorSpotlight() {
         pointerEvents: 'none',
         zIndex: 9998,
         willChange: 'transform',
-        background: 'radial-gradient(circle, rgba(56,189,248,0.055) 0%, rgba(56,189,248,0.015) 50%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(var(--action-rgb),0.055) 0%, rgba(var(--action-rgb),0.015) 50%, transparent 70%)',
       }}
     />
   )

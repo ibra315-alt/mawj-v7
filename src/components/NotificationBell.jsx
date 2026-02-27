@@ -10,7 +10,7 @@ import { formatCurrency } from '../data/constants'
 const TYPE = {
   order:  { icon:'', color:'var(--action)',     bg:'var(--action-faint)',  label:'طلب جديد' },
   update: { icon:'', color:'var(--info-light)', bg:'var(--info-faint)',    label:'تحديث' },
-  alert:  { icon:'️', color:'var(--warning)',    bg:'rgba(245,158,11,0.06)', label:'تنبيه' },
+  alert:  { icon:'️', color:'var(--warning)',    bg:'rgba(var(--warning-rgb),0.06)', label:'تنبيه' },
 }
 
 export default function NotificationBell() {

@@ -237,12 +237,12 @@ export function filterByMonth(items, dateField, key) {
 // ── ORDER STATUS CONFIG ─────────────────────────────────
 
 export const ORDER_STATUSES = [
-  { id: 'new',           label: 'جديد',    color: '#7c3aed', bg: 'rgba(124,58,237,0.1)', next: 'ready' },
-  { id: 'ready',         label: 'جاهز',    color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', next: 'with_hayyak' },
-  { id: 'with_hayyak',   label: 'مع حياك', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', next: 'delivered' },
-  { id: 'delivered',     label: 'مسلّم',   color: '#10b981', bg: 'rgba(16,185,129,0.1)', next: null },
-  { id: 'not_delivered', label: 'لم يتم',  color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  next: null },
-  { id: 'cancelled',     label: 'ملغي',    color: '#6b7280', bg: 'rgba(107,114,128,0.1)', next: null },
+  { id: 'new',           label: 'جديد',    color: 'var(--action)', bg: 'rgba(var(--action-rgb),0.1)', next: 'ready' },
+  { id: 'ready',         label: 'جاهز',    color: 'var(--warning)', bg: 'rgba(var(--warning-rgb),0.1)', next: 'with_hayyak' },
+  { id: 'with_hayyak',   label: 'مع حياك', color: 'var(--info)', bg: 'rgba(var(--info-rgb),0.1)', next: 'delivered' },
+  { id: 'delivered',     label: 'مسلّم',   color: 'var(--success)', bg: 'rgba(var(--success-rgb),0.1)', next: null },
+  { id: 'not_delivered', label: 'لم يتم',  color: 'var(--danger)', bg: 'rgba(var(--danger-rgb),0.1)',  next: null },
+  { id: 'cancelled',     label: 'ملغي',    color: 'var(--text-muted)', bg: 'rgba(107,114,128,0.1)', next: null },
 ]
 
 export const PIPELINE_STATUSES = ORDER_STATUSES.filter(s => s.id !== 'cancelled')

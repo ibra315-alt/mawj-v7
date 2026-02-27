@@ -183,7 +183,7 @@ export default function Settings({ theme, toggleTheme, user }) {
                 width:'100%', display:'flex', alignItems:'center', gap:10,
                 padding:'10px 12px', borderRadius:'var(--r-md)',
                 border:'none', background: active
-                  ? 'linear-gradient(135deg,rgba(56,189,248,0.12),rgba(37,99,235,0.08))'
+                  ? 'linear-gradient(135deg,rgba(var(--action-rgb),0.12),rgba(var(--info-rgb),0.08))'
                   : 'transparent',
                 cursor:'pointer', fontFamily:'inherit',
                 transition:'all 0.15s ease', textAlign:'right',
@@ -212,7 +212,7 @@ export default function Settings({ theme, toggleTheme, user }) {
           }}>
             <div style={{
               width:44,height:44,borderRadius:'var(--r-md)',
-              background:'linear-gradient(135deg,rgba(56,189,248,0.15),rgba(37,99,235,0.10))',
+              background:'linear-gradient(135deg,rgba(var(--action-rgb),0.15),rgba(var(--info-rgb),0.10))',
               border:'1px solid var(--action-soft)',
               display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
             }}>{active?.icon}</div>
@@ -239,7 +239,7 @@ export default function Settings({ theme, toggleTheme, user }) {
           }} className="mawj-card mawj-card-hover">
             <div style={{
               width:44,height:44,borderRadius:'var(--r-md)',flexShrink:0,
-              background:'linear-gradient(135deg,rgba(56,189,248,0.10),rgba(37,99,235,0.08))',
+              background:'linear-gradient(135deg,rgba(var(--action-rgb),0.10),rgba(var(--info-rgb),0.08))',
               border:'none',
               display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
             }}>{s.icon}</div>
@@ -302,11 +302,11 @@ function ControlBtn({ active, onClick, children, style={}, title }) {
     <button onClick={onClick} title={title} style={{
       minWidth:36,height:36,padding:'0 10px',borderRadius:'var(--r-md)',
       border:`2px solid ${active?'var(--action)':'var(--border)'}`,
-      background: active ? 'linear-gradient(135deg,rgba(56,189,248,0.12),rgba(37,99,235,0.08))' : 'var(--bg-hover)',
+      background: active ? 'linear-gradient(135deg,rgba(var(--action-rgb),0.12),rgba(var(--info-rgb),0.08))' : 'var(--bg-hover)',
       color: active?'var(--action)':'var(--text-sec)',
       cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:13,
       transition:'all 0.15s ease',
-      boxShadow: active ? '0 0 12px rgba(56,189,248,0.2)' : 'none',
+      boxShadow: active ? '0 0 12px rgba(var(--action-rgb),0.2)' : 'none',
       ...style,
     }}>{children}</button>
   )
@@ -329,8 +329,8 @@ function InfoBox({ children, color='var(--action)', icon='' }) {
   return (
     <div style={{
       padding:'12px 16px',
-      background:`rgba(${color==='var(--action)'?'0,228,184':'37,99,235'},0.06)`,
-      border:`1px solid ${color==='var(--action)'?'rgba(56,189,248,0.18)':'rgba(37,99,235,0.18)'}`,
+      background:`rgba(${color==='var(--action)'?'56,189,248':'37,99,235'},0.06)`,
+      border:`1px solid ${color==='var(--action)'?'rgba(var(--action-rgb),0.18)':'rgba(var(--info-rgb),0.18)'}`,
       borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',
       display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
     }}>
@@ -681,7 +681,7 @@ function TeamTab() {
               </Select>
             </div>
             {formError && (
-              <div style={{color:'var(--red)',fontSize:12,padding:'8px 12px',background:'rgba(239,68,68,0.08)',borderRadius:'var(--r-md)',border:'1px solid rgba(239,68,68,0.2)'}}>{formError}</div>
+              <div style={{color:'var(--red)',fontSize:12,padding:'8px 12px',background:'rgba(var(--danger-rgb),0.08)',borderRadius:'var(--r-md)',border:'1px solid rgba(var(--danger-rgb),0.2)'}}>{formError}</div>
             )}
             <Btn loading={saving} onClick={addUser} style={{alignSelf:'flex-start'}}>
               <IcPlus size={14}/> إضافة المستخدم
@@ -763,7 +763,7 @@ function TeamTab() {
 
       <div style={{
         padding:'12px 16px',
-        background:'rgba(37,99,235,0.06)',border:'1px solid rgba(37,99,235,0.14)',
+        background:'rgba(var(--info-rgb),0.06)',border:'1px solid rgba(var(--info-rgb),0.14)',
         borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',
         display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
       }}>
@@ -796,7 +796,7 @@ function WhatsAppTab({ templates, updateData }) {
         <div style={{fontSize:13,color:'var(--text-sec)',marginBottom:10,fontWeight:600}}>المتغيرات المتاحة:</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
           {VARS.map(v => (
-            <code key={v} style={{fontSize:11,padding:'4px 10px',background:'rgba(37,99,235,0.08)',border:'none',borderRadius:999,color:'var(--action)',cursor:'pointer'}}
+            <code key={v} style={{fontSize:11,padding:'4px 10px',background:'rgba(var(--info-rgb),0.08)',border:'none',borderRadius:999,color:'var(--action)',cursor:'pointer'}}
               onClick={()=>{ navigator.clipboard?.writeText(v); toast('تم نسخ المتغير') }}
             >{v}</code>
           ))}
@@ -1174,7 +1174,7 @@ function PartnersTab({ partners, updateData }) {
           ))}
         </div>
         {totalShare !== 100 && list.length > 0 && (
-          <div style={{padding:'8px 12px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.25)',borderRadius:'var(--r-md)',fontSize:12,color:'#f59e0b',marginBottom:12}}>
+          <div style={{padding:'8px 12px',background:'rgba(var(--warning-rgb),0.08)',border:'1px solid rgba(var(--warning-rgb),0.25)',borderRadius:'var(--r-md)',fontSize:12,color:'var(--warning)',marginBottom:12}}>
             ⚠️ مجموع الحصص {totalShare}% — يجب أن يساوي 100%
           </div>
         )}
@@ -1230,7 +1230,7 @@ const AI_MODELS = [
   {
     id: 'claude-haiku-4-5-20251001', provider: 'anthropic', providerLabel: 'Anthropic',
     name: 'Claude Haiku 4.5',
-    tag: 'اقتصادي', tagBg: 'rgba(56,189,248,0.12)', tagColor: 'var(--action)',
+    tag: 'اقتصادي', tagBg: 'rgba(var(--action-rgb),0.12)', tagColor: 'var(--action)',
     priceIn: 0.80, priceOut: 4.00, estimate: '~0.01 د.إ / رسالة',
     speed: 'سريع جداً', quality: '★★★☆☆',
     via: 'supabase_proxy',
@@ -1261,7 +1261,7 @@ const AI_MODELS = [
   {
     id: 'gemini-2.5-flash', provider: 'google', providerLabel: 'Google',
     name: 'Gemini 2.5 Flash',
-    tag: 'الأرخص', tagBg: 'rgba(16,185,129,0.12)', tagColor: '#10b981',
+    tag: 'الأرخص', tagBg: 'rgba(var(--success-rgb),0.12)', tagColor: 'var(--success)',
     priceIn: 0.15, priceOut: 0.60, estimate: '~0.003 د.إ / رسالة',
     speed: 'سريع جداً', quality: '★★★☆☆',
     via: 'google_api', keyField: 'google_api_key',
@@ -1274,7 +1274,7 @@ const AI_MODELS = [
   {
     id: 'gemini-2.5-pro', provider: 'google', providerLabel: 'Google',
     name: 'Gemini 2.5 Pro',
-    tag: 'قوي', tagBg: 'rgba(59,130,246,0.12)', tagColor: '#3b82f6',
+    tag: 'قوي', tagBg: 'rgba(var(--info-rgb),0.12)', tagColor: 'var(--info)',
     priceIn: 1.25, priceOut: 10.00, estimate: '~0.02 د.إ / رسالة',
     speed: 'متوسط', quality: '★★★★☆',
     via: 'google_api', keyField: 'google_api_key',
@@ -1288,7 +1288,7 @@ const AI_MODELS = [
   {
     id: 'gpt-4o-mini', provider: 'openai', providerLabel: 'OpenAI',
     name: 'GPT-4o Mini',
-    tag: 'اقتصادي', tagBg: 'rgba(56,189,248,0.12)', tagColor: 'var(--action)',
+    tag: 'اقتصادي', tagBg: 'rgba(var(--action-rgb),0.12)', tagColor: 'var(--action)',
     priceIn: 0.15, priceOut: 0.60, estimate: '~0.003 د.إ / رسالة',
     speed: 'سريع جداً', quality: '★★★☆☆',
     via: 'openai_api', keyField: 'openai_api_key',
@@ -1315,7 +1315,7 @@ const AI_MODELS = [
   {
     id: 'deepseek-chat', provider: 'deepseek', providerLabel: 'DeepSeek',
     name: 'DeepSeek V3',
-    tag: 'أرخص خيار', tagBg: 'rgba(245,158,11,0.12)', tagColor: '#f59e0b',
+    tag: 'أرخص خيار', tagBg: 'rgba(var(--warning-rgb),0.12)', tagColor: 'var(--warning)',
     priceIn: 0.27, priceOut: 1.10, estimate: '~0.005 د.إ / رسالة',
     speed: 'سريع', quality: '★★★☆☆',
     via: 'deepseek_api', keyField: 'deepseek_api_key',
@@ -1385,7 +1385,7 @@ function AITab({ ai_settings, updateData }) {
 
       {/* Save banner */}
       {dirty && (
-        <div style={{padding:'12px 16px',background:'rgba(56,189,248,0.08)',border:'1.5px solid rgba(56,189,248,0.3)',borderRadius:'var(--r-md)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div style={{padding:'12px 16px',background:'rgba(var(--action-rgb),0.08)',border:'1.5px solid rgba(var(--action-rgb),0.3)',borderRadius:'var(--r-md)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <span style={{fontSize:13,color:'var(--text-sec)'}}>لديك تغييرات غير محفوظة</span>
           <Btn size="sm" onClick={save}><IcSave size={13}/> حفظ الإعدادات</Btn>
         </div>
@@ -1404,8 +1404,8 @@ function AITab({ ai_settings, updateData }) {
                 return (
                   <button key={m.id} onClick={()=>set('model', m.id)} style={{
                     width:'100%', textAlign:'right', padding:'12px 14px',
-                    background: isActive ? 'linear-gradient(135deg,rgba(56,189,248,0.10),rgba(124,58,237,0.08))' : 'var(--bg-hover)',
-                    border: isActive ? '1.5px solid rgba(56,189,248,0.35)' : '1.5px solid transparent',
+                    background: isActive ? 'linear-gradient(135deg,rgba(var(--action-rgb),0.10),rgba(124,58,237,0.08))' : 'var(--bg-hover)',
+                    border: isActive ? '1.5px solid rgba(var(--action-rgb),0.35)' : '1.5px solid transparent',
                     borderRadius:'var(--r-md)', cursor:'pointer', fontFamily:'inherit',
                     transition:'all 0.15s ease',
                   }}>
@@ -1413,7 +1413,7 @@ function AITab({ ai_settings, updateData }) {
                       <div style={{display:'flex',alignItems:'center',gap:8}}>
                         <span style={{fontWeight:800,fontSize:13,color: isActive?'var(--action)':'var(--text)'}}>{m.name}</span>
                         <span style={{fontSize:10,padding:'2px 7px',borderRadius:999,background:m.tagBg,color:m.tagColor,fontWeight:700}}>{m.tag}</span>
-                        {m.via==='supabase_proxy' && <span style={{fontSize:9,padding:'1px 5px',borderRadius:999,background:'rgba(56,189,248,0.08)',color:'var(--action)',fontWeight:700}}>بدون مفتاح</span>}
+                        {m.via==='supabase_proxy' && <span style={{fontSize:9,padding:'1px 5px',borderRadius:999,background:'rgba(var(--action-rgb),0.08)',color:'var(--action)',fontWeight:700}}>بدون مفتاح</span>}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:10}}>
                         <span style={{fontSize:10,color:'var(--text-muted)'}}>{m.speed}</span>
@@ -1556,8 +1556,8 @@ function AITab({ ai_settings, updateData }) {
             <div>
               <div style={{display:'flex',alignItems:'center',gap:6}}>
                 <span style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{item.label}</span>
-                {!item.safe && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(239,68,68,0.1)',color:'var(--danger)',fontWeight:700}}>يعدّل البيانات</span>}
-                {item.safe  && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(56,189,248,0.1)',color:'var(--action)',fontWeight:700}}>آمن</span>}
+                {!item.safe && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(var(--danger-rgb),0.1)',color:'var(--danger)',fontWeight:700}}>يعدّل البيانات</span>}
+                {item.safe  && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(var(--action-rgb),0.1)',color:'var(--action)',fontWeight:700}}>آمن</span>}
               </div>
               <div style={{fontSize:11,color:'var(--text-muted)'}}>{item.desc}</div>
             </div>
@@ -1565,7 +1565,7 @@ function AITab({ ai_settings, updateData }) {
               onClick={()=>set('actions_enabled.'+item.key, !form.actions_enabled?.[item.key])}
               style={{
                 width:44,height:24,borderRadius:999,border:'none',cursor:'pointer',flexShrink:0,
-                background: form.actions_enabled?.[item.key] ? (item.safe?'var(--action)':'#f59e0b') : 'var(--bg-hover)',
+                background: form.actions_enabled?.[item.key] ? (item.safe?'var(--action)':'var(--warning)') : 'var(--bg-hover)',
                 transition:'background 150ms',position:'relative',
               }}
             >

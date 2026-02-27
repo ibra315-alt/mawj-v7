@@ -17,7 +17,7 @@ import { IcPlus, IcDelete, IcEdit } from '../components/Icons'
 const PARTNERS = ['إبراهيم', 'إحسان']
 
 const CAPITAL_TYPES = [
-  { value: 'opening',    label: 'رصيد افتتاحي',  color: '#a78bfa' },
+  { value: 'opening',    label: 'رصيد افتتاحي',  color: 'var(--info-light)' },
   { value: 'deposit',    label: 'إيداع رأس مال',  color: 'var(--action)' },
   { value: 'withdrawal', label: 'سحب رأس مال',    color: 'var(--danger)' },
 ]
@@ -35,7 +35,7 @@ function typeLabel(type) {
 function typeColor(type) {
   if (type === 'deposit' || type === 'opening') return 'var(--action)'
   if (type === 'withdrawal') return 'var(--danger)'
-  return '#f59e0b'
+  return 'var(--warning)'
 }
 
 export default function Partners() {
@@ -142,12 +142,12 @@ export default function Partners() {
           borderRadius:'var(--r-md)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12,
         }}>
           <div>
-            <div style={{ fontWeight:800, fontSize:14, color:'#a78bfa', marginBottom:4 }}>📋 لم يتم تسجيل رأس المال بعد</div>
+            <div style={{ fontWeight:800, fontSize:14, color:'var(--info-light)', marginBottom:4 }}>📋 لم يتم تسجيل رأس المال بعد</div>
             <div style={{ fontSize:12, color:'var(--text-muted)' }}>
               أضف الرصيد الافتتاحي لكل شريك حتى تظهر حقوق الملكية بشكل صحيح في صفحة المحاسبة.
             </div>
           </div>
-          <Btn onClick={() => openForm('capital')} style={{ background:'rgba(167,139,250,0.15)', color:'#a78bfa', border:'1px solid rgba(167,139,250,0.3)' }}>
+          <Btn onClick={() => openForm('capital')} style={{ background:'rgba(167,139,250,0.15)', color:'var(--info-light)', border:'1px solid rgba(167,139,250,0.3)' }}>
             إضافة رصيد افتتاحي
           </Btn>
         </div>
@@ -162,7 +162,7 @@ export default function Partners() {
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
             flex:1, padding:'9px 8px', borderRadius:8, border:'none', cursor:'pointer',
             background: activeTab===t.id ? 'linear-gradient(135deg,var(--action),var(--info-light))' : 'transparent',
-            color: activeTab===t.id ? '#050c1a' : 'var(--text-muted)',
+            color: activeTab===t.id ? '#ffffff' : 'var(--text-muted)',
             fontWeight: activeTab===t.id ? 800 : 500, fontSize:13, fontFamily:'inherit',
             transition:'all 120ms',
           }}>{t.label}</button>
@@ -184,7 +184,7 @@ export default function Partners() {
                   {/* Header */}
                   <div style={{
                     padding:'16px', display:'flex', alignItems:'center', justifyContent:'space-between',
-                    background: s.netEquity >= 0 ? 'rgba(56,189,248,0.05)' : 'rgba(239,68,68,0.05)',
+                    background: s.netEquity >= 0 ? 'rgba(var(--action-rgb),0.05)' : 'rgba(var(--danger-rgb),0.05)',
                     borderBottom:'1px solid var(--border)',
                   }}>
                     <div style={{ display:'flex', alignItems:'center', gap:12 }}>
@@ -192,7 +192,7 @@ export default function Partners() {
                         width:44, height:44, borderRadius:'50%', flexShrink:0,
                         background:'linear-gradient(135deg,var(--info-light),var(--action))',
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        fontWeight:900, fontSize:20, color:'#050c1a',
+                        fontWeight:900, fontSize:20, color:'#ffffff',
                       }}>{name[0]}</div>
                       <div>
                         <div style={{ fontWeight:800, fontSize:16 }}>{name}</div>
@@ -210,7 +210,7 @@ export default function Partners() {
                   {/* Breakdown rows */}
                   <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:6 }}>
                     {s.opening > 0 && (
-                      <Row label="رصيد افتتاحي" value={`+${formatCurrency(s.opening)}`} color="#a78bfa"/>
+                      <Row label="رصيد افتتاحي" value={`+${formatCurrency(s.opening)}`} color="var(--info-light)"/>
                     )}
                     {s.capitalIn > 0 && (
                       <Row label="إيداعات" value={`+${formatCurrency(s.capitalIn)}`} color="var(--action)"/>
@@ -223,7 +223,7 @@ export default function Partners() {
                       <Row label="مسحوبات ورواتب" value={`−${formatCurrency(s.totalWith)}`} color="var(--danger)"/>
                     )}
                     {s.unreimbursed > 0 && (
-                      <Row label="مصاريف غير مردودة" value={`+${formatCurrency(s.unreimbursed)}`} color="#f59e0b"/>
+                      <Row label="مصاريف غير مردودة" value={`+${formatCurrency(s.unreimbursed)}`} color="var(--warning)"/>
                     )}
                   </div>
                 </div>

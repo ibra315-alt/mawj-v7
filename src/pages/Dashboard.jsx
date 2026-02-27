@@ -12,9 +12,9 @@ import Sparkline from '../components/Sparkline'
 ══════════════════════════════════════════════════ */
 
 const STATUS_COLORS = {
-  new:'#7c3aed', ready:'#f59e0b', with_hayyak:'#3b82f6',
-  delivered:'#10b981', not_delivered:'#ef4444', cancelled:'#6b7280',
-  returned:'#6b7280',
+  new:'var(--info)', ready:'var(--warning)', with_hayyak:'var(--info)',
+  delivered:'var(--success)', not_delivered:'var(--danger)', cancelled:'var(--text-muted)',
+  returned:'var(--text-muted)',
 }
 const STATUS_LABELS = {
   new:'جديد', ready:'جاهز', with_hayyak:'مع حياك',
@@ -152,15 +152,15 @@ export default function Dashboard({ onNavigate }) {
         onClick={() => onNavigate('orders')}
         style={{
           position:'relative', overflow:'hidden', cursor:'pointer',
-          background:'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(59,130,246,0.06) 50%, rgba(139,92,246,0.04) 100%)',
-          border:'1px solid rgba(56,189,248,0.15)',
+          background:'linear-gradient(135deg, rgba(var(--action-rgb),0.08) 0%, rgba(var(--info-rgb),0.06) 50%, rgba(139,92,246,0.04) 100%)',
+          border:'1px solid rgba(var(--action-rgb),0.15)',
           borderRadius:'var(--r-xl)',
           padding:'28px 24px 20px',
           marginBottom:20,
           transition:'border-color 200ms ease',
         }}
-        onMouseEnter={e => e.currentTarget.style.borderColor='rgba(56,189,248,0.35)'}
-        onMouseLeave={e => e.currentTarget.style.borderColor='rgba(56,189,248,0.15)'}
+        onMouseEnter={e => e.currentTarget.style.borderColor='rgba(var(--action-rgb),0.35)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor='rgba(var(--action-rgb),0.15)'}
       >
         {/* Wave SVG background */}
         <svg
@@ -181,8 +181,8 @@ export default function Dashboard({ onNavigate }) {
           />
           <defs>
             <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#38BDF8"/>
-              <stop offset="50%" stopColor="#3B82F6"/>
+              <stop offset="0%" stopColor="var(--action)"/>
+              <stop offset="50%" stopColor="var(--info)"/>
               <stop offset="100%" stopColor="#8B5CF6"/>
             </linearGradient>
           </defs>
@@ -203,8 +203,8 @@ export default function Dashboard({ onNavigate }) {
               <span style={{
                 padding:'4px 10px', borderRadius:999,
                 fontSize:12, fontWeight:800,
-                background: (data?.revChange ?? 0) >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-                color: (data?.revChange ?? 0) >= 0 ? '#10b981' : 'var(--danger)',
+                background: (data?.revChange ?? 0) >= 0 ? 'rgba(var(--success-rgb),0.12)' : 'rgba(var(--danger-rgb),0.12)',
+                color: (data?.revChange ?? 0) >= 0 ? 'var(--success)' : 'var(--danger)',
               }}>
                 {data?.revChange !== null ? `${(data?.revChange ?? 0) >= 0 ? '↑' : '↓'} ${Math.abs(data?.revChange || 0)}%` : '—'}
               </span>
@@ -218,7 +218,7 @@ export default function Dashboard({ onNavigate }) {
         {/* 14-day sparkline in the hero */}
         {sparkData.revenue.length > 1 && (
           <div style={{ position:'relative', zIndex:1, marginTop:16, opacity:0.8 }}>
-            <Sparkline data={sparkData.revenue} color="#38BDF8" width={340} height={40}/>
+            <Sparkline data={sparkData.revenue} color="var(--action)" width={340} height={40}/>
           </div>
         )}
       </div>
@@ -233,28 +233,28 @@ export default function Dashboard({ onNavigate }) {
           label="إيرادات الشهر"
           value={formatCurrency(data?.revenue || 0)}
           pct={Math.min(100, data?.revenueProgress || 0)}
-          color="#38BDF8"
+          color="var(--action)"
           sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% مقارنة بالشهر السابق` : 'أول شهر'}
           sparkData={sparkData.revenue}
-          sparkColor="#38BDF8"
+          sparkColor="var(--action)"
         />
         <RingCard
           label="معدل التسليم"
           value={`${data?.deliveryRate || 0}%`}
           pct={data?.deliveryRate || 0}
-          color="#3B82F6"
+          color="var(--info)"
           sub={`${data?.delivered || 0} مسلّم من ${data?.totalOrders || 0}`}
           sparkData={sparkData.orders}
-          sparkColor="#3B82F6"
+          sparkColor="var(--info)"
         />
         <RingCard
           label="هامش الربح"
           value={`${data?.profitMargin || 0}%`}
           pct={Math.max(0, Math.min(100, data?.profitMargin || 0))}
-          color={data?.profitMargin >= 0 ? '#10b981' : '#ef4444'}
+          color={data?.profitMargin >= 0 ? 'var(--success)' : 'var(--danger)'}
           sub={formatCurrency(data?.netProfit || 0) + ' صافي'}
           sparkData={sparkData.profit}
-          sparkColor="#10b981"
+          sparkColor="var(--success)"
         />
       </div>
 
@@ -263,9 +263,9 @@ export default function Dashboard({ onNavigate }) {
         className="stats-grid-4"
       >
         <MiniStat label="طلبات الشهر" value={data?.totalOrders || 0} color="var(--action)" icon={<IcOrders size={16}/>} />
-        <MiniStat label="قيد المعالجة" value={data?.inProgress || 0} color="#f59e0b" icon={<IcPackage size={16}/>} />
+        <MiniStat label="قيد المعالجة" value={data?.inProgress || 0} color="var(--warning)" icon={<IcPackage size={16}/>} />
         <MiniStat label="لم يتم" value={data?.notDelivered || 0} color="var(--danger)" icon={<IcTruck size={16}/>} />
-        <MiniStat label="المصاريف" value={formatCurrency(data?.opExpenses || 0)} color="#f59e0b" icon={<IcExpenses size={16}/>} />
+        <MiniStat label="المصاريف" value={formatCurrency(data?.opExpenses || 0)} color="var(--warning)" icon={<IcExpenses size={16}/>} />
       </div>
 
       {/* ── Pending COD alert ── */}
@@ -275,24 +275,24 @@ export default function Dashboard({ onNavigate }) {
           style={{
             display:'flex', alignItems:'center', gap:12, padding:'14px 16px',
             marginBottom:20, cursor:'pointer',
-            background:'rgba(245,158,11,0.06)',
-            border:'1.5px solid rgba(245,158,11,0.25)',
+            background:'rgba(var(--warning-rgb),0.06)',
+            border:'1.5px solid rgba(var(--warning-rgb),0.25)',
             borderRadius:'var(--r-lg)',
             transition:'background 120ms',
           }}
-          onMouseEnter={e => e.currentTarget.style.background='rgba(245,158,11,0.10)'}
-          onMouseLeave={e => e.currentTarget.style.background='rgba(245,158,11,0.06)'}
+          onMouseEnter={e => e.currentTarget.style.background='rgba(var(--warning-rgb),0.10)'}
+          onMouseLeave={e => e.currentTarget.style.background='rgba(var(--warning-rgb),0.06)'}
         >
-          <IcAlert size={20} style={{ color:'#f59e0b', flexShrink:0 }}/>
+          <IcAlert size={20} style={{ color:'var(--warning)', flexShrink:0 }}/>
           <div style={{ flex:1 }}>
-            <div style={{ fontWeight:800, fontSize:14, color:'#f59e0b' }}>
+            <div style={{ fontWeight:800, fontSize:14, color:'var(--warning)' }}>
               {formatCurrency(data.pendingCOD)} COD معلق
             </div>
             <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
               {data.pendingCount} طلب • صافي المتوقع: {formatCurrency(data.pendingNet)}
             </div>
           </div>
-          <IcArrowLeft size={16} style={{ color:'#f59e0b', flexShrink:0 }}/>
+          <IcArrowLeft size={16} style={{ color:'var(--warning)', flexShrink:0 }}/>
         </div>
       )}
 
@@ -326,7 +326,7 @@ export default function Dashboard({ onNavigate }) {
             title="قيد المعالجة"
             count={inProgressOrders.length}
             icon={<IcPackage size={16}/>}
-            color="#f59e0b"
+            color="var(--warning)"
             onAction={() => onNavigate('orders')}
             actionLabel="عرض الكل"
           >
@@ -344,9 +344,9 @@ export default function Dashboard({ onNavigate }) {
       }}>
         {[
           { icon:<IcPlus size={16}/>,     label:'طلب جديد',   color:'var(--action)',      action: () => onNavigate('orders') },
-          { icon:<IcExpenses size={16}/>,  label:'مصروف جديد', color:'#f59e0b',           action: () => onNavigate('expenses') },
+          { icon:<IcExpenses size={16}/>,  label:'مصروف جديد', color:'var(--warning)',           action: () => onNavigate('expenses') },
           { icon:<IcTruck size={16}/>,     label:'حياك',       color:'var(--info-light)',  action: () => onNavigate('hayyak') },
-          { icon:<IcTrendUp size={16}/>,   label:'المحاسبة',   color:'#10b981',           action: () => onNavigate('accounting') },
+          { icon:<IcTrendUp size={16}/>,   label:'المحاسبة',   color:'var(--success)',           action: () => onNavigate('accounting') },
         ].map(a => (
           <button key={a.label} onClick={a.action} style={{
             display:'flex', flexDirection:'column', alignItems:'center', gap:6,
@@ -506,7 +506,7 @@ function StreamCard({ title, count, icon, color, children, onAction, actionLabel
    STREAM ORDER ROW — Single order in activity stream
 ═══════════════════════════════════════════════════ */
 function StreamOrderRow({ order }) {
-  const color = STATUS_COLORS[order.status] || '#6b7280'
+  const color = STATUS_COLORS[order.status] || 'var(--text-muted)'
 
   return (
     <div style={{

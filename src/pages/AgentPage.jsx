@@ -523,9 +523,9 @@ ${TOOL_DEFS}`
 // ── Styling ───────────────────────────────────────────────────
 const S = {
   card:  { background: 'var(--bg-glass)', border: '1.5px solid var(--glass-border)', borderRadius: 'var(--r-lg,16px)', padding: 16 },
-  step:  (st) => ({ display: 'flex', gap: 10, padding: '10px 12px', background: st === 'done' ? 'rgba(56,189,248,0.05)' : st === 'error' ? 'rgba(239,68,68,0.05)' : st === 'confirm' ? 'rgba(245,158,11,0.08)' : 'var(--bg-hover)', border: `1px solid ${st === 'done' ? 'rgba(56,189,248,0.2)' : st === 'error' ? 'rgba(239,68,68,0.2)' : st === 'confirm' ? 'rgba(245,158,11,0.2)' : 'var(--bg-border)'}`, borderRadius: 'var(--r-md,12px)', transition: 'all 0.2s' }),
+  step:  (st) => ({ display: 'flex', gap: 10, padding: '10px 12px', background: st === 'done' ? 'rgba(var(--action-rgb),0.05)' : st === 'error' ? 'rgba(var(--danger-rgb),0.05)' : st === 'confirm' ? 'rgba(var(--warning-rgb),0.08)' : 'var(--bg-hover)', border: `1px solid ${st === 'done' ? 'rgba(var(--action-rgb),0.2)' : st === 'error' ? 'rgba(var(--danger-rgb),0.2)' : st === 'confirm' ? 'rgba(var(--warning-rgb),0.2)' : 'var(--bg-border)'}`, borderRadius: 'var(--r-md,12px)', transition: 'all 0.2s' }),
   pill:  (color) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, background: `${color}18`, color }),
-  btn:   (v = 'primary') => ({ padding: '8px 16px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', background: v === 'primary' ? 'linear-gradient(135deg,var(--action),var(--action-deep))' : v === 'danger' ? 'rgba(239,68,68,0.1)' : v === 'confirm' ? 'rgba(245,158,11,0.15)' : 'var(--bg-hover)', color: v === 'primary' ? '#050c1a' : v === 'danger' ? 'var(--danger,#ef4444)' : v === 'confirm' ? '#f59e0b' : 'var(--text)', transition: 'all 0.15s' }),
+  btn:   (v = 'primary') => ({ padding: '8px 16px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', background: v === 'primary' ? 'linear-gradient(135deg,var(--action),var(--action-deep))' : v === 'danger' ? 'rgba(var(--danger-rgb),0.1)' : v === 'confirm' ? 'rgba(var(--warning-rgb),0.15)' : 'var(--bg-hover)', color: v === 'primary' ? '#ffffff' : v === 'danger' ? 'var(--danger,#ef4444)' : v === 'confirm' ? 'var(--warning)' : 'var(--text)', transition: 'all 0.15s' }),
   input: { padding: '9px 13px', background: 'var(--bg-hover)', border: '1.5px solid var(--input-border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box' },
 }
 
@@ -821,7 +821,7 @@ export default function AgentPage({ user, onNavigate }) {
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,var(--action),var(--action-deep))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 0 24px rgba(56,189,248,0.3)' }}>🤖</div>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,var(--action),var(--action-deep))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 0 24px rgba(var(--action-rgb),0.3)' }}>🤖</div>
           <div>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: 'var(--text)' }}>وكيل موج v2</h2>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>20 أداة · ذاكرة دائمة · واتساب · تحليل النظام</div>
@@ -829,12 +829,12 @@ export default function AgentPage({ user, onNavigate }) {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {aiCfg?.model && <span style={S.pill('var(--action)')}>{aiCfg.model.split('-').slice(0, 3).join('-')}</span>}
-          <span style={S.pill(dryRun ? '#f59e0b' : 'var(--text-muted)')}>{dryRun ? '🧪 تجريبي' : '⚡ حي'}</span>
+          <span style={S.pill(dryRun ? 'var(--warning)' : 'var(--text-muted)')}>{dryRun ? '🧪 تجريبي' : '⚡ حي'}</span>
           <button onClick={() => setDryRun(d => !d)} style={{ ...S.btn(''), fontSize: 11, padding: '5px 10px' }}>
             {dryRun ? 'إلغاء التجريب' : 'وضع تجريبي'}
           </button>
           {undoStack.length > 0 && <button onClick={handleUndo} style={{ ...S.btn('danger'), fontSize: 11, padding: '5px 10px' }}>↩️ تراجع</button>}
-          {running && <span style={{ ...S.pill('#f59e0b'), animation: 'pulse 1s ease infinite' }}>⚡ يعمل...</span>}
+          {running && <span style={{ ...S.pill('var(--warning)'), animation: 'pulse 1s ease infinite' }}>⚡ يعمل...</span>}
         </div>
       </div>
 
@@ -852,7 +852,7 @@ export default function AgentPage({ user, onNavigate }) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, padding: 20 }}>
           <div style={{ ...S.card, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {dryRun && (
-              <div style={{ padding: '8px 12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--r-sm)', fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>
+              <div style={{ padding: '8px 12px', background: 'rgba(var(--warning-rgb),0.1)', border: '1px solid rgba(var(--warning-rgb),0.3)', borderRadius: 'var(--r-sm)', fontSize: 11, color: 'var(--warning)', fontWeight: 700 }}>
                 🧪 وضع تجريبي — الوكيل سيخطط ويُحلل بدون تعديل أي بيانات
               </div>
             )}
@@ -869,7 +869,7 @@ export default function AgentPage({ user, onNavigate }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: 8 }}>
               {QUICK_TASKS.map(q => (
                 <button key={q.label} onClick={() => runAgent(q.task, `${q.icon} ${q.label}`)} disabled={running} style={{ ...S.card, cursor: 'pointer', textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px', border: '1px solid var(--bg-border)', transition: 'border-color 0.15s', opacity: running ? 0.5 : 1 }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.4)'}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(var(--action-rgb),0.4)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--bg-border)'}>
                   <div style={{ fontSize: 22 }}>{q.icon}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{q.label}</div>
@@ -890,11 +890,11 @@ export default function AgentPage({ user, onNavigate }) {
                     {s.type === 'tool' && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{TOOL_LABELS[s.tool] || s.tool}</span>
-                        <span style={{ ...S.pill(s.status === 'done' ? 'var(--action)' : s.status === 'error' ? '#ef4444' : s.status === 'confirm' ? '#f59e0b' : s.status === 'cancelled' ? 'var(--text-muted)' : 'var(--info-light)'), fontSize: 9 }}>
+                        <span style={{ ...S.pill(s.status === 'done' ? 'var(--action)' : s.status === 'error' ? 'var(--danger)' : s.status === 'confirm' ? 'var(--warning)' : s.status === 'cancelled' ? 'var(--text-muted)' : 'var(--info-light)'), fontSize: 9 }}>
                           {s.status === 'done' ? '✓ تم' : s.status === 'error' ? '✗ خطأ' : s.status === 'confirm' ? '⚠️ تأكيد' : s.status === 'cancelled' ? 'ملغى' : '⏳'}
                         </span>
-                        {MUTATION_TOOLS.has(s.tool) && <span style={S.pill('#ef4444')}>يعدّل</span>}
-                        {s.status === 'done' && s.result?.dry_run && <span style={S.pill('#f59e0b')}>تجريبي</span>}
+                        {MUTATION_TOOLS.has(s.tool) && <span style={S.pill('var(--danger)')}>يعدّل</span>}
+                        {s.status === 'done' && s.result?.dry_run && <span style={S.pill('var(--warning)')}>تجريبي</span>}
                       </div>
                     )}
                     {s.type === 'tool' && s.params && Object.keys(s.params).length > 0 && (
@@ -919,14 +919,14 @@ export default function AgentPage({ user, onNavigate }) {
                     {s.result?.report && (
                       <div style={{ marginTop: 8, padding: 12, background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 'var(--r-md)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: '#25d366' }}>📱 تقرير جاهز</span>
-                          <button onClick={() => navigator.clipboard.writeText(s.result.report)} style={{ ...S.btn(''), fontSize: 10, padding: '3px 8px', background: 'rgba(37,211,102,0.15)', color: '#25d366' }}>نسخ</button>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--whatsapp)' }}>📱 تقرير جاهز</span>
+                          <button onClick={() => navigator.clipboard.writeText(s.result.report)} style={{ ...S.btn(''), fontSize: 10, padding: '3px 8px', background: 'rgba(37,211,102,0.15)', color: 'var(--whatsapp)' }}>نسخ</button>
                         </div>
                         <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit', lineHeight: 1.6, color: 'var(--text)' }}>{s.result.report}</pre>
                       </div>
                     )}
                     {['user','msg','answer','error','thinking','system'].includes(s.type) && (
-                      <div style={{ fontSize: 13, color: s.type === 'error' ? '#ef4444' : 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{s.content}</div>
+                      <div style={{ fontSize: 13, color: s.type === 'error' ? 'var(--danger)' : 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{s.content}</div>
                     )}
                   </div>
                 </div>
@@ -943,7 +943,7 @@ export default function AgentPage({ user, onNavigate }) {
       {/* ══ WORKFLOWS TAB ══ */}
       {tab === 'workflows' && (
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ ...S.card, background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.2)' }}>
+          <div style={{ ...S.card, background: 'rgba(var(--action-rgb),0.04)', border: '1px solid rgba(var(--action-rgb),0.2)' }}>
             <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 12, color: 'var(--text)' }}>➕ سير عمل جديد</div>
             <div style={{ display: 'grid', gap: 10 }}>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -981,14 +981,14 @@ export default function AgentPage({ user, onNavigate }) {
           {workflows.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>لا توجد سير عمل بعد.</div>}
 
           {workflows.map(wf => (
-            <div key={wf.id} style={{ ...S.card, border: `1.5px solid ${wf.enabled ? 'rgba(56,189,248,0.25)' : 'var(--bg-border)'}`, opacity: wf.enabled ? 1 : 0.75 }}>
+            <div key={wf.id} style={{ ...S.card, border: `1.5px solid ${wf.enabled ? 'rgba(var(--action-rgb),0.25)' : 'var(--bg-border)'}`, opacity: wf.enabled ? 1 : 0.75 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 20 }}>{wf.icon || '⚡'}</span>
                     <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)' }}>{wf.name}</span>
                     {wf.schedule && <span style={S.pill('var(--info-light)')}>{wf.schedule.type === 'daily' ? `يومي ${wf.schedule.hour}:00` : wf.schedule.type === 'weekly' ? `أسبوعي / ${['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'][wf.schedule.day]}` : `شهري / يوم ${wf.schedule.day_of_month}`}</span>}
-                    {wfRunning === wf.id && <span style={{ ...S.pill('#f59e0b'), animation: 'pulse 1s infinite' }}>⚡ يعمل</span>}
+                    {wfRunning === wf.id && <span style={{ ...S.pill('var(--warning)'), animation: 'pulse 1s infinite' }}>⚡ يعمل</span>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     {wf.tasks.map((t, i) => <div key={i} style={{ fontSize: 12, color: 'var(--text-muted)' }}>{i + 1}. {t}</div>)}
@@ -1018,7 +1018,7 @@ export default function AgentPage({ user, onNavigate }) {
             const { error } = await supabase.from('agent_memory').upsert({ key: 'memory_test', value: `اختبار ${new Date().toLocaleString('ar-AE')}`, category: 'general', importance: 1, access_count: 0, tags: [], updated_at: new Date().toISOString(), last_accessed: new Date().toISOString() }, { onConflict: 'key' })
             if (error) alert('خطأ: ' + error.message)
             else { await loadMemories(); alert('تم الحفظ ✓') }
-          }} style={{ ...S.btn(''), fontSize: 12, padding: '8px 14px', background: 'rgba(56,189,248,0.1)', color: 'var(--action)' }}>🧪 اختبار الحفظ</button>
+          }} style={{ ...S.btn(''), fontSize: 12, padding: '8px 14px', background: 'rgba(var(--action-rgb),0.1)', color: 'var(--action)' }}>🧪 اختبار الحفظ</button>
           </div>
           {memLoading && <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>جاري التحميل...</div>}
           {!memLoading && filteredMems.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>لا توجد ذاكرة بعد. شغّل الوكيل وسيحفظ ملاحظاته تلقائياً.</div>}
@@ -1039,7 +1039,7 @@ export default function AgentPage({ user, onNavigate }) {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                       <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--action)' }}>{m.key}</span>
-                      <span style={S.pill(m.importance >= 8 ? '#ef4444' : m.importance >= 5 ? '#f59e0b' : 'var(--text-muted)')}>أهمية {m.importance}</span>
+                      <span style={S.pill(m.importance >= 8 ? 'var(--danger)' : m.importance >= 5 ? 'var(--warning)' : 'var(--text-muted)')}>أهمية {m.importance}</span>
                       <span style={S.pill('var(--info-light)')}>{m.category}</span>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-sec)', lineHeight: 1.5 }}>{m.value}</div>
@@ -1129,8 +1129,8 @@ export default function AgentPage({ user, onNavigate }) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-                {run.triggered_by && <span style={S.pill(run.triggered_by === 'whatsapp' ? '#25d366' : run.triggered_by === 'cron' ? '#f59e0b' : 'var(--action)')}>{run.triggered_by === 'whatsapp' ? '💬' : run.triggered_by === 'cron' ? '⏰' : '👤'} {run.triggered_by}</span>}
-                <span style={S.pill(run.status === 'completed' ? 'var(--action)' : '#ef4444')}>{run.status === 'completed' ? '✓' : '✗'}</span>
+                {run.triggered_by && <span style={S.pill(run.triggered_by === 'whatsapp' ? 'var(--whatsapp)' : run.triggered_by === 'cron' ? 'var(--warning)' : 'var(--action)')}>{run.triggered_by === 'whatsapp' ? '💬' : run.triggered_by === 'cron' ? '⏰' : '👤'} {run.triggered_by}</span>}
+                <span style={S.pill(run.status === 'completed' ? 'var(--action)' : 'var(--danger)')}>{run.status === 'completed' ? '✓' : '✗'}</span>
               </div>
             </div>
           ))}

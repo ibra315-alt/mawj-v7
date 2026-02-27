@@ -89,7 +89,7 @@ export default function Suppliers() {
                       <a href={`tel:${sup.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'var(--bg-surface)', border: 'none', borderRadius: 6, color: 'var(--text-sec)', fontSize: 12 }}>
                         <IcPhone size={12} /> {sup.phone}
                       </a>
-                      <a href={`https://wa.me/${sup.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 6, color: '#25d166', fontSize: 12 }}>
+                      <a href={`https://wa.me/${sup.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 6, color: 'var(--whatsapp)', fontSize: 12 }}>
                         <IcWhatsapp size={12} />
                       </a>
                     </>

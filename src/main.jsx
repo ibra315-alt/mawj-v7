@@ -10,7 +10,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.error) {
       return (
         <div style={{
-          minHeight:'100vh', background:'#07051c',
+          minHeight:'100vh', background:'var(--bg, #FAFAF8)',
           display:'flex', flexDirection:'column',
           alignItems:'center', justifyContent:'center',
           padding:24, fontFamily:'monospace',
@@ -19,10 +19,10 @@ class ErrorBoundary extends React.Component {
             background:'rgba(255,71,87,0.12)', border:'1px solid rgba(255,71,87,0.4)',
             borderRadius:16, padding:24, maxWidth:520, width:'100%',
           }}>
-            <div style={{color:'#ff4757', fontWeight:800, fontSize:16, marginBottom:12}}>
+            <div style={{color:'var(--danger)', fontWeight:800, fontSize:16, marginBottom:12}}>
                خطأ في التطبيق
             </div>
-            <div style={{color:'#ff4757', fontSize:13, wordBreak:'break-all', lineHeight:1.7}}>
+            <div style={{color:'var(--danger)', fontSize:13, wordBreak:'break-all', lineHeight:1.7}}>
               {String(this.state.error)}
             </div>
             {this.state.error?.stack && (

@@ -423,9 +423,9 @@ export default function AIAssistant({ onClose, onNavigate }) {
           <div style={{width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,var(--action),var(--info))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,boxShadow:'0 0 10px var(--action-glow)'}}>🤖</div>
           <div>
             <div style={{fontWeight:800,fontSize:12.5,color:'var(--text)'}}>مساعد موج</div>
-            <div style={{fontSize:9,color:context?'var(--action)':'#f59e0b',marginTop:1}}>
+            <div style={{fontSize:9,color:context?'var(--action)':'var(--warning)',marginTop:1}}>
               {context ? '● بيانات محمّلة' : '○ جارٍ التحميل...'}
-              {hasActions && <span style={{color:'#f59e0b',marginInlineStart:6}}>· إجراءات مفعّلة</span>}
+              {hasActions && <span style={{color:'var(--warning)',marginInlineStart:6}}>· إجراءات مفعّلة</span>}
             </div>
             <div style={{fontSize:8,color:'var(--text-muted)',marginTop:1,direction:'ltr',textAlign:'left'}}>
               {model.startsWith('claude')?'Anthropic':model.startsWith('gemini')?'Google':model.startsWith('gpt')?'OpenAI':model.startsWith('deepseek')?'DeepSeek':'AI'} · {model.split('-').slice(0,3).join('-')}
@@ -439,7 +439,7 @@ export default function AIAssistant({ onClose, onNavigate }) {
               <button key={t.id} onClick={()=>setTab(t.id)} style={{
                 padding:'4px 8px',borderRadius:6,border:'none',cursor:'pointer',
                 background:tab===t.id?'var(--action)':'transparent',
-                color:tab===t.id?'#050c1a':'var(--text-muted)',
+                color:tab===t.id?'#ffffff':'var(--text-muted)',
                 fontSize:12,fontFamily:'inherit',
               }}>{t.l}</button>
             ))}
@@ -474,9 +474,9 @@ export default function AIAssistant({ onClose, onNavigate }) {
                 {isSystem ? (
                   <div style={{
                     width:'100%',padding:'7px 11px',borderRadius:'var(--r-md)',
-                    background:m.content.startsWith('✅')?'rgba(16,185,129,0.1)':'rgba(245,158,11,0.1)',
-                    border:`1px solid ${m.content.startsWith('✅')?'rgba(16,185,129,0.2)':'rgba(245,158,11,0.2)'}`,
-                    fontSize:12,color:m.content.startsWith('✅')?'#10b981':'#f59e0b',fontWeight:700,
+                    background:m.content.startsWith('✅')?'rgba(var(--success-rgb),0.1)':'rgba(var(--warning-rgb),0.1)',
+                    border:`1px solid ${m.content.startsWith('✅')?'rgba(var(--success-rgb),0.2)':'rgba(var(--warning-rgb),0.2)'}`,
+                    fontSize:12,color:m.content.startsWith('✅')?'var(--success)':'var(--warning)',fontWeight:700,
                   }}>{m.content}</div>
                 ) : (
                   <div style={{
