@@ -97,7 +97,8 @@ export default function Partners() {
     const opening      = myCap.filter(c => c.type === 'opening').reduce((s,c) => s+(c.amount||0), 0)
     const capitalIn    = myCap.filter(c => c.type === 'deposit').reduce((s,c) => s+(c.amount||0), 0)
     const capitalOut   = myCap.filter(c => c.type === 'withdrawal').reduce((s,c) => s+(c.amount||0), 0)
-    const totalWith    = myWith.reduce((s,w) => s+(w.amount||0), 0)
+    // FIX: Exclude reimbursement withdrawals — unreimbursed tracking handles it
+    const totalWith    = myWith.filter(w => w.type !== 'reimbursement').reduce((s,w) => s+(w.amount||0), 0)
     const expPaid      = myExp.reduce((s,e) => s+(e.amount||0), 0)
     const reimbursed   = myExp.filter(e => e.reimbursed).reduce((s,e) => s+(e.amount||0), 0)
     const unreimbursed = expPaid - reimbursed

@@ -47,8 +47,9 @@ export default function Dashboard({ onNavigate }) {
       const opExpenses      = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0)
       const netProfit       = grossProfit - opExpenses
 
-      const todayRev  = todayOrders.reduce((s, o) => s + (o.total || 0), 0)
-      const yestRev   = yestOrders.reduce((s, o)  => s + (o.total || 0), 0)
+      // FIX: Filter today/yesterday revenue same as monthly (exclude replacements + not_delivered)
+      const todayRev  = todayOrders.filter(o => !o.is_replacement && o.status !== 'not_delivered').reduce((s, o) => s + (o.total || 0), 0)
+      const yestRev   = yestOrders.filter(o => !o.is_replacement && o.status !== 'not_delivered').reduce((s, o)  => s + (o.total || 0), 0)
       const revChange = yestRev > 0 ? ((todayRev - yestRev) / yestRev * 100).toFixed(0) : null
 
       // Pending COD — delivered but not yet remitted by Hayyak

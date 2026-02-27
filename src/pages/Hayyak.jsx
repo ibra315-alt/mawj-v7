@@ -66,8 +66,9 @@ export default function Hayyak() {
 
     const totalCOD        = delivered.reduce(    (s, o) => s + (o.total       || 0), 0)
     const pendingCOD      = pendingOrders.reduce((s, o) => s + (o.total       || 0), 0)
+    // Hayyak charges for any delivery attempt (delivered + not_delivered)
     const totalHayyakFees = orders.filter(o => ['delivered','not_delivered'].includes(o.status))
-                                  .reduce((s, o) => s + (o.hayyak_fee || 25), 0)
+                                  .reduce((s, o) => s + (o.hayyak_fee || 0), 0)
     const bankReceived    = remittances.reduce(  (s, r) => s + (r.bank_received || 0), 0)
     const transferFees    = remittances.reduce(  (s, r) => s + (r.transfer_fee  || 0), 0)
     const notDelivered    = orders.filter(o => o.status === 'not_delivered')
