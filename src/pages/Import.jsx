@@ -279,7 +279,7 @@ export default function ImportTool() {
               </div>
             </div>
             <button onClick={e => { e.stopPropagation(); setFile(null); setPreview(null); setLog([]); setDone(false) }}
-              style={{ marginRight:'auto', background:'none', border:'none', cursor:'pointer', color:'var(--danger)', padding:'4px 8px' }}>
+              style={{ marginInlineStart:'auto', background:'none', border:'none', cursor:'pointer', color:'var(--danger)', padding:'4px 8px' }}>
               <IcDelete size={16}/>
             </button>
           </div>

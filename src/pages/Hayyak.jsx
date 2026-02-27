@@ -179,7 +179,7 @@ export default function Hayyak() {
           <IcAlert size={20} style={{ color:'#f59e0b', flexShrink:0 }}/>
           <div style={{ flex:1 }}>
             <span style={{ fontWeight:800, color:'#f59e0b', fontSize:15 }}>{formatCurrency(stats.pendingCOD)}</span>
-            <span style={{ color:'var(--text-sec)', fontSize:13, marginRight:8 }}>
+            <span style={{ color:'var(--text-sec)', fontSize:13, marginInlineStart:8 }}>
               محصّلة من {stats.pendingCount} طلب — لم تُحوَّل بعد من حياك
             </span>
           </div>
@@ -201,7 +201,7 @@ export default function Hayyak() {
           }}>
             {t.label}
             {t.id === 'pending' && stats.pendingCount > 0 && (
-              <span style={{ marginRight:6, padding:'1px 6px', borderRadius:999, fontSize:10, fontWeight:900, background:'rgba(245,158,11,0.2)', color:'#f59e0b' }}>
+              <span style={{ marginInlineStart:6, padding:'1px 6px', borderRadius:999, fontSize:10, fontWeight:900, background:'rgba(245,158,11,0.2)', color:'#f59e0b' }}>
                 {stats.pendingCount}
               </span>
             )}
@@ -276,7 +276,7 @@ export default function Hayyak() {
             {[
               { label:'طلبات معلقة',  value: stats.pendingCount,            color:'#f59e0b' },
               { label:'COD المعلق',   value: formatCurrency(stats.pendingCOD), color:'#f59e0b', small:true },
-              { label:'رسوم حياك',    value: formatCurrency(stats.pendingOrders.reduce((s,o) => s + (o.hayyak_fee || 25), 0)), color:'var(--danger)', small:true },
+              { label:'رسوم حياك',    value: formatCurrency(stats.pendingOrders.reduce((s,o) => s + (o.hayyak_fee || 0), 0)), color:'var(--danger)', small:true },
             ].map(s => (
               <div key={s.label} style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center', boxShadow:'var(--card-shadow)' }}>
                 <div style={{ fontSize: s.small ? 11 : 20, fontWeight:800, color:s.color, fontFamily:'Inter,sans-serif', lineHeight:1.2 }}>{s.value}</div>
@@ -436,12 +436,12 @@ export default function Hayyak() {
    PENDING ORDER ROW
 ═══════════════════════════════════════════ */
 function PendingOrderRow({ order, onQuickLink }) {
-  const net = (order.total || 0) - (order.hayyak_fee || 25)
+  const net = (order.total || 0) - (order.hayyak_fee || 0)
   return (
     <div style={{
       display:'flex', alignItems:'center', gap:10, padding:'11px 14px',
       background:'var(--bg-surface)', borderRadius:'var(--r-md)',
-      borderRight:'3px solid #f59e0b', boxShadow:'var(--card-shadow)',
+      borderInlineStart:'3px solid #f59e0b', boxShadow:'var(--card-shadow)',
       flexWrap:'wrap',
     }}>
       <div style={{ flex:1, minWidth:100 }}>
@@ -458,7 +458,7 @@ function PendingOrderRow({ order, onQuickLink }) {
         <div style={{ textAlign:'center', minWidth:56 }}>
           <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>رسوم</div>
           <div style={{ fontWeight:700, color:'var(--danger)', fontSize:12, fontFamily:'Inter,sans-serif' }}>
-            −{formatCurrency(order.hayyak_fee || 25)}
+            −{formatCurrency(order.hayyak_fee || 0)}
           </div>
         </div>
         <div style={{ textAlign:'center', minWidth:64 }}>
@@ -486,7 +486,7 @@ function RemittanceRow({ remit, orderCount, onEdit, onDelete, compact }) {
     <div style={{
       display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
       background:'var(--bg-surface)', borderRadius:'var(--r-md)',
-      borderRight:'3px solid var(--action)', boxShadow:'var(--card-shadow)',
+      borderInlineStart:'3px solid var(--action)', boxShadow:'var(--card-shadow)',
       flexWrap:'wrap', marginBottom: compact ? 8 : 0,
     }}>
       <div style={{ flex:1, minWidth:120 }}>
@@ -581,7 +581,7 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
   // ── Calculated totals ──────────────────────────────────
   const selectedOrders = pendingOrders.filter(o => selectedIds.includes(o.id))
   const totalCOD       = selectedOrders.reduce((s, o) => s + (o.total || 0), 0)
-  const totalHayyakFee = selectedOrders.reduce((s, o) => s + (o.hayyak_fee || 25), 0)
+  const totalHayyakFee = selectedOrders.reduce((s, o) => s + (o.hayyak_fee || 0), 0)
   const expectedNet    = totalCOD - totalHayyakFee          // what Hayyak should send
   const bankReceived   = parseFloat(form.bank_received) || 0
   const transferFee    = parseFloat(form.transfer_fee)  || 0
@@ -743,7 +743,7 @@ function RemittanceForm({ open, onClose, remit, pendingOrders, onSaved }) {
                       <div style={{ textAlign:'center', minWidth:60 }}>
                         <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:1 }}>رسوم حياك</div>
                         <div style={{ fontSize:12, fontWeight:700, color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>
-                          {formatCurrency(order.hayyak_fee || 25)}
+                          {formatCurrency(order.hayyak_fee || 0)}
                         </div>
                       </div>
 

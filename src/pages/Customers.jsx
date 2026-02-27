@@ -225,7 +225,7 @@ function CustomerModal({ customer: c, onClose }) {
             <div style={{ fontSize:12, color:'var(--text-muted)' }}>عميل منذ {daysSinceFirst} يوم</div>
           </div>
           {c.phone && (
-            <a href={`https://wa.me/${c.phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ marginRight:'auto', display:'flex', alignItems:'center', gap:5, padding:'6px 12px', background:'rgba(37,209,102,0.12)', border:'1px solid rgba(37,209,102,0.25)', borderRadius:999, color:'#25d166', fontSize:12, fontWeight:700, textDecoration:'none' }}>
+            <a href={`https://wa.me/${c.phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ marginInlineStart:'auto', display:'flex', alignItems:'center', gap:5, padding:'6px 12px', background:'rgba(37,209,102,0.12)', border:'1px solid rgba(37,209,102,0.25)', borderRadius:999, color:'#25d166', fontSize:12, fontWeight:700, textDecoration:'none' }}>
               <IcWhatsapp size={13}/> واتساب
             </a>
           )}
@@ -351,7 +351,7 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
         <div style={{ padding:'10px 14px', background:'rgba(37,209,102,0.06)', border:'1px solid rgba(37,209,102,0.2)', borderRadius:'var(--r-md)', fontSize:13 }}>
           <span style={{ fontWeight:800, color:'#25d166', fontSize:16 }}>{targets.length}</span>
           <span style={{ color:'var(--text-sec)' }}> عميل سيصلهم الرسالة</span>
-          {targets.length === 0 && <span style={{ color:'var(--red)', marginRight:8 }}>— لا يوجد عملاء بأرقام هاتف</span>}
+          {targets.length === 0 && <span style={{ color:'var(--red)', marginInlineStart:8 }}>— لا يوجد عملاء بأرقام هاتف</span>}
         </div>
 
         {/* Message composer */}
