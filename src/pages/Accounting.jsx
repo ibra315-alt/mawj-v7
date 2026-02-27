@@ -90,7 +90,7 @@ export default function Accounting() {
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'9px 6px', borderRadius:8, border:'none', cursor:'pointer',
             background: tab === t.id ? 'linear-gradient(135deg,var(--action),var(--action-deep))' : 'transparent',
-            color: tab === t.id ? '#050c1a' : 'var(--text-muted)',
+            color: tab === t.id ? '#ffffff' : 'var(--text-muted)',
             fontWeight: tab === t.id ? 800 : 500, fontSize:12,
             fontFamily:'inherit', transition:'all 0.2s', whiteSpace:'nowrap',
           }}>{t.label}</button>

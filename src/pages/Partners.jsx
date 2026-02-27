@@ -162,7 +162,7 @@ export default function Partners() {
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
             flex:1, padding:'9px 8px', borderRadius:8, border:'none', cursor:'pointer',
             background: activeTab===t.id ? 'linear-gradient(135deg,var(--action),var(--info-light))' : 'transparent',
-            color: activeTab===t.id ? '#050c1a' : 'var(--text-muted)',
+            color: activeTab===t.id ? '#ffffff' : 'var(--text-muted)',
             fontWeight: activeTab===t.id ? 800 : 500, fontSize:13, fontFamily:'inherit',
             transition:'all 120ms',
           }}>{t.label}</button>
@@ -192,7 +192,7 @@ export default function Partners() {
                         width:44, height:44, borderRadius:'50%', flexShrink:0,
                         background:'linear-gradient(135deg,var(--info-light),var(--action))',
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        fontWeight:900, fontSize:20, color:'#050c1a',
+                        fontWeight:900, fontSize:20, color:'#ffffff',
                       }}>{name[0]}</div>
                       <div>
                         <div style={{ fontWeight:800, fontSize:16 }}>{name}</div>

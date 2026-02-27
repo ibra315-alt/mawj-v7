@@ -333,7 +333,7 @@ export default function ImportTool() {
                       width:28, height:28, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:12,
                       background: status === 'done' ? 'var(--action)' : status === 'running' ? 'rgba(56,189,248,0.15)' : status === 'error' ? 'var(--danger)' : 'var(--bg-surface)',
                       border: status ? 'none' : '1.5px solid var(--border)',
-                      color: status === 'done' ? '#050c1a' : 'var(--text)',
+                      color: status === 'done' ? '#ffffff' : 'var(--text)',
                       animation: status === 'running' ? 'pulse 1s infinite' : 'none',
                     }}>
                       {status === 'done' ? '✓' : status === 'error' ? '✗' : step.icon}
@@ -362,7 +362,7 @@ export default function ImportTool() {
 
       {/* Live log */}
       {log.length > 0 && (
-        <div style={{ background:'#0a0818', borderRadius:'var(--r-md)', padding:'14px 16px', fontFamily:'monospace', fontSize:12, maxHeight:320, overflowY:'auto', boxShadow:'var(--card-shadow)' }}>
+        <div style={{ background:'var(--bg-surface)', borderRadius:'var(--r-md)', padding:'14px 16px', fontFamily:'monospace', fontSize:12, maxHeight:320, overflowY:'auto', boxShadow:'var(--card-shadow)', border:'1px solid var(--border)' }}>
           {log.map((l, i) => (
             <div key={i} style={{
               color: l.type === 'success' ? '#38BDF8' : l.type === 'error' ? '#ef4444' : l.type === 'warn' ? '#f59e0b' : '#a78bfa',
@@ -384,7 +384,7 @@ export default function ImportTool() {
             البيانات التاريخية موجودة الآن في النظام — الطلبات والتحويلات والمنتجات كلها جاهزة.
           </div>
           <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
-            <Btn onClick={() => window.location.reload()} style={{ background:'var(--action)', color:'#050c1a' }}>
+            <Btn onClick={() => window.location.reload()} style={{ background:'var(--action)', color:'#ffffff' }}>
               <IcCheck size={15}/> الذهاب للوحة التحكم
             </Btn>
           </div>

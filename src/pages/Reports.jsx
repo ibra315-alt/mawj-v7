@@ -198,7 +198,7 @@ export default function Reports() {
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'9px 4px', borderRadius:8, border:'none', cursor:'pointer',
             background: tab===t.id ? 'linear-gradient(135deg,var(--action),var(--info-light))' : 'transparent',
-            color: tab===t.id ? '#050c1a' : 'var(--text-muted)',
+            color: tab===t.id ? '#ffffff' : 'var(--text-muted)',
             fontWeight: tab===t.id ? 800 : 500, fontSize:12, fontFamily:'inherit', transition:'all 120ms',
           }}>{t.label}</button>
         ))}
@@ -396,7 +396,7 @@ export default function Reports() {
                 return (
                   <div key={`${p.name}-${p.size}`} style={{ background:'var(--bg-surface)', border:`1.5px solid ${isTop?'var(--action)':'var(--border)'}`, borderRadius:'var(--r-lg)', padding:'14px 16px', boxShadow: isTop?'0 0 16px rgba(56,189,248,0.08)':'var(--card-shadow)' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-                      <div style={{ width:30,height:30,borderRadius:9,flexShrink:0, background:i<3?rankColors[i]:'var(--bg-hover)', display:'flex',alignItems:'center',justifyContent:'center', fontWeight:900,fontSize:12, color:i<3?'#050c1a':'var(--text-muted)' }}>
+                      <div style={{ width:30,height:30,borderRadius:9,flexShrink:0, background:i<3?rankColors[i]:'var(--bg-hover)', display:'flex',alignItems:'center',justifyContent:'center', fontWeight:900,fontSize:12, color:i<3?'#ffffff':'var(--text-muted)' }}>
                         {i<3?`#${i+1}`:i+1}
                       </div>
                       <div style={{ flex:1 }}>

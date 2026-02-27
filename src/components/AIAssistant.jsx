@@ -439,7 +439,7 @@ export default function AIAssistant({ onClose, onNavigate }) {
               <button key={t.id} onClick={()=>setTab(t.id)} style={{
                 padding:'4px 8px',borderRadius:6,border:'none',cursor:'pointer',
                 background:tab===t.id?'var(--action)':'transparent',
-                color:tab===t.id?'#050c1a':'var(--text-muted)',
+                color:tab===t.id?'#ffffff':'var(--text-muted)',
                 fontSize:12,fontFamily:'inherit',
               }}>{t.l}</button>
             ))}
