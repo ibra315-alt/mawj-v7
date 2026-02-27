@@ -876,11 +876,12 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1100 }}/>
-      <div style={{
+      <div className="order-view-modal" style={{
         position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)',
         width:'min(560px, 94vw)', maxHeight:'90vh', overflowY:'auto',
         background:'var(--modal-bg)', borderRadius:'var(--r-xl)',
         boxShadow:'var(--modal-shadow)', zIndex:1101,
+        border:'1px solid var(--border)',
         animation:'modalIn var(--dur-base) var(--ease-out) both',
         padding:'24px',
       }}>
@@ -908,36 +909,46 @@ function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplac
             </div>
           </div>
 
-          {/* Items */}
-          {order.items?.length > 0 && (
-            <div>
-              <div style={{ fontWeight:700, fontSize:11, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:8 }}>المنتجات</div>
-              {order.items.map((item, i) => (
-                <div key={i} style={{ background:'var(--bg-hover)', borderRadius:'var(--r-md)', padding:'10px 12px', marginBottom:6 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom: item.engraving_notes ? 6 : 0 }}>
-                    <span style={{ fontWeight:700, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</span>
-                    <div>
-                      <span style={{ fontSize:13, fontWeight:700 }}>{item.name}</span>
-                      {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:5 }}>({item.size})</span>}
-                      <span style={{ fontSize:12, color:'var(--text-muted)', marginInlineStart:4 }}>× {item.qty}</span>
-                    </div>
-                  </div>
-                  {item.engraving_notes && (
-                    <div style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
-                      <IcNote size={12} style={{ color:'var(--text-muted)', marginTop:2, flexShrink:0 }}/>
-                      <span style={{ fontSize:12, color:'var(--text-sec)', fontStyle:'italic' }}>{item.engraving_notes}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+          {/* Order number */}
+          {order.order_number && (
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>رقم الطلب:</span>
+              <span style={{ fontSize:13, fontWeight:700, fontFamily:'Inter,sans-serif', color:'var(--action)' }}>{order.order_number}</span>
             </div>
           )}
+
+          {/* Items */}
+          <div>
+            <div style={{ fontWeight:700, fontSize:11, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:8 }}>المنتجات</div>
+            {order.items?.length > 0 ? order.items.map((item, i) => (
+              <div key={i} style={{ background:'var(--bg-hover)', borderRadius:'var(--r-md)', padding:'10px 12px', marginBottom:6, border:'1px solid var(--border)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom: item.engraving_notes ? 6 : 0 }}>
+                  <span style={{ fontWeight:700, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</span>
+                  <div>
+                    <span style={{ fontSize:13, fontWeight:700 }}>{item.name}</span>
+                    {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:5 }}>({item.size})</span>}
+                    <span style={{ fontSize:12, color:'var(--text-muted)', marginInlineStart:4 }}>× {item.qty}</span>
+                  </div>
+                </div>
+                {item.engraving_notes && (
+                  <div style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
+                    <IcNote size={12} style={{ color:'var(--text-muted)', marginTop:2, flexShrink:0 }}/>
+                    <span style={{ fontSize:12, color:'var(--text-sec)', fontStyle:'italic' }}>{item.engraving_notes}</span>
+                  </div>
+                )}
+              </div>
+            )) : (
+              <div style={{ padding:'16px', textAlign:'center', color:'var(--text-muted)', fontSize:13, background:'var(--bg-hover)', borderRadius:'var(--r-md)', border:'1px solid var(--border)' }}>
+                لا توجد منتجات مسجلة لهذا الطلب
+              </div>
+            )}
+          </div>
 
           {/* Financial summary */}
           <div style={{
             padding:'12px 16px', borderRadius:'var(--r-md)',
-            background: profit < 0 ? 'rgba(239,68,68,0.06)' : 'rgba(0,228,184,0.06)',
-            border:`1px solid ${profit < 0 ? 'rgba(239,68,68,0.15)' : 'rgba(0,228,184,0.15)'}`,
+            background: profit < 0 ? 'rgba(239,68,68,0.06)' : 'rgba(56,189,248,0.06)',
+            border:`1px solid ${profit < 0 ? 'rgba(239,68,68,0.15)' : 'rgba(56,189,248,0.15)'}`,
             display:'flex', flexWrap:'wrap', gap:'6px 18px',
           }}>
             <span style={{ fontSize:13, color:'var(--text-sec)' }}>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(order.subtotal)}</b></span>
@@ -1030,13 +1041,13 @@ function OrderTimeline({ notes }) {
     <div>
       <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginBottom:10 }}>سجل الطلب</div>
       <div style={{ position:'relative', paddingRight:16 }}>
-        <div style={{ position:'absolute', right:5, top:6, bottom:6, width:2, background:'linear-gradient(to bottom,var(--teal),var(--violet-light))', borderRadius:2, opacity:0.3 }}/>
+        <div style={{ position:'absolute', right:5, top:6, bottom:6, width:2, background:'linear-gradient(to bottom,var(--action),var(--info-light))', borderRadius:2, opacity:0.3 }}/>
         {sorted.map((note, i) => {
           const isLast = i === sorted.length - 1
           const d = new Date(note.time)
           return (
             <div key={i} style={{ display:'flex', gap:10, marginBottom: isLast ? 0 : 10, alignItems:'flex-start' }}>
-              <div style={{ width:10, height:10, borderRadius:'50%', flexShrink:0, marginTop:3, background: isLast ? 'var(--teal)' : 'var(--violet-light)', border:'2px solid var(--bg)', boxShadow: isLast ? '0 0 8px var(--teal-glow)' : 'none' }}/>
+              <div style={{ width:10, height:10, borderRadius:'50%', flexShrink:0, marginTop:3, background: isLast ? 'var(--action)' : 'var(--info-light)', border:'2px solid var(--bg)', boxShadow: isLast ? '0 0 8px var(--action-glow)' : 'none' }}/>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:12, color: isLast ? 'var(--text)' : 'var(--text-sec)', fontWeight: isLast ? 700 : 400 }}>{note.text}</div>
                 <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>

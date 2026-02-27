@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import { Auth } from '../data/db'
-import MawjLogo from '../components/Logo'
 
 /* ══════════════════════════════════════════════════
-   LOGIN v10 — CRYSTAL LUXURY
-   Glass card · Teal-Gold branding · Ambient orbs
-   The first thing you see = the brand promise
+   LOGIN v10 — Maison
+   Clean · RTL-first · Sky blue accent
+   Light default · Premium warm
 ══════════════════════════════════════════════════ */
 export default function Login({ theme, toggleTheme }) {
   const [email, setEmail]       = useState('')
@@ -39,55 +38,31 @@ export default function Login({ theme, toggleTheme }) {
       zIndex: 0,
     }}>
 
-      {/* ── Ambient orbs ── */}
-      <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0, overflow:'hidden' }} aria-hidden="true">
-        {/* Teal orb — top right */}
-        <div style={{
-          position:'absolute', top:'-15%', right:'-8%',
-          width:'min(60vw,600px)', height:'min(60vw,600px)', borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(0,228,184,0.8), transparent 65%)',
-          filter:'blur(120px)', opacity:0.12,
-          animation:'orbDrift1 20s ease-in-out infinite alternate',
-        }}/>
-        {/* Indigo orb — bottom left */}
-        <div style={{
-          position:'absolute', bottom:'-15%', left:'-8%',
-          width:'min(55vw,550px)', height:'min(55vw,550px)', borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(99,102,241,0.8), transparent 65%)',
-          filter:'blur(120px)', opacity:0.10,
-          animation:'orbDrift2 26s ease-in-out infinite alternate',
-        }}/>
-        {/* Gold orb — center */}
-        <div style={{
-          position:'absolute', top:'40%', left:'40%',
-          width:'min(35vw,350px)', height:'min(35vw,350px)', borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(201,169,110,0.6), transparent 65%)',
-          filter:'blur(100px)', opacity:0.08,
-          animation:'orbDrift3 22s ease-in-out infinite alternate',
-        }}/>
-        {/* Subtle noise */}
-        <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', opacity:0.02 }}>
-          <filter id="loginNoise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter>
-          <rect width="100%" height="100%" filter="url(#loginNoise)"/>
-        </svg>
+      {/* Premium background orbs */}
+      <div className="bg-orbs" aria-hidden="true">
+        <div className="bg-orb bg-orb-1"/>
+        <div className="bg-orb bg-orb-2"/>
+        <div className="bg-orb bg-orb-3"/>
+        <div className="bg-waves">
+          <div className="bg-wave bg-wave-1"/>
+          <div className="bg-wave bg-wave-2"/>
+          <div className="bg-wave bg-wave-3"/>
+        </div>
       </div>
 
-      {/* ── Theme toggle ── */}
+      {/* Theme toggle — top left in RTL = top right visually */}
       {toggleTheme && (
         <button
           onClick={toggleTheme}
           style={{
-            position: 'absolute', top: 20, left: 20, zIndex:10,
+            position: 'absolute', top: 20, left: 20,
             padding: '8px 14px', borderRadius: 'var(--r-pill)',
-            background: 'var(--bg-surface)',
-            backdropFilter: 'var(--glass-blur-subtle)',
-            WebkitBackdropFilter: 'var(--glass-blur-subtle)',
-            border: '1px solid var(--border)',
+            background: 'var(--bg-surface)', border: 'none',
             boxShadow: 'var(--card-shadow)',
             color: 'var(--text-sec)', fontSize: 12,
             fontFamily: 'inherit', fontWeight: 600,
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'all 120ms ease',
+            transition: 'box-shadow 120ms ease',
           }}
         >
           {isDark ? (
@@ -107,68 +82,66 @@ export default function Login({ theme, toggleTheme }) {
         </button>
       )}
 
-      {/* ── Glass Login Card ── */}
+      {/* Card */}
       <div style={{
-        width: '100%', maxWidth: 420,
-        background: isDark ? 'rgba(13,14,20,0.65)' : 'rgba(255,255,255,0.55)',
-        backdropFilter: 'blur(48px) saturate(1.5)',
-        WebkitBackdropFilter: 'blur(48px) saturate(1.5)',
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
-        boxShadow: isDark
-          ? '0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)'
-          : '0 24px 80px rgba(15,14,12,0.12)',
-        borderRadius: 'var(--r-2xl)',
+        width: '100%', maxWidth: 400,
+        background: 'var(--bg-surface)',
+        boxShadow: 'var(--float-shadow)',
+        borderRadius: 'var(--r-xl)',
         overflow: 'hidden',
-        animation: 'cardEntrance 400ms var(--ease-out) both',
+        animation: 'cardEntrance var(--dur-base) var(--ease-out) both',
         position: 'relative', zIndex: 1,
       }}>
 
-        {/* Top accent — teal to gold gradient */}
+        {/* Teal top accent bar */}
         <div style={{
-          height: 2,
-          background: 'linear-gradient(90deg, var(--action), var(--gold-500), var(--action))',
-          opacity: 0.6,
+          height: 3,
+          background: 'linear-gradient(90deg, var(--action), var(--info-light))',
         }}/>
 
-        <div style={{ padding: '40px 36px 36px' }}>
+        <div style={{ padding: '36px 32px 32px' }}>
 
-          {/* ── Brand Section ── */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            {/* Logo with glass frame */}
+          {/* Brand */}
+          <div style={{ textAlign: 'center', marginBottom: 36 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 72, height: 72, borderRadius: 'var(--r-lg)',
-              background: 'var(--action-soft)',
-              border: '1px solid rgba(0,228,184,0.10)',
-              marginBottom: 20,
-              boxShadow: '0 8px 32px var(--action-glow)',
+              width: 64, height: 64, borderRadius: 'var(--r-md)',
+              background: 'var(--action-soft)', marginBottom: 16,
             }}>
-              <MawjLogo size={40} color="var(--action)" animated />
+              <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
+                <defs>
+                  <linearGradient id="llg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#38BDF8"/>
+                    <stop offset="1" stopColor="#3b82f6"/>
+                  </linearGradient>
+                </defs>
+                <path d="M4 20c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
+                  stroke="url(#llg)" strokeWidth="2.5" strokeLinecap="round"/>
+                <path d="M4 14c3-5 6-5 8.5 0s5.5 5 8.5 0c2-3.5 4.5-4.5 7-2"
+                  stroke="url(#llg)" strokeWidth="2.5" strokeLinecap="round" opacity="0.35"/>
+              </svg>
             </div>
-
-            {/* Brand name — gold gradient */}
             <div style={{
-              fontSize: 36, fontWeight: 900,
-              background: 'linear-gradient(135deg, var(--action), var(--gold-500))',
+              fontSize: 28, fontWeight: 900,
+              background: 'linear-gradient(135deg, var(--action), var(--info-light))',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              lineHeight: 1.1, marginBottom: 8,
+              lineHeight: 1, marginBottom: 6,
             }}>مَوج</div>
-
             <div style={{
               fontSize: 12, color: 'var(--text-muted)',
-              letterSpacing: '0.12em', fontWeight: 500,
-            }}>CRYSTAL GIFTS ERP</div>
+              letterSpacing: '0.06em',
+            }}>نظام إدارة المبيعات</div>
           </div>
 
-          {/* ── Form ── */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Email */}
             <div>
               <label style={{
                 display: 'block', fontSize: 11, fontWeight: 700,
                 color: 'var(--text-muted)', marginBottom: 8,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
+                letterSpacing: '0.05em', textTransform: 'uppercase',
               }}>البريد الإلكتروني</label>
               <input
                 type="email"
@@ -178,17 +151,15 @@ export default function Login({ theme, toggleTheme }) {
                 placeholder="you@example.com"
                 autoComplete="email"
                 style={{
-                  width: '100%', padding: '12px 16px',
-                  background: 'var(--input-bg)',
-                  backdropFilter: 'var(--glass-blur-subtle)',
-                  WebkitBackdropFilter: 'var(--glass-blur-subtle)',
+                  width: '100%', padding: '11px 14px',
+                  background: 'var(--bg-elevated)',
                   border: '1.5px solid var(--input-border)',
                   borderRadius: 'var(--r-sm)',
                   color: 'var(--text)', fontSize: 13,
                   fontFamily: 'Inter, sans-serif',
                   outline: 'none', boxSizing: 'border-box',
                   direction: 'ltr', textAlign: 'left',
-                  transition: 'border-color 160ms ease, box-shadow 160ms ease',
+                  transition: 'border-color 120ms ease, box-shadow 120ms ease',
                 }}
                 onFocus={e => {
                   e.target.style.borderColor = 'var(--action)'
@@ -206,7 +177,7 @@ export default function Login({ theme, toggleTheme }) {
               <label style={{
                 display: 'block', fontSize: 11, fontWeight: 700,
                 color: 'var(--text-muted)', marginBottom: 8,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
+                letterSpacing: '0.05em', textTransform: 'uppercase',
               }}>كلمة المرور</label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -218,10 +189,9 @@ export default function Login({ theme, toggleTheme }) {
                   autoComplete="current-password"
                   style={{
                     width: '100%',
-                    padding: '12px 16px 12px 48px',
-                    background: 'var(--input-bg)',
-                    backdropFilter: 'var(--glass-blur-subtle)',
-                    WebkitBackdropFilter: 'var(--glass-blur-subtle)',
+                    /* padding-left for eye icon on left (trailing in RTL) */
+                    padding: '11px 14px 11px 44px',
+                    background: 'var(--bg-elevated)',
                     border: '1.5px solid var(--input-border)',
                     borderRadius: 'var(--r-sm)',
                     color: 'var(--text)', fontSize: 14,
@@ -229,7 +199,7 @@ export default function Login({ theme, toggleTheme }) {
                     outline: 'none', boxSizing: 'border-box',
                     direction: 'rtl', textAlign: 'right',
                     letterSpacing: showPass ? 'normal' : '0.12em',
-                    transition: 'border-color 160ms ease, box-shadow 160ms ease',
+                    transition: 'border-color 120ms ease, box-shadow 120ms ease',
                   }}
                   onFocus={e => {
                     e.target.style.borderColor = 'var(--action)'
@@ -240,11 +210,12 @@ export default function Login({ theme, toggleTheme }) {
                     e.target.style.boxShadow = 'none'
                   }}
                 />
+                {/* Eye toggle — left side (trailing in RTL = end of input) */}
                 <button
                   type="button"
                   onClick={() => setShowPass(p => !p)}
                   style={{
-                    position: 'absolute', left: 14, top: '50%',
+                    position: 'absolute', left: 12, top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none', border: 'none',
                     cursor: 'pointer', padding: 4,
@@ -271,8 +242,7 @@ export default function Login({ theme, toggleTheme }) {
             {error && (
               <div style={{
                 padding: '10px 14px',
-                background: 'rgba(239,68,68,0.06)',
-                border: '1px solid rgba(239,68,68,0.10)',
+                background: 'rgba(239,68,68,0.08)',
                 borderRadius: 'var(--r-sm)',
                 fontSize: 12, color: 'var(--danger-light)',
                 textAlign: 'center',
@@ -281,21 +251,20 @@ export default function Login({ theme, toggleTheme }) {
               </div>
             )}
 
-            {/* Submit — premium button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
               style={{
-                width: '100%', padding: '14px',
+                width: '100%', padding: '13px',
                 background: loading ? 'var(--bg-hover)' : 'var(--action)',
                 border: 'none', borderRadius: 'var(--r-sm)',
-                color: loading ? 'var(--text-muted)' : '#031a13',
+                color: loading ? 'var(--text-muted)' : '#ffffff',
                 fontSize: 14, fontWeight: 900,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit',
-                transition: 'all 160ms ease',
+                transition: 'background 120ms ease, transform 100ms ease',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: loading ? 'none' : '0 4px 20px var(--action-glow)',
               }}
               onMouseDown={e => { if (!loading) e.currentTarget.style.transform = 'scale(0.985)' }}
               onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
@@ -314,9 +283,9 @@ export default function Login({ theme, toggleTheme }) {
 
         </div>
 
-        {/* Footer */}
+        {/* Footer credit */}
         <div style={{
-          padding: '14px 36px 20px',
+          padding: '12px 32px 20px',
           textAlign: 'center',
           borderTop: '1px solid var(--border)',
           fontSize: 11, color: 'var(--text-muted)',
@@ -324,7 +293,7 @@ export default function Login({ theme, toggleTheme }) {
           تم التصميم بواسطة{' '}
           <span style={{
             fontWeight: 700,
-            background: 'linear-gradient(135deg, var(--action), var(--gold-500))',
+            background: 'linear-gradient(135deg, var(--action), var(--info-light))',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>إبراهيم كنعي</span>
         </div>
@@ -332,21 +301,6 @@ export default function Login({ theme, toggleTheme }) {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
-        @keyframes orbDrift1 {
-          0%   { transform: translate(0,0) scale(1); }
-          50%  { transform: translate(-30px,20px) scale(1.05); }
-          100% { transform: translate(0,0) scale(1); }
-        }
-        @keyframes orbDrift2 {
-          0%   { transform: translate(0,0) scale(1); }
-          50%  { transform: translate(35px,-25px) scale(1.06); }
-          100% { transform: translate(0,0) scale(1); }
-        }
-        @keyframes orbDrift3 {
-          0%   { transform: translate(0,0) scale(1); }
-          50%  { transform: translate(-20px,25px) scale(1.04); }
-          100% { transform: translate(0,0) scale(1); }
-        }
       `}</style>
     </div>
   )

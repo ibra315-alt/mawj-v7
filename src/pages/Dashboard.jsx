@@ -7,13 +7,12 @@ import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcArrowLeft, IcPlus, IcAler
 import Sparkline from '../components/Sparkline'
 
 /* ══════════════════════════════════════════════════
-   DASHBOARD v11 — "THE CRYSTAL PULSE"
-   Glass hero · Ring charts · Activity stream
-   Every panel = frosted glass · Gold-teal accents
+   DASHBOARD v10 — "THE PULSE"
+   Wave hero · Ring charts · Activity stream
 ══════════════════════════════════════════════════ */
 
 const STATUS_COLORS = {
-  new:'#6366f1', ready:'#f59e0b', with_hayyak:'#3b82f6',
+  new:'#7c3aed', ready:'#f59e0b', with_hayyak:'#3b82f6',
   delivered:'#10b981', not_delivered:'#ef4444', cancelled:'#6b7280',
   returned:'#6b7280',
 }
@@ -54,6 +53,7 @@ export default function Dashboard({ onNavigate }) {
       const todayOrders    = allOrders.filter(o => new Date(o.order_date||o.created_at) >= todayStart)
       const yestOrders     = allOrders.filter(o => { const d = new Date(o.order_date||o.created_at); return d >= yestStart && d < todayStart })
 
+      // Revenue = only delivered (non-replacement) orders
       const revFilter      = o => !o.is_replacement && o.status !== 'not_delivered'
       const revenue        = monthOrders.filter(revFilter).reduce((s, o) => s + (o.total || 0), 0)
       const prevRevenue    = prevOrders.filter(revFilter).reduce((s, o) => s + (o.total || 0), 0)
@@ -65,10 +65,12 @@ export default function Dashboard({ onNavigate }) {
       const yestRev   = yestOrders.filter(revFilter).reduce((s, o) => s + (o.total || 0), 0)
       const revChange = yestRev > 0 ? Math.round((todayRev - yestRev) / yestRev * 100) : null
 
+      // Pending COD
       const pendingOrders = allOrders.filter(o => o.status === 'delivered' && !o.hayyak_remittance_id)
       const pendingCOD    = pendingOrders.reduce((s, o) => s + (o.total || 0), 0)
       const pendingHayyak = pendingOrders.reduce((s, o) => s + (o.hayyak_fee || 0), 0)
 
+      // Order status counts
       const delivered    = monthOrders.filter(o => o.status === 'delivered').length
       const notDelivered = monthOrders.filter(o => o.status === 'not_delivered').length
       const inProgress   = monthOrders.filter(o => ['new','ready','with_hayyak'].includes(o.status)).length
@@ -89,6 +91,7 @@ export default function Dashboard({ onNavigate }) {
 
       setOrders(allOrders)
 
+      // 14-day sparklines
       const revByDay = [], ordByDay = [], profByDay = []
       for (let i = 13; i >= 0; i--) {
         const d  = new Date(); d.setDate(d.getDate() - i)
@@ -104,6 +107,7 @@ export default function Dashboard({ onNavigate }) {
     finally { setLoading(false) }
   }
 
+  // Build activity stream from today's orders
   const stream = useMemo(() => {
     if (!orders.length) return []
     const now = new Date()
@@ -113,6 +117,7 @@ export default function Dashboard({ onNavigate }) {
       .sort((a, b) => new Date(b.order_date||b.created_at) - new Date(a.order_date||a.created_at))
   }, [orders])
 
+  // In-progress orders (all time, latest first)
   const inProgressOrders = useMemo(() => {
     return orders
       .filter(o => ['new','ready','with_hayyak'].includes(o.status))
@@ -133,72 +138,37 @@ export default function Dashboard({ onNavigate }) {
   return (
     <div className="page">
       {/* ── Header ── */}
-      <div style={{ marginBottom:28 }}>
-        <h1 style={{ fontSize:26, fontWeight:900, margin:0, color:'var(--text)' }}>لوحة التحكم</h1>
+      <div style={{ marginBottom:24 }}>
+        <h1 style={{ fontSize:24, fontWeight:900, margin:0, color:'var(--text)' }}>لوحة التحكم</h1>
         <p style={{ color:'var(--text-muted)', marginTop:4, fontSize:13 }}>
           {new Date().toLocaleDateString('ar-AE', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
         </p>
-        {/* Accent line */}
-        <div style={{
-          height:1.5, marginTop:16,
-          background:'linear-gradient(90deg, transparent, var(--action), var(--gold-500), transparent)',
-          opacity:0.3, borderRadius:999,
-        }}/>
       </div>
 
       {/* ════════════════════════════════════════════
-         1. THE WAVE — Today's revenue hero (glass)
+         1. THE WAVE — Today's revenue hero
       ════════════════════════════════════════════ */}
       <div
         onClick={() => onNavigate('orders')}
         style={{
           position:'relative', overflow:'hidden', cursor:'pointer',
-          background:'var(--bg-surface)',
-          backdropFilter:'var(--glass-blur)',
-          WebkitBackdropFilter:'var(--glass-blur)',
-          border:'1px solid var(--border)',
+          background:'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(59,130,246,0.06) 50%, rgba(139,92,246,0.04) 100%)',
+          border:'1px solid rgba(56,189,248,0.15)',
           borderRadius:'var(--r-xl)',
-          padding:'28px 24px 22px',
+          padding:'28px 24px 20px',
           marginBottom:20,
-          transition:'border-color 200ms ease, box-shadow 200ms ease',
+          transition:'border-color 200ms ease',
         }}
-        onMouseEnter={e => {
-          e.currentTarget.style.borderColor='rgba(0,228,184,0.20)'
-          e.currentTarget.style.boxShadow='0 8px 40px rgba(0,228,184,0.08)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.borderColor='var(--border)'
-          e.currentTarget.style.boxShadow='none'
-        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor='rgba(56,189,248,0.35)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor='rgba(56,189,248,0.15)'}
       >
-        {/* Top accent bar */}
-        <div style={{
-          position:'absolute', top:0, left:0, right:0, height:2,
-          background:'linear-gradient(90deg, var(--action), var(--gold-500), var(--action))',
-          opacity:0.5,
-        }}/>
-
-        {/* Ambient glow */}
-        <div style={{
-          position:'absolute', top:-60, right:-40,
-          width:200, height:200, borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(0,228,184,0.15), transparent 65%)',
-          filter:'blur(60px)', pointerEvents:'none',
-        }}/>
-        <div style={{
-          position:'absolute', bottom:-40, left:-20,
-          width:160, height:160, borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(201,169,110,0.10), transparent 65%)',
-          filter:'blur(50px)', pointerEvents:'none',
-        }}/>
-
         {/* Wave SVG background */}
         <svg
           viewBox="0 0 400 80"
           preserveAspectRatio="none"
           style={{
-            position:'absolute', bottom:0, left:0, right:0, height:'45%',
-            opacity:0.10, pointerEvents:'none',
+            position:'absolute', bottom:0, left:0, right:0, height:'50%',
+            opacity:0.12, pointerEvents:'none',
           }}
         >
           <path
@@ -211,31 +181,30 @@ export default function Dashboard({ onNavigate }) {
           />
           <defs>
             <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#00e4b8"/>
-              <stop offset="50%" stopColor="#c9a96e"/>
-              <stop offset="100%" stopColor="#6366f1"/>
+              <stop offset="0%" stopColor="#38BDF8"/>
+              <stop offset="50%" stopColor="#3B82F6"/>
+              <stop offset="100%" stopColor="#8B5CF6"/>
             </linearGradient>
           </defs>
         </svg>
 
         <div style={{ position:'relative', zIndex:1 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:10 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:8 }}>
             إيرادات اليوم
           </div>
           <div style={{ display:'flex', alignItems:'flex-end', gap:16, flexWrap:'wrap' }}>
             <div style={{
-              fontSize:38, fontWeight:900, color:'var(--action)',
+              fontSize:36, fontWeight:900, color:'var(--action)',
               fontFamily:'Inter,sans-serif', lineHeight:1, letterSpacing:'-0.03em',
             }}>
               {formatCurrency(data?.todayRevenue || 0)}
             </div>
-            <div style={{ display:'flex', alignItems:'center', gap:12, paddingBottom:6 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, paddingBottom:4 }}>
               <span style={{
-                padding:'4px 12px', borderRadius:999,
+                padding:'4px 10px', borderRadius:999,
                 fontSize:12, fontWeight:800,
-                background: (data?.revChange ?? 0) >= 0 ? 'rgba(16,185,129,0.10)' : 'rgba(239,68,68,0.10)',
+                background: (data?.revChange ?? 0) >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
                 color: (data?.revChange ?? 0) >= 0 ? '#10b981' : 'var(--danger)',
-                border: `1px solid ${(data?.revChange ?? 0) >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)'}`,
               }}>
                 {data?.revChange !== null ? `${(data?.revChange ?? 0) >= 0 ? '↑' : '↓'} ${Math.abs(data?.revChange || 0)}%` : '—'}
               </span>
@@ -246,9 +215,10 @@ export default function Dashboard({ onNavigate }) {
           </div>
         </div>
 
+        {/* 14-day sparkline in the hero */}
         {sparkData.revenue.length > 1 && (
-          <div style={{ position:'relative', zIndex:1, marginTop:18, opacity:0.7 }}>
-            <Sparkline data={sparkData.revenue} color="#00e4b8" width={340} height={40}/>
+          <div style={{ position:'relative', zIndex:1, marginTop:16, opacity:0.8 }}>
+            <Sparkline data={sparkData.revenue} color="#38BDF8" width={340} height={40}/>
           </div>
         )}
       </div>
@@ -263,19 +233,19 @@ export default function Dashboard({ onNavigate }) {
           label="إيرادات الشهر"
           value={formatCurrency(data?.revenue || 0)}
           pct={Math.min(100, data?.revenueProgress || 0)}
-          color="#00e4b8"
+          color="#38BDF8"
           sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% مقارنة بالشهر السابق` : 'أول شهر'}
           sparkData={sparkData.revenue}
-          sparkColor="#00e4b8"
+          sparkColor="#38BDF8"
         />
         <RingCard
           label="معدل التسليم"
           value={`${data?.deliveryRate || 0}%`}
           pct={data?.deliveryRate || 0}
-          color="#6366f1"
+          color="#3B82F6"
           sub={`${data?.delivered || 0} مسلّم من ${data?.totalOrders || 0}`}
           sparkData={sparkData.orders}
-          sparkColor="#6366f1"
+          sparkColor="#3B82F6"
         />
         <RingCard
           label="هامش الربح"
@@ -288,7 +258,7 @@ export default function Dashboard({ onNavigate }) {
         />
       </div>
 
-      {/* ── Quick stat cards ── */}
+      {/* ── Quick stat cards row ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10, marginBottom:20 }}
         className="stats-grid-4"
       >
@@ -305,21 +275,13 @@ export default function Dashboard({ onNavigate }) {
           style={{
             display:'flex', alignItems:'center', gap:12, padding:'14px 16px',
             marginBottom:20, cursor:'pointer',
-            background:'rgba(245,158,11,0.04)',
-            backdropFilter:'var(--glass-blur-subtle)',
-            WebkitBackdropFilter:'var(--glass-blur-subtle)',
-            border:'1px solid rgba(245,158,11,0.12)',
+            background:'rgba(245,158,11,0.06)',
+            border:'1.5px solid rgba(245,158,11,0.25)',
             borderRadius:'var(--r-lg)',
-            transition:'all 140ms ease',
+            transition:'background 120ms',
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background='rgba(245,158,11,0.08)'
-            e.currentTarget.style.borderColor='rgba(245,158,11,0.20)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background='rgba(245,158,11,0.04)'
-            e.currentTarget.style.borderColor='rgba(245,158,11,0.12)'
-          }}
+          onMouseEnter={e => e.currentTarget.style.background='rgba(245,158,11,0.10)'}
+          onMouseLeave={e => e.currentTarget.style.background='rgba(245,158,11,0.06)'}
         >
           <IcAlert size={20} style={{ color:'#f59e0b', flexShrink:0 }}/>
           <div style={{ flex:1 }}>
@@ -335,9 +297,10 @@ export default function Dashboard({ onNavigate }) {
       )}
 
       {/* ════════════════════════════════════════════
-         3. THE STREAM — Activity feed (glass panels)
+         3. THE STREAM — Activity feed
       ════════════════════════════════════════════ */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))', gap:14 }}>
+        {/* Today's orders */}
         <StreamCard
           title="طلبات اليوم"
           count={stream.length}
@@ -357,6 +320,7 @@ export default function Dashboard({ onNavigate }) {
           )}
         </StreamCard>
 
+        {/* In-progress orders */}
         {inProgressOrders.length > 0 && (
           <StreamCard
             title="قيد المعالجة"
@@ -373,7 +337,7 @@ export default function Dashboard({ onNavigate }) {
         )}
       </div>
 
-      {/* ── Quick shortcuts ── */}
+      {/* ── Quick shortcuts FAB (mobile) ── */}
       <div style={{
         display:'flex', gap:8, marginTop:20, overflowX:'auto',
         paddingBottom:4, scrollbarWidth:'none',
@@ -386,24 +350,13 @@ export default function Dashboard({ onNavigate }) {
         ].map(a => (
           <button key={a.label} onClick={a.action} style={{
             display:'flex', flexDirection:'column', alignItems:'center', gap:6,
-            padding:'14px 18px',
-            background:'var(--bg-surface)',
-            backdropFilter:'var(--glass-blur-subtle)',
-            WebkitBackdropFilter:'var(--glass-blur-subtle)',
-            border:'1px solid var(--border)',
-            boxShadow:'var(--card-shadow)',
-            borderRadius:'var(--r-md)',
-            cursor:'pointer', fontFamily:'inherit', flexShrink:0, minWidth:76,
-            color:a.color, transition:'all 140ms ease',
+            padding:'12px 16px', background:'var(--bg-surface)',
+            boxShadow:'var(--card-shadow)', borderRadius:'var(--r-md)',
+            cursor:'pointer', fontFamily:'inherit', flexShrink:0, minWidth:72, border:'none',
+            color:a.color, transition:'transform 120ms ease',
           }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform='translateY(-2px)'
-              e.currentTarget.style.borderColor='var(--border-strong)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform='translateY(0)'
-              e.currentTarget.style.borderColor='var(--border)'
-            }}
+            onMouseEnter={e => e.currentTarget.style.transform='translateY(-2px)'}
+            onMouseLeave={e => e.currentTarget.style.transform='translateY(0)'}
           >
             {a.icon}
             <span style={{ fontSize:10, fontWeight:700, whiteSpace:'nowrap', color:'var(--text-muted)' }}>{a.label}</span>
@@ -414,12 +367,11 @@ export default function Dashboard({ onNavigate }) {
   )
 }
 
-
 /* ═══════════════════════════════════════════════════
-   RING CARD — Glass panel with arc chart
+   RING CARD — Arc chart + value + sparkline
 ═══════════════════════════════════════════════════ */
 function RingCard({ label, value, pct, color, sub, sparkData, sparkColor }) {
-  const size = 64, sw = 4.5
+  const size = 64, sw = 5
   const r = (size - sw * 2) / 2
   const circ = 2 * Math.PI * r
   const dash = circ * Math.min(100, pct) / 100
@@ -427,22 +379,16 @@ function RingCard({ label, value, pct, color, sub, sparkData, sparkColor }) {
   return (
     <div style={{
       background:'var(--bg-surface)',
-      backdropFilter:'var(--glass-blur)',
-      WebkitBackdropFilter:'var(--glass-blur)',
-      border:'1px solid var(--border)',
       borderRadius:'var(--r-lg)',
       padding:'18px 16px',
       boxShadow:'var(--card-shadow)',
       position:'relative', overflow:'hidden',
     }}>
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${color},transparent)`, opacity:0.4 }}/>
-      {/* Ambient glow */}
-      <div style={{
-        position:'absolute', top:-30, right:-30, width:80, height:80, borderRadius:'50%',
-        background:color, opacity:0.04, filter:'blur(30px)', pointerEvents:'none',
-      }}/>
+      {/* Top accent */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${color},transparent)`, opacity:0.5 }}/>
 
       <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+        {/* Arc ring */}
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink:0 }}>
           <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--bg-hover)" strokeWidth={sw}/>
           <circle
@@ -461,14 +407,15 @@ function RingCard({ label, value, pct, color, sub, sparkData, sparkColor }) {
         </svg>
 
         <div style={{ minWidth:0, flex:1 }}>
-          <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.07em', textTransform:'uppercase', marginBottom:4 }}>{label}</div>
+          <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:4 }}>{label}</div>
           <div style={{ fontSize:18, fontWeight:900, color, lineHeight:1.1, fontFamily:'Inter,sans-serif' }}>{value}</div>
           {sub && <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:4, lineHeight:1.3 }}>{sub}</div>}
         </div>
       </div>
 
+      {/* Mini sparkline */}
       {sparkData?.length > 1 && (
-        <div style={{ marginTop:10, opacity:0.5 }}>
+        <div style={{ marginTop:10, opacity:0.6 }}>
           <Sparkline data={sparkData} color={sparkColor || color} width={160} height={24}/>
         </div>
       )}
@@ -476,34 +423,28 @@ function RingCard({ label, value, pct, color, sub, sparkData, sparkColor }) {
   )
 }
 
-
 /* ═══════════════════════════════════════════════════
-   MINI STAT — Compact glass card
+   MINI STAT — Compact stat card
 ═══════════════════════════════════════════════════ */
 function MiniStat({ label, value, color, icon }) {
   return (
     <div style={{
-      background:'var(--bg-surface)',
-      backdropFilter:'var(--glass-blur-subtle)',
-      WebkitBackdropFilter:'var(--glass-blur-subtle)',
-      border:'1px solid var(--border)',
-      borderRadius:'var(--r-md)',
+      background:'var(--bg-surface)', borderRadius:'var(--r-md)',
       padding:'14px 16px', boxShadow:'var(--card-shadow)',
       position:'relative', overflow:'hidden',
     }}>
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${color},transparent)`, opacity:0.35 }}/>
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${color},transparent)`, opacity:0.4 }}/>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
-        <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.07em', textTransform:'uppercase' }}>{label}</div>
-        {icon && <div style={{ color, opacity:0.6 }}>{icon}</div>}
+        <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>{label}</div>
+        {icon && <div style={{ color, opacity:0.7 }}>{icon}</div>}
       </div>
       <div style={{ fontSize:20, fontWeight:900, color, lineHeight:1.1, fontFamily:'Inter,sans-serif' }}>{value}</div>
     </div>
   )
 }
 
-
 /* ═══════════════════════════════════════════════════
-   STREAM CARD — Collapsible glass panel
+   STREAM CARD — Collapsible section with items
 ═══════════════════════════════════════════════════ */
 function StreamCard({ title, count, icon, color, children, onAction, actionLabel }) {
   const [expanded, setExpanded] = useState(true)
@@ -511,9 +452,6 @@ function StreamCard({ title, count, icon, color, children, onAction, actionLabel
   return (
     <div style={{
       background:'var(--bg-surface)',
-      backdropFilter:'var(--glass-blur)',
-      WebkitBackdropFilter:'var(--glass-blur)',
-      border:'1px solid var(--border)',
       borderRadius:'var(--r-lg)',
       boxShadow:'var(--card-shadow)',
       overflow:'hidden',
@@ -530,20 +468,15 @@ function StreamCard({ title, count, icon, color, children, onAction, actionLabel
           <span style={{ fontWeight:800, fontSize:14 }}>{title}</span>
           {count > 0 && (
             <span style={{
-              padding:'2px 9px', borderRadius:999,
+              padding:'2px 8px', borderRadius:999,
               fontSize:11, fontWeight:800,
-              background:`${color}12`, color,
-              border:`1px solid ${color}10`,
+              background:`${color}18`, color,
             }}>
               {count}
             </span>
           )}
         </div>
-        <span style={{
-          color:'var(--text-muted)', fontSize:13,
-          transition:'transform 200ms ease',
-          transform: expanded ? 'rotate(180deg)' : 'rotate(0)',
-        }}>▼</span>
+        <span style={{ color:'var(--text-muted)', fontSize:13, transition:'transform 200ms ease', transform: expanded ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
       </div>
 
       {expanded && (
@@ -551,20 +484,14 @@ function StreamCard({ title, count, icon, color, children, onAction, actionLabel
           {children}
           {onAction && (
             <button onClick={e => { e.stopPropagation(); onAction() }} style={{
-              marginTop:10, width:'100%', padding:'10px',
+              marginTop:10, width:'100%', padding:'9px',
               background:'none', border:'1.5px dashed var(--border)',
               borderRadius:'var(--r-md)', color:'var(--text-muted)',
               fontSize:12, cursor:'pointer', fontFamily:'inherit', fontWeight:600,
-              transition:'all 140ms ease',
+              transition:'border-color 120ms ease',
             }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor='var(--action)'
-                e.currentTarget.style.color='var(--action)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor='var(--border)'
-                e.currentTarget.style.color='var(--text-muted)'
-              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor='var(--action)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}
             >
               {actionLabel}
             </button>
@@ -575,9 +502,8 @@ function StreamCard({ title, count, icon, color, children, onAction, actionLabel
   )
 }
 
-
 /* ═══════════════════════════════════════════════════
-   STREAM ORDER ROW — Glass row with status accent
+   STREAM ORDER ROW — Single order in activity stream
 ═══════════════════════════════════════════════════ */
 function StreamOrderRow({ order }) {
   const color = STATUS_COLORS[order.status] || '#6b7280'
@@ -585,13 +511,13 @@ function StreamOrderRow({ order }) {
   return (
     <div style={{
       display:'flex', alignItems:'center', gap:12,
-      padding:'10px 14px',
-      background:'var(--bg-hover)',
-      border:'1px solid var(--border)',
+      padding:'10px 14px', background:'var(--bg-hover)',
       borderRadius:'var(--r-md)',
       borderInlineStart:`3px solid ${color}`,
     }}>
-      <div style={{ width:7, height:7, borderRadius:'50%', background:color, flexShrink:0, boxShadow:`0 0 6px ${color}50` }}/>
+      {/* Status dot */}
+      <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0, boxShadow:`0 0 6px ${color}60` }}/>
+
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontWeight:700, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
           {order.customer_name || 'عميل'}
@@ -601,15 +527,16 @@ function StreamOrderRow({ order }) {
           {order.customer_city && <span>• {order.customer_city}</span>}
         </div>
       </div>
+
       <span style={{
         padding:'3px 9px', borderRadius:999,
         fontSize:10, fontWeight:700,
-        background:`${color}12`, color,
-        border:`1px solid ${color}10`,
+        background:`${color}18`, color,
         flexShrink:0,
       }}>
         {STATUS_LABELS[order.status] || order.status}
       </span>
+
       <div style={{
         fontWeight:800, color:'var(--action)', fontSize:13,
         fontFamily:'Inter,sans-serif', flexShrink:0,

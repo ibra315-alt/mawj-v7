@@ -22,12 +22,32 @@ import MawjLogo from './components/Logo'
 import CursorSpotlight from './components/CursorSpotlight'
 import AIAssistant from './components/AIAssistant'
 
+/* ══════════════════════════════════════════════════
+   ROLE-BASED ACCESS CONTROL
+   admin      = everything
+   accountant = orders (CRUD), customers, expenses, suppliers,
+                accounting (no profit split), inventory (view)
+   sales      = orders (CRUD), customers
+   viewer     = read-only dashboard + orders
+══════════════════════════════════════════════════ */
+const ROLE_ACCESS = {
+  admin:      ['dashboard','orders','customers','inventory','suppliers','expenses','accounting','partners','reports','settings','import','hayyak','agent'],
+  accountant: ['dashboard','orders','customers','inventory','suppliers','expenses','accounting','hayyak'],
+  sales:      ['dashboard','orders','customers'],
+  viewer:     ['dashboard','orders'],
+}
+
+function canAccess(role, page) {
+  const pages = ROLE_ACCESS[role] || ROLE_ACCESS.viewer
+  return pages.includes(page)
+}
+
 export default function App() {
   const [session, setSession]   = useState(undefined)
   const [user, setUser]         = useState(null)
   const [page, setPage]         = useState(() => localStorage.getItem('mawj-page') || 'dashboard')
   const [pageKey, setPageKey]   = useState(0)
-  const [theme, setTheme]       = useState('dark')
+  const [theme, setTheme]       = useState('light')  // Light mode default
   const [showAI, setShowAI]     = useState(false)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState(null)
@@ -60,7 +80,8 @@ export default function App() {
   useEffect(() => {
     loadAndApplyAppearance().then(prefs => {
       window.__mawjPrefs = prefs || DEFAULT_PREFS
-      setTheme(window.__mawjPrefs.mode || 'dark')
+      // Default to light if no saved preference
+      setTheme(window.__mawjPrefs.mode || 'light')
     })
   }, [])
 
@@ -83,6 +104,11 @@ export default function App() {
   }
 
   function navigate(id) {
+    // Role-based guard
+    if (user && !canAccess(user.role, id)) {
+      toast('ليس لديك صلاحية للوصول لهذه الصفحة', 'error')
+      return
+    }
     setPage(id)
     setPageKey(k => k + 1)
     localStorage.setItem('mawj-page', id)
@@ -113,6 +139,7 @@ export default function App() {
       <div style={{
         width: 64, height: 64, borderRadius: 18,
         background: 'var(--action-soft)',
+        border: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <MawjLogo size={40} color="var(--action)" animated />
@@ -144,7 +171,9 @@ export default function App() {
 
   function renderPage() {
     const props = { user, onNavigate: navigate, theme, toggleTheme }
-    switch (page) {
+    // Enforce role access — redirect to dashboard if no access
+    const currentPage = (user && !canAccess(user.role, page)) ? 'dashboard' : page
+    switch (currentPage) {
       case 'dashboard':   return <Dashboard    key={pageKey} {...props} />
       case 'orders':      return <Orders       key={pageKey} {...props} />
       case 'customers':   return <Customers    key={pageKey} {...props} />
@@ -177,7 +206,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PWA install — compact square, bottom-left above AI btn ── */}
+      {/* ── PWA install — compact square ── */}
       {installPrompt && (
         <div style={{
           position: 'fixed', bottom: 140, left: 16, zIndex: 9999,
@@ -212,7 +241,7 @@ export default function App() {
           </div>
           <button onClick={handleInstall} style={{
             background: 'var(--action)', border: 'none',
-            borderRadius: 'var(--r-md)', color: '#031a13',
+            borderRadius: 'var(--r-md)', color: '#fff',
             padding: '8px 0', fontSize: 12, fontWeight: 800,
             cursor: 'pointer', fontFamily: 'inherit', width: '100%',
             WebkitTapHighlightColor: 'transparent',
@@ -232,7 +261,7 @@ export default function App() {
         {renderPage()}
       </Layout>
 
-      {/* ── Floating AI button — positioned above dock ── */}
+      {/* ── Floating AI button ── */}
       <button
         onClick={() => setShowAI(p => !p)}
         title="موج AI"
@@ -248,7 +277,7 @@ export default function App() {
           WebkitTapHighlightColor: 'transparent',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={showAI ? '#fff' : '#031a13'} strokeWidth="2.2" strokeLinecap="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={showAI ? '#fff' : '#fff'} strokeWidth="2.2" strokeLinecap="round">
           {showAI
             ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
             : <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></>

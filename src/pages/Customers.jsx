@@ -6,11 +6,16 @@ import { IcSearch, IcWhatsapp } from '../components/Icons'
 
 function getSegment(c) {
   const daysSinceLast = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
-  if (c.totalSpent >= 2000 || c.orderCount >= 5) return { label:'VIP',   color:'#f59e0b', icon:'' }
-  if (c.orderCount >= 3 && daysSinceLast < 60)   return { label:'مخلص', color:'#00e4b8', icon:'⭐' }
-  if (daysSinceLast > 90 && c.orderCount >= 2)   return { label:'خامل', color:'#ef4444', icon:'' }
-  if (c.orderCount === 1)                        return { label:'جديد',  color:'#a78bfa', icon:'' }
-  return                                                { label:'نشط',   color:'#34d399', icon:'' }
+  if (c.totalSpent >= 2000 || c.orderCount >= 5) return { label:'VIP',   color:'#F59E0B', icon:'', tier:1 }
+  if (c.orderCount >= 3 && daysSinceLast < 60)   return { label:'مخلص', color:'#38BDF8', icon:'⭐', tier:2 }
+  if (daysSinceLast > 90 && c.orderCount >= 2)   return { label:'خامل', color:'#EF4444', icon:'', tier:4 }
+  if (c.orderCount === 1)                        return { label:'جديد',  color:'#8B5CF6', icon:'', tier:3 }
+  return                                                { label:'نشط',   color:'#10B981', icon:'', tier:2 }
+}
+
+// Generate auto customer ID
+function generateCustomerId(index) {
+  return `MWJ-C${String(index + 1).padStart(4, '0')}`
 }
 
 const SORT_OPTIONS = [
@@ -98,11 +103,11 @@ export default function Customers() {
       {/* Summary */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:16 }}>
         {[
-          { label:'إجمالي العملاء',    value: customers.length,       color:'var(--violet)' },
-          { label:'متوسط قيمة العميل', value: formatCurrency(avgLTV), color:'var(--teal)' },
+          { label:'إجمالي العملاء',    value: customers.length,       color:'var(--info-light)' },
+          { label:'متوسط قيمة العميل', value: formatCurrency(avgLTV), color:'var(--action)' },
           { label:'عملاء VIP',        value: vipCount,                color:'#f59e0b' },
         ].map(s => (
-          <div key={s.label} style={{ background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center' }}>
+          <div key={s.label} style={{ background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', padding:'10px 12px', textAlign:'center' }}>
             <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:3 }}>{s.label}</div>
             <div style={{ fontSize:15, fontWeight:900, color:s.color }}>{s.value}</div>
           </div>
@@ -114,9 +119,9 @@ export default function Customers() {
         {segments.map(seg => (
           <button key={seg} onClick={() => setSegFilter(seg)} style={{
             padding:'5px 12px', borderRadius:999,
-            border:`1.5px solid ${segFilter===seg ? 'var(--teal)' : 'var(--border)'}`,
-            background: segFilter===seg ? 'rgba(0,228,184,0.12)' : 'var(--bg-hover)',
-            color: segFilter===seg ? 'var(--teal)' : 'var(--text-muted)',
+            border:`1.5px solid ${segFilter===seg ? 'var(--action)' : 'var(--border)'}`,
+            background: segFilter===seg ? 'rgba(56,189,248,0.12)' : 'var(--bg-hover)',
+            color: segFilter===seg ? 'var(--action)' : 'var(--text-muted)',
             fontSize:12, fontWeight: segFilter===seg ? 800 : 500,
             cursor:'pointer', fontFamily:'inherit', flexShrink:0, whiteSpace:'nowrap',
           }}>
@@ -141,7 +146,7 @@ export default function Customers() {
       {/* Grid */}
       {filtered.length === 0 ? <Empty title="لا يوجد عملاء"/> : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:12 }}>
-          {filtered.map((c,i) => <CustomerCard key={i} customer={c} onClick={() => setSelected(c)}/>)}
+          {filtered.map((c,i) => <CustomerCard key={i} index={i} customer={c} onClick={() => setSelected(c)}/>)}
         </div>
       )}
 
@@ -155,15 +160,21 @@ export default function Customers() {
   )
 }
 
-function CustomerCard({ customer: c, onClick }) {
+function CustomerCard({ customer: c, onClick, index }) {
   const seg = c.segment
   const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
+  const isVIP = seg.label === 'VIP'
+  const custId = generateCustomerId(index)
   return (
     <div onClick={onClick} className="list-row" style={{
       background:'var(--bg-surface)',
       borderTop:`3px solid ${seg.color}`,
-      borderRadius:'var(--r-lg)', padding:'16px', cursor:'pointer',
-      transition:'box-shadow 120ms ease, transform 120ms ease', boxShadow:'var(--card-shadow)', position:'relative', overflow:'hidden',
+      border: isVIP ? `1.5px solid rgba(245,158,11,0.35)` : '1px solid var(--border)',
+      borderTopWidth: 3, borderTopColor: seg.color, borderTopStyle: 'solid',
+      borderRadius:'var(--r-lg)', padding: isVIP ? '18px' : '16px', cursor:'pointer',
+      transition:'box-shadow 120ms ease, transform 120ms ease',
+      boxShadow: isVIP ? '0 4px 24px rgba(245,158,11,0.12)' : 'var(--card-shadow)',
+      position:'relative', overflow:'hidden',
     }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:40, background:`radial-gradient(ellipse at 50% 0%, ${seg.color}15, transparent 70%)`, pointerEvents:'none' }}/>
       {/* Header */}
@@ -172,8 +183,13 @@ function CustomerCard({ customer: c, onClick }) {
           {(c.name || c.phone || '?')[0]}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:800, fontSize:14, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name || 'بدون اسم'}</div>
-          {c.phone && <div style={{ fontSize:12, color:'var(--text-muted)', direction:'ltr' }}>{c.phone}</div>}
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+            <span style={{ fontWeight:800, fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name || 'بدون اسم'}</span>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <span style={{ fontSize:10, fontFamily:'monospace', color:'var(--action)', fontWeight:700, background:'rgba(56,189,248,0.08)', padding:'1px 6px', borderRadius:4 }}>{custId}</span>
+            {c.phone && <span style={{ fontSize:11, color:'var(--text-muted)', direction:'ltr' }}>{c.phone}</span>}
+          </div>
         </div>
         <span style={{ padding:'3px 8px', borderRadius:999, fontSize:10, fontWeight:800, background:`${seg.color}20`, color:seg.color, border:`1px solid ${seg.color}40`, flexShrink:0 }}>
           {seg.icon} {seg.label}
@@ -182,20 +198,20 @@ function CustomerCard({ customer: c, onClick }) {
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:4, marginBottom:10 }}>
         {[
-          { label:'الإنفاق',    value: formatCurrency(c.totalSpent), color:'var(--teal)' },
-          { label:'الطلبات',   value: c.orderCount,                  color:'var(--violet-light,#a78bfa)' },
+          { label:'الإنفاق',    value: formatCurrency(c.totalSpent), color:'var(--action)' },
+          { label:'الطلبات',   value: c.orderCount,                  color:'var(--info-light)' },
           { label:'المتوسط',   value: formatCurrency(c.avgOrder),   color:'var(--text-sec)' },
         ].map(s => (
-          <div key={s.label} style={{ textAlign:'center', padding:'7px 4px', background:'rgba(255,255,255,0.03)', borderRadius:8 }}>
+          <div key={s.label} style={{ textAlign:'center', padding:'7px 4px', background:'var(--bg-hover)', borderRadius:8 }}>
             <div style={{ fontSize:12, fontWeight:900, color:s.color }}>{s.value}</div>
             <div style={{ fontSize:9, color:'var(--text-muted)', marginTop:2 }}>{s.label}</div>
           </div>
         ))}
       </div>
       {/* Footer */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:10, borderTop:'none' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:10, borderTop:'1px solid var(--border)' }}>
         <div style={{ fontSize:11, color:'var(--text-muted)' }}>
-          {c.city && ` ${c.city} • `}آخر طلب: {daysSince===0 ? 'اليوم' : `منذ ${daysSince} يوم`}
+          {c.city && `${c.city} • `}آخر طلب: {daysSince===0 ? 'اليوم' : `منذ ${daysSince} يوم`}
         </div>
         {c.phone && (
           <a href={`https://wa.me/${c.phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
@@ -233,12 +249,12 @@ function CustomerModal({ customer: c, onClose }) {
         {/* Stats */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:8 }}>
           {[
-            { label:'إجمالي الإنفاق',   value: formatCurrency(c.totalSpent),  color:'var(--teal)' },
+            { label:'إجمالي الإنفاق',   value: formatCurrency(c.totalSpent),  color:'var(--action)' },
             { label:'صافي الربح',       value: formatCurrency(c.totalProfit), color: c.totalProfit>=0?'var(--green,#34d399)':'var(--red)' },
-            { label:'عدد الطلبات',      value: `${c.orderCount} طلب`,         color:'var(--violet-light,#a78bfa)' },
+            { label:'عدد الطلبات',      value: `${c.orderCount} طلب`,         color:'var(--info-light)' },
             { label:'متوسط قيمة الطلب', value: formatCurrency(c.avgOrder),   color:'var(--text)' },
           ].map(s => (
-            <div key={s.label} style={{ padding:'12px 14px', background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-md)' }}>
+            <div key={s.label} style={{ padding:'12px 14px', background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:'var(--r-md)' }}>
               <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>{s.label}</div>
               <div style={{ fontSize:18, fontWeight:900, color:s.color }}>{s.value}</div>
             </div>
@@ -256,11 +272,11 @@ function CustomerModal({ customer: c, onClose }) {
           <div style={{ fontWeight:700, fontSize:13, color:'var(--text-sec)', marginBottom:8 }}>سجل الطلبات</div>
           <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:220, overflowY:'auto' }}>
             {sorted.map(o => (
-              <div key={o.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:'var(--bg-hover)', borderRadius:'var(--r-md)', border:'none' }}>
+              <div key={o.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:'var(--bg-hover)', borderRadius:'var(--r-md)', border:'1px solid var(--border)' }}>
                 <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace', fontWeight:600, flexShrink:0 }}>{o.order_number}</span>
                 <span style={{ fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>{formatDate(o.created_at)}</span>
                 {o.items?.length > 0 && <span style={{ fontSize:11, color:'var(--text-sec)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.items.map(i=>`${i.name}×${i.qty}`).join('، ')}</span>}
-                <span style={{ fontWeight:800, color:'var(--teal)', fontSize:13, flexShrink:0 }}>{formatCurrency(o.total)}</span>
+                <span style={{ fontWeight:800, color:'var(--action)', fontSize:13, flexShrink:0 }}>{formatCurrency(o.total)}</span>
               </div>
             ))}
           </div>
@@ -378,8 +394,8 @@ function WhatsAppBroadcast({ open, onClose, customers }) {
         )}
 
         {sending && (
-          <div style={{ padding:'10px 14px', background:'rgba(0,228,184,0.06)', border:'1px solid rgba(0,228,184,0.2)', borderRadius:'var(--r-md)', textAlign:'center' }}>
-            <div style={{ fontSize:13, color:'var(--teal)', fontWeight:700 }}>جاري الإرسال... {sentCount}/{targets.length}</div>
+          <div style={{ padding:'10px 14px', background:'rgba(56,189,248,0.06)', border:'1px solid rgba(56,189,248,0.2)', borderRadius:'var(--r-md)', textAlign:'center' }}>
+            <div style={{ fontSize:13, color:'var(--action)', fontWeight:700 }}>جاري الإرسال... {sentCount}/{targets.length}</div>
             <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>سيتم فتح واتساب لكل عميل — يرجى عدم إغلاق النوافذ</div>
           </div>
         )}

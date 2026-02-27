@@ -13,7 +13,8 @@ import { IcPlus, IcSave, IcDownload } from '../components/Icons'
 
 const SECTIONS = [
   { id:'business',      label:'المتجر',           desc:'معلومات المتجر والمنتجات', icon:'🏪' },
-  { id:'partners',      label:'الشركاء',          desc:'إبراهيم وإحسان والحصص',   icon:'🤝' },
+  { id:'financial',     label:'المالية',           desc:'الإيرادات والضرائب والميزانية', icon:'💰' },
+  { id:'partners',      label:'الشركاء',          desc:'إبراهيم وإحسان والحصص',   icon:'🤝', adminOnly:true },
   { id:'statuses',      label:'الحالات',          desc:'حالات الطلبات وألوانها',  icon:'🔖' },
   { id:'team',          label:'الفريق',           desc:'أعضاء وصلاحيات',          icon:'👥' },
   { id:'whatsapp',      label:'واتساب',           desc:'قوالب الرسائل',           icon:'💬' },
@@ -25,23 +26,26 @@ const SECTIONS = [
   { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد',          icon:'💾' },
 ]
 
-export default function Settings({ theme, toggleTheme }) {
+export default function Settings({ theme, toggleTheme, user }) {
+  const isAdmin = user?.role === 'admin'
+  const visibleSections = SECTIONS.filter(s => !s.adminOnly || isAdmin)
   const [section, setSection] = useState('business')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState({ business:{}, statuses:[], products:[], templates:{}, partners:[], ai_settings:{} })
+  const [data, setData] = useState({ business:{}, statuses:[], products:[], templates:{}, partners:[], ai_settings:{}, financial:{} })
 
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
     try {
-      const [business, statuses, products, templates, rawPartners, aiSettings] = await Promise.all([
+      const [business, statuses, products, templates, rawPartners, aiSettings, financial] = await Promise.all([
         SettingsDB.get('business'),
         SettingsDB.get('statuses'),
         SettingsDB.get('products'),
         SettingsDB.get('whatsapp_templates'),
         SettingsDB.get('partners'),
         SettingsDB.get('ai_settings'),
+        SettingsDB.get('financial'),
       ])
       // Auto-seed partners if empty
       let partners = rawPartners
@@ -68,7 +72,7 @@ export default function Settings({ theme, toggleTheme }) {
         aiSettingsMutable = { ...aiSettingsMutable, model: GEMINI_REMAP[aiSettingsMutable.model] }
         SettingsDB.set('ai_settings', aiSettingsMutable).catch(()=>{})
       }
-      setData({ business:business||{}, statuses:statuses||[], products:products||[], templates:templates||{}, partners, ai_settings:aiSettingsMutable||{} })
+      setData({ business:business||{}, statuses:statuses||[], products:products||[], templates:templates||{}, partners, ai_settings:aiSettingsMutable||{}, financial:financial||{} })
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }
@@ -89,21 +93,23 @@ export default function Settings({ theme, toggleTheme }) {
     </div>
   )
 
-  const active = SECTIONS.find(s=>s.id===section)
+  const active = visibleSections.find(s=>s.id===section) || visibleSections[0]
 
   const contentProps = {
-    data, updateData, theme, toggleTheme,
+    data, updateData, theme, toggleTheme, user,
     statuses:    data.statuses,
     products:    data.products,
     templates:   data.templates,
     business:    data.business,
     partners:    data.partners || [],
     ai_settings: data.ai_settings || {},
+    financial:   data.financial || {},
   }
 
   function renderSection() {
     switch(section) {
       case 'business':      return <BusinessTab      {...contentProps} />
+      case 'financial':     return <FinancialTab     {...contentProps} />
       case 'partners':      return <PartnersTab      {...contentProps} />
       case 'statuses':      return <StatusesTab      {...contentProps} />
       case 'team':          return <TeamTab />
@@ -126,7 +132,7 @@ export default function Settings({ theme, toggleTheme }) {
       background:'var(--bg)', display:'flex', flexDirection:'column',
       animation:'pageIn 0.22s var(--ease-io) both',
     }}>
-      <div style={{height:3,flexShrink:0,background:'linear-gradient(90deg,var(--violet-light),var(--teal),var(--pink))'}} />
+      <div style={{height:3,flexShrink:0,background:'linear-gradient(90deg,var(--action),var(--info-light),var(--action))'}} />
       <div style={{
         display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'14px 16px', borderBottom:'none',
@@ -134,7 +140,7 @@ export default function Settings({ theme, toggleTheme }) {
       }}>
         <button onClick={()=>setMobileOpen(false)} style={{
           display:'flex', alignItems:'center', gap:6,
-          background:'none', border:'none', color:'var(--teal)',
+          background:'none', border:'none', color:'var(--action)',
           fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
         }}>← رجوع</button>
         <h2 style={{fontSize:16,fontWeight:900,margin:0,color:'var(--text)'}}>
@@ -170,25 +176,25 @@ export default function Settings({ theme, toggleTheme }) {
           padding:8,
           position:'sticky', top:16,
         }} className="settings-sidebar">
-          {SECTIONS.map(s => {
+          {visibleSections.map(s => {
             const active = section === s.id
             return (
               <button key={s.id} onClick={() => setSection(s.id)} style={{
                 width:'100%', display:'flex', alignItems:'center', gap:10,
                 padding:'10px 12px', borderRadius:'var(--r-md)',
                 border:'none', background: active
-                  ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))'
+                  ? 'linear-gradient(135deg,rgba(56,189,248,0.12),rgba(37,99,235,0.08))'
                   : 'transparent',
                 cursor:'pointer', fontFamily:'inherit',
                 transition:'all 0.15s ease', textAlign:'right',
-                borderInlineStart: active ? '2.5px solid var(--teal)' : '2.5px solid transparent',
+                borderInlineStart: active ? '2.5px solid var(--action)' : '2.5px solid transparent',
               }}>
                 <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
                 <div style={{minWidth:0,flex:1}}>
-                  <div style={{fontSize:13,fontWeight: active?800:600,color: active?'var(--teal)':'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.label}</div>
+                  <div style={{fontSize:13,fontWeight: active?800:600,color: active?'var(--action)':'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.label}</div>
                   <div style={{fontSize:10,color:'var(--text-muted)',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.desc}</div>
                 </div>
-                {active && <div style={{width:6,height:6,borderRadius:'50%',background:'var(--teal)',flexShrink:0,boxShadow:'0 0 8px var(--teal)'}} />}
+                {active && <div style={{width:6,height:6,borderRadius:'50%',background:'var(--action)',flexShrink:0,boxShadow:'0 0 8px var(--action)'}} />}
               </button>
             )
           })}
@@ -206,7 +212,7 @@ export default function Settings({ theme, toggleTheme }) {
           }}>
             <div style={{
               width:44,height:44,borderRadius:'var(--r-md)',
-              background:'linear-gradient(135deg,rgba(0,228,184,0.15),rgba(37,99,235,0.10))',
+              background:'linear-gradient(135deg,rgba(56,189,248,0.15),rgba(37,99,235,0.10))',
               border:'1px solid var(--action-soft)',
               display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
             }}>{active?.icon}</div>
@@ -221,7 +227,7 @@ export default function Settings({ theme, toggleTheme }) {
 
       {/* ── Mobile: section list ── */}
       <div className="settings-mobile-list">
-        {SECTIONS.map(s => (
+        {visibleSections.map(s => (
           <button key={s.id} onClick={()=>{ setSection(s.id); setMobileOpen(true) }} style={{
             width:'100%', display:'flex', alignItems:'center', gap:14,
             padding:'14px 16px', marginBottom:8,
@@ -233,7 +239,7 @@ export default function Settings({ theme, toggleTheme }) {
           }} className="mawj-card mawj-card-hover">
             <div style={{
               width:44,height:44,borderRadius:'var(--r-md)',flexShrink:0,
-              background:'linear-gradient(135deg,rgba(0,228,184,0.10),rgba(37,99,235,0.08))',
+              background:'linear-gradient(135deg,rgba(56,189,248,0.10),rgba(37,99,235,0.08))',
               border:'none',
               display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
             }}>{s.icon}</div>
@@ -295,12 +301,12 @@ function ControlBtn({ active, onClick, children, style={}, title }) {
   return (
     <button onClick={onClick} title={title} style={{
       minWidth:36,height:36,padding:'0 10px',borderRadius:'var(--r-md)',
-      border:`2px solid ${active?'var(--teal)':'var(--border)'}`,
-      background: active ? 'linear-gradient(135deg,rgba(0,228,184,0.12),rgba(37,99,235,0.08))' : 'var(--bg-hover)',
-      color: active?'var(--teal)':'var(--text-sec)',
+      border:`2px solid ${active?'var(--action)':'var(--border)'}`,
+      background: active ? 'linear-gradient(135deg,rgba(56,189,248,0.12),rgba(37,99,235,0.08))' : 'var(--bg-hover)',
+      color: active?'var(--action)':'var(--text-sec)',
       cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:13,
       transition:'all 0.15s ease',
-      boxShadow: active ? '0 0 12px rgba(0,228,184,0.2)' : 'none',
+      boxShadow: active ? '0 0 12px rgba(56,189,248,0.2)' : 'none',
       ...style,
     }}>{children}</button>
   )
@@ -319,12 +325,12 @@ function GlassRow({ children, style }) {
   )
 }
 
-function InfoBox({ children, color='var(--teal)', icon='' }) {
+function InfoBox({ children, color='var(--action)', icon='' }) {
   return (
     <div style={{
       padding:'12px 16px',
-      background:`rgba(${color==='var(--teal)'?'0,228,184':'37,99,235'},0.06)`,
-      border:`1px solid ${color==='var(--teal)'?'rgba(0,228,184,0.18)':'rgba(37,99,235,0.18)'}`,
+      background:`rgba(${color==='var(--action)'?'0,228,184':'37,99,235'},0.06)`,
+      border:`1px solid ${color==='var(--action)'?'rgba(56,189,248,0.18)':'rgba(37,99,235,0.18)'}`,
       borderRadius:'var(--r-md)',fontSize:13,color:'var(--text-sec)',
       display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
     }}>
@@ -371,6 +377,7 @@ function BusinessTab({ data, products, partners, updateData }) {
           <Input label="الهدف الشهري (د.إ)" type="number" value={form.monthly_target||''} onChange={e=>field('monthly_target',parseFloat(e.target.value)||0)} />
           <Input label="بادئة رقم الطلب" value={form.order_prefix||'MWJ'} onChange={e=>field('order_prefix',e.target.value)} placeholder="MWJ" dir="ltr" />
           <Input label="نسبة الضريبة / VAT %" type="number" value={form.vat_rate||''} onChange={e=>field('vat_rate',parseFloat(e.target.value)||0)} />
+          <Input label="بادئة رقم العميل" value={form.customer_prefix||'MWJ-C'} onChange={e=>field('customer_prefix',e.target.value)} placeholder="MWJ-C" dir="ltr" />
           <Select label="العملة" value={form.currency||'AED'} onChange={e=>field('currency',e.target.value)} containerStyle={{gridColumn:'1/-1'}}>
             {CURRENCIES.map(c=><option key={c.v} value={c.v}>{c.l}</option>)}
           </Select>
@@ -399,7 +406,7 @@ function BusinessTab({ data, products, partners, updateData }) {
                     <div key={si} style={{fontSize:11,background:'var(--bg-hover)',border:'1px solid var(--border)',borderRadius:6,padding:'4px 10px',color:'var(--text-sec)',display:'flex',alignItems:'center',gap:6,direction:'rtl'}}>
                       {sv.size && <span style={{fontWeight:700,color:'var(--text)'}}>{sv.size}</span>}
                       {sv.size && <span style={{color:'var(--bg-border)'}}>|</span>}
-                      <span style={{color:'var(--teal)',fontWeight:700}}>{sv.price} د.إ</span>
+                      <span style={{color:'var(--action)',fontWeight:700}}>{sv.price} د.إ</span>
                       <span style={{color:'var(--text-muted)'}}>· تكلفة: {sv.cost}</span>
                     </div>
                   ))}
@@ -422,18 +429,89 @@ function BusinessTab({ data, products, partners, updateData }) {
 }
 
 /* ══════════════════════════════════════════════════
+   FINANCIAL TAB — Revenue recognition, VAT, fiscal settings
+══════════════════════════════════════════════════ */
+function FinancialTab({ financial, updateData }) {
+  const [form, setForm] = useState(financial || {})
+
+  function field(k,v) { setForm(p => ({...p,[k]:v})) }
+
+  function save() { updateData('financial', form) }
+
+  const FISCAL_MONTHS = [
+    { v:1, l:'يناير' },{ v:2, l:'فبراير' },{ v:3, l:'مارس' },{ v:4, l:'أبريل' },
+    { v:5, l:'مايو' },{ v:6, l:'يونيو' },{ v:7, l:'يوليو' },{ v:8, l:'أغسطس' },
+    { v:9, l:'سبتمبر' },{ v:10, l:'أكتوبر' },{ v:11, l:'نوفمبر' },{ v:12, l:'ديسمبر' },
+  ]
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <Card>
+        <SectionTitle icon="📊">الاعتراف بالإيرادات</SectionTitle>
+        <InfoBox icon="ℹ️">تحديد متى يتم احتساب الإيراد في التقارير المالية.</InfoBox>
+        <div style={{marginTop:14}}>
+          <ControlRow label="احتساب الإيراد عند" desc="يحدد نقطة تسجيل الإيراد في النظام">
+            <select value={form.revenue_recognition||'delivery'} onChange={e=>field('revenue_recognition',e.target.value)}
+              style={{padding:'8px 12px',background:'var(--bg-hover)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',color:'var(--text)',fontSize:12,fontFamily:'inherit',cursor:'pointer'}}>
+              <option value="delivery">عند التسليم</option>
+              <option value="order">عند إنشاء الطلب</option>
+              <option value="confirmed">عند تأكيد الطلب</option>
+            </select>
+          </ControlRow>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionTitle icon="🧾">ضريبة القيمة المضافة (VAT)</SectionTitle>
+        <ControlRow label="تفعيل VAT" desc="تطبيق ضريبة القيمة المضافة على الطلبات (اختياري)">
+          <Toggle checked={!!form.vat_enabled} onChange={v=>field('vat_enabled',v)} />
+        </ControlRow>
+        {form.vat_enabled && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginTop:12}}>
+            <Input label="نسبة VAT %" type="number" value={form.vat_rate||5} onChange={e=>field('vat_rate',parseFloat(e.target.value)||0)} />
+            <Input label="رقم التسجيل الضريبي (TRN)" value={form.trn||''} onChange={e=>field('trn',e.target.value)} placeholder="100XXXXXXXXX003" dir="ltr" />
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <SectionTitle icon="📅">السنة المالية</SectionTitle>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+          <Select label="بداية السنة المالية" value={form.fiscal_start_month||1} onChange={e=>field('fiscal_start_month',parseInt(e.target.value))}>
+            {FISCAL_MONTHS.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+          </Select>
+          <Input label="الهدف الشهري (د.إ)" type="number" value={form.monthly_target||''} onChange={e=>field('monthly_target',parseFloat(e.target.value)||0)} />
+        </div>
+      </Card>
+
+      <Card>
+        <SectionTitle icon="💵">التدفق النقدي</SectionTitle>
+        <ControlRow label="تتبع التدفق النقدي" desc="عرض تقرير التدفق النقدي الشهري في المحاسبة">
+          <Toggle checked={form.cash_flow_tracking!==false} onChange={v=>field('cash_flow_tracking',v)} />
+        </ControlRow>
+        <ControlRow label="تنبيه COD المعلق" desc="تنبيه عند تراكم مبالغ COD غير محصلة" last>
+          <Toggle checked={form.cod_alert!==false} onChange={v=>field('cod_alert',v)} />
+        </ControlRow>
+      </Card>
+
+      <Btn onClick={save}><IcSave size={14}/> حفظ الإعدادات المالية</Btn>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════
    STATUSES TAB
 ══════════════════════════════════════════════════ */
 function StatusesTab({ statuses, updateData }) {
   const [list, setList] = useState(statuses||[])
-  const [form, setForm] = useState({ label:'', color:'#00e4b8' })
+  const [form, setForm] = useState({ label:'', color:'#38BDF8' })
   const [dragIdx, setDragIdx] = useState(null)
 
   function add() {
     if (!form.label) return
     const updated = [...list, { id:`s_${Date.now()}`, ...form, order:list.length }]
     setList(updated); updateData('statuses', updated)
-    setForm({ label:'', color:'#00e4b8' })
+    setForm({ label:'', color:'#38BDF8' })
   }
 
   function remove(id) { const u=list.filter(s=>s.id!==id); setList(u); updateData('statuses',u) }
@@ -572,7 +650,7 @@ function TeamTab() {
   }
 
   const ROLES = { admin:'مدير النظام', accountant:'محاسب', sales:'مبيعات', viewer:'مشاهد' }
-  const ROLE_C = { admin:'var(--teal)', accountant:'var(--amber)', sales:'var(--violet-light)', viewer:'var(--text-muted)' }
+  const ROLE_C = { admin:'var(--action)', accountant:'var(--amber)', sales:'var(--violet-light)', viewer:'var(--text-muted)' }
 
   if (loading) return <Spinner />
 
@@ -593,7 +671,7 @@ function TeamTab() {
             background:'var(--bg-hover)', border:'1.5px solid var(--action-soft)',
             borderRadius:'var(--r-lg)', display:'flex', flexDirection:'column', gap:12,
           }}>
-            <div style={{fontWeight:700,fontSize:14,color:'var(--teal)',marginBottom:4}}>إضافة مستخدم جديد</div>
+            <div style={{fontWeight:700,fontSize:14,color:'var(--action)',marginBottom:4}}>إضافة مستخدم جديد</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <Input label="الاسم *" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="مثال: أحمد محمد" />
               <Input label="البريد الإلكتروني *" type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="user@example.com" dir="ltr" />
@@ -618,9 +696,9 @@ function TeamTab() {
             <GlassRow key={u.id}>
               <div style={{
                 width:42,height:42,borderRadius:'50%',flexShrink:0,
-                background:'linear-gradient(135deg,var(--teal),var(--violet-light),var(--pink))',
+                background:'linear-gradient(135deg,var(--action),var(--info-light))',
                 display:'flex',alignItems:'center',justifyContent:'center',
-                fontWeight:900,color:'#050c1a',fontSize:16,
+                fontWeight:900,color:'#ffffff',fontSize:16,
               }}>{u.name?.[0]||'؟'}</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:700,fontSize:13,color:'var(--text)'}}>{u.name}</div>
@@ -636,6 +714,53 @@ function TeamTab() {
         </div>
       </Card>
 
+      {/* Permissions matrix */}
+      <Card>
+        <SectionTitle icon="🔐">مصفوفة الصلاحيات</SectionTitle>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:14}}>عرض سريع لما يمكن لكل صلاحية الوصول إليه</div>
+        <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+            <thead>
+              <tr>
+                <th style={{textAlign:'right',padding:'8px 10px',borderBottom:'1px solid var(--border)',fontWeight:700,color:'var(--text-muted)'}}>الميزة</th>
+                {Object.entries(ROLES).map(([k,v]) => (
+                  <th key={k} style={{textAlign:'center',padding:'8px 6px',borderBottom:'1px solid var(--border)',fontWeight:700,color:ROLE_C[k],minWidth:70}}>{v}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { feature:'لوحة التحكم',    admin:true, accountant:true, sales:true,  viewer:true },
+                { feature:'الطلبات (CRUD)',  admin:true, accountant:true, sales:true,  viewer:'👁' },
+                { feature:'العملاء',        admin:true, accountant:true, sales:true,  viewer:false },
+                { feature:'المخزون',        admin:true, accountant:'👁', sales:'👁',  viewer:false },
+                { feature:'الموردين',       admin:true, accountant:true, sales:false, viewer:false },
+                { feature:'المصاريف',       admin:true, accountant:true, sales:false, viewer:false },
+                { feature:'المحاسبة',       admin:true, accountant:true, sales:false, viewer:false },
+                { feature:'بيانات الأرباح',  admin:true, accountant:false, sales:false, viewer:false },
+                { feature:'حصص الشركاء',    admin:true, accountant:false, sales:false, viewer:false },
+                { feature:'التقارير',       admin:true, accountant:false, sales:false, viewer:false },
+                { feature:'الإعدادات',      admin:true, accountant:false, sales:false, viewer:false },
+              ].map(row => (
+                <tr key={row.feature}>
+                  <td style={{padding:'7px 10px',borderBottom:'1px solid var(--border)',fontWeight:600,color:'var(--text)'}}>{row.feature}</td>
+                  {['admin','accountant','sales','viewer'].map(role => {
+                    const v = row[role]
+                    return (
+                      <td key={role} style={{textAlign:'center',padding:'7px 6px',borderBottom:'1px solid var(--border)'}}>
+                        {v === true ? <span style={{color:'var(--action)',fontWeight:800}}>✓</span>
+                          : v === '👁' ? <span style={{fontSize:11}} title="عرض فقط">👁</span>
+                          : <span style={{color:'var(--text-muted)',opacity:0.4}}>—</span>}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
       <div style={{
         padding:'12px 16px',
         background:'rgba(37,99,235,0.06)',border:'1px solid rgba(37,99,235,0.14)',
@@ -643,7 +768,7 @@ function TeamTab() {
         display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6,
       }}>
         <span></span>
-        <span>المستخدمون المضافون هنا سيتلقون بريد تأكيل من Supabase. كلمة المرور مؤقتة ويمكن تغييرها لاحقاً.</span>
+        <span>المستخدمون المضافون هنا سيتلقون بريد تأكيد من Supabase. كلمة المرور مؤقتة ويمكن تغييرها لاحقاً.</span>
       </div>
     </div>
   )
@@ -671,7 +796,7 @@ function WhatsAppTab({ templates, updateData }) {
         <div style={{fontSize:13,color:'var(--text-sec)',marginBottom:10,fontWeight:600}}>المتغيرات المتاحة:</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
           {VARS.map(v => (
-            <code key={v} style={{fontSize:11,padding:'4px 10px',background:'rgba(37,99,235,0.08)',border:'none',borderRadius:999,color:'var(--teal)',cursor:'pointer'}}
+            <code key={v} style={{fontSize:11,padding:'4px 10px',background:'rgba(37,99,235,0.08)',border:'none',borderRadius:999,color:'var(--action)',cursor:'pointer'}}
               onClick={()=>{ navigator.clipboard?.writeText(v); toast('تم نسخ المتغير') }}
             >{v}</code>
           ))}
@@ -781,7 +906,7 @@ function DeliveryTab({ business, updateData }) {
               <input type="number" value={z.cost}
                 onChange={e=>updateCost(i,e.target.value)}
                 onBlur={()=>updateData('business',{...business,delivery_zones:zones})}
-                style={{width:80,padding:'6px 10px',background:'var(--bg-hover)',border:'none',borderRadius:999,color:'var(--teal)',fontWeight:700,fontSize:13,textAlign:'center',fontFamily:'inherit',outline:'none'}}
+                style={{width:80,padding:'6px 10px',background:'var(--bg-hover)',border:'none',borderRadius:999,color:'var(--action)',fontWeight:700,fontSize:13,textAlign:'center',fontFamily:'inherit',outline:'none'}}
               />
               <span style={{fontSize:12,color:'var(--text-muted)'}}>د.إ</span>
               <button onClick={()=>remove(i)} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:16}}></button>
@@ -848,7 +973,7 @@ function DiscountsTab() {
           {list.length===0 && <div style={{color:'var(--text-muted)',fontSize:13,padding:'20px 0',textAlign:'center'}}>لا يوجد أكواد خصم بعد</div>}
           {list.map(d => (
             <GlassRow key={d.id}>
-              <code style={{fontSize:14,fontWeight:800,color:'var(--teal)',minWidth:90,direction:'ltr'}}>{d.code}</code>
+              <code style={{fontSize:14,fontWeight:800,color:'var(--action)',minWidth:90,direction:'ltr'}}>{d.code}</code>
               <Badge color={d.type==='percent'?'var(--violet-light)':'var(--amber)'}>{d.value}{d.type==='percent'?'%':' د.إ'}</Badge>
               <div style={{flex:1,minWidth:0}}>
                 {d.min_order>0 && <div style={{fontSize:10,color:'var(--text-muted)'}}>حد أدنى: {d.min_order} د.إ</div>}
@@ -930,7 +1055,7 @@ function NotificationsTab() {
         <SectionTitle>حد المخزون المنخفض</SectionTitle>
         <ControlRow label="الحد الأدنى للمخزون" desc="التنبيه عند وصول الكمية لهذا الحد" last>
           <input type="number" value={settings.low_stock_threshold||5} onChange={e=>updateVal('low_stock_threshold',parseInt(e.target.value)||5)}
-            style={{width:80,padding:'8px 12px',background:'var(--bg-hover)',border:'none',borderRadius:'var(--r-md)',color:'var(--teal)',fontWeight:700,fontFamily:'inherit',outline:'none',textAlign:'center'}} />
+            style={{width:80,padding:'8px 12px',background:'var(--bg-hover)',border:'none',borderRadius:'var(--r-md)',color:'var(--action)',fontWeight:700,fontFamily:'inherit',outline:'none',textAlign:'center'}} />
         </ControlRow>
       </Card>
 
@@ -1029,7 +1154,7 @@ function PartnersTab({ partners, updateData }) {
           {list.length === 0 && <div style={{color:'var(--text-muted)',fontSize:13,padding:'12px 0',textAlign:'center'}}>لا يوجد شركاء — أضف إبراهيم وإحسان</div>}
           {list.map(p => (
             <GlassRow key={p.id}>
-              <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--teal),var(--violet))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#050c1a',flexShrink:0}}>
+              <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,var(--action),var(--info-light))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:14,color:'#ffffff',flexShrink:0}}>
                 {p.name?.[0]}
               </div>
               <div style={{flex:1}}>
@@ -1105,7 +1230,7 @@ const AI_MODELS = [
   {
     id: 'claude-haiku-4-5-20251001', provider: 'anthropic', providerLabel: 'Anthropic',
     name: 'Claude Haiku 4.5',
-    tag: 'اقتصادي', tagBg: 'rgba(0,228,184,0.12)', tagColor: 'var(--teal)',
+    tag: 'اقتصادي', tagBg: 'rgba(56,189,248,0.12)', tagColor: 'var(--action)',
     priceIn: 0.80, priceOut: 4.00, estimate: '~0.01 د.إ / رسالة',
     speed: 'سريع جداً', quality: '★★★☆☆',
     via: 'supabase_proxy',
@@ -1163,7 +1288,7 @@ const AI_MODELS = [
   {
     id: 'gpt-4o-mini', provider: 'openai', providerLabel: 'OpenAI',
     name: 'GPT-4o Mini',
-    tag: 'اقتصادي', tagBg: 'rgba(0,228,184,0.12)', tagColor: 'var(--teal)',
+    tag: 'اقتصادي', tagBg: 'rgba(56,189,248,0.12)', tagColor: 'var(--action)',
     priceIn: 0.15, priceOut: 0.60, estimate: '~0.003 د.إ / رسالة',
     speed: 'سريع جداً', quality: '★★★☆☆',
     via: 'openai_api', keyField: 'openai_api_key',
@@ -1260,7 +1385,7 @@ function AITab({ ai_settings, updateData }) {
 
       {/* Save banner */}
       {dirty && (
-        <div style={{padding:'12px 16px',background:'rgba(0,228,184,0.08)',border:'1.5px solid rgba(0,228,184,0.3)',borderRadius:'var(--r-md)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div style={{padding:'12px 16px',background:'rgba(56,189,248,0.08)',border:'1.5px solid rgba(56,189,248,0.3)',borderRadius:'var(--r-md)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <span style={{fontSize:13,color:'var(--text-sec)'}}>لديك تغييرات غير محفوظة</span>
           <Btn size="sm" onClick={save}><IcSave size={13}/> حفظ الإعدادات</Btn>
         </div>
@@ -1279,22 +1404,22 @@ function AITab({ ai_settings, updateData }) {
                 return (
                   <button key={m.id} onClick={()=>set('model', m.id)} style={{
                     width:'100%', textAlign:'right', padding:'12px 14px',
-                    background: isActive ? 'linear-gradient(135deg,rgba(0,228,184,0.10),rgba(124,58,237,0.08))' : 'var(--bg-hover)',
-                    border: isActive ? '1.5px solid rgba(0,228,184,0.35)' : '1.5px solid transparent',
+                    background: isActive ? 'linear-gradient(135deg,rgba(56,189,248,0.10),rgba(124,58,237,0.08))' : 'var(--bg-hover)',
+                    border: isActive ? '1.5px solid rgba(56,189,248,0.35)' : '1.5px solid transparent',
                     borderRadius:'var(--r-md)', cursor:'pointer', fontFamily:'inherit',
                     transition:'all 0.15s ease',
                   }}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
                       <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <span style={{fontWeight:800,fontSize:13,color: isActive?'var(--teal)':'var(--text)'}}>{m.name}</span>
+                        <span style={{fontWeight:800,fontSize:13,color: isActive?'var(--action)':'var(--text)'}}>{m.name}</span>
                         <span style={{fontSize:10,padding:'2px 7px',borderRadius:999,background:m.tagBg,color:m.tagColor,fontWeight:700}}>{m.tag}</span>
-                        {m.via==='supabase_proxy' && <span style={{fontSize:9,padding:'1px 5px',borderRadius:999,background:'rgba(0,228,184,0.08)',color:'var(--teal)',fontWeight:700}}>بدون مفتاح</span>}
+                        {m.via==='supabase_proxy' && <span style={{fontSize:9,padding:'1px 5px',borderRadius:999,background:'rgba(56,189,248,0.08)',color:'var(--action)',fontWeight:700}}>بدون مفتاح</span>}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:10}}>
                         <span style={{fontSize:10,color:'var(--text-muted)'}}>{m.speed}</span>
                         <span style={{fontSize:11,color:'var(--text-sec)',letterSpacing:1}}>{m.quality}</span>
-                        <span style={{fontSize:11,fontWeight:800,color:'var(--teal)',minWidth:90,textAlign:'left', direction:'ltr'}}>{m.estimate}</span>
-                        {isActive && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--teal)',boxShadow:'0 0 8px var(--teal)',flexShrink:0}}/>}
+                        <span style={{fontSize:11,fontWeight:800,color:'var(--action)',minWidth:90,textAlign:'left', direction:'ltr'}}>{m.estimate}</span>
+                        {isActive && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--action)',boxShadow:'0 0 8px var(--action)',flexShrink:0}}/>}
                       </div>
                     </div>
                     <div style={{fontSize:11,color:'var(--text-muted)',lineHeight:1.5,marginBottom:3}}>{m.note}</div>
@@ -1331,7 +1456,7 @@ function AITab({ ai_settings, updateData }) {
                   <div style={{fontSize:10,color:'var(--text-muted)'}}>{k.models} — {k.hint}</div>
                 </div>
               </div>
-              <a href={k.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:'var(--teal)',fontWeight:700,textDecoration:'none'}}>احصل على المفتاح ↗</a>
+              <a href={k.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:'var(--action)',fontWeight:700,textDecoration:'none'}}>احصل على المفتاح ↗</a>
             </div>
             <div style={{display:'flex',gap:6,alignItems:'center'}}>
               <input
@@ -1345,7 +1470,7 @@ function AITab({ ai_settings, updateData }) {
               <button onClick={()=>setShowKeys(p=>({...p,[k.field]:!p[k.field]}))} style={{width:32,height:32,borderRadius:'var(--r-sm)',background:'var(--bg-glass)',border:'1px solid var(--bg-border)',cursor:'pointer',fontSize:13,color:'var(--text-muted)',flexShrink:0}}>
                 {showKeys[k.field] ? '🙈' : '👁'}
               </button>
-              {apiKeys[k.field] && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--teal)',flexShrink:0,boxShadow:'0 0 6px var(--teal)'}}/>}
+              {apiKeys[k.field] && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--action)',flexShrink:0,boxShadow:'0 0 6px var(--action)'}}/>}
             </div>
           </div>
         ))}
@@ -1432,7 +1557,7 @@ function AITab({ ai_settings, updateData }) {
               <div style={{display:'flex',alignItems:'center',gap:6}}>
                 <span style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{item.label}</span>
                 {!item.safe && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(239,68,68,0.1)',color:'var(--danger)',fontWeight:700}}>يعدّل البيانات</span>}
-                {item.safe  && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(0,228,184,0.1)',color:'var(--action)',fontWeight:700}}>آمن</span>}
+                {item.safe  && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'rgba(56,189,248,0.1)',color:'var(--action)',fontWeight:700}}>آمن</span>}
               </div>
               <div style={{fontSize:11,color:'var(--text-muted)'}}>{item.desc}</div>
             </div>
