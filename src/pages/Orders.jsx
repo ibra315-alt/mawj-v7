@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { DB, Settings, generateOrderNumber } from '../data/db'
+import { DB, Settings, generateOrderNumber, supabase } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency, formatDate, SOURCE_LABELS, UAE_CITIES } from '../data/constants'
 import { calcOrderProfit, ORDER_STATUSES, PIPELINE_STATUSES, getStatusInfo, getNextStatus } from '../data/finance'
@@ -60,6 +60,71 @@ export default function Orders({ user }) {
     } catch {}
   }
 
+  async function triggerWhatsAppNotification(order, newStatus) {
+    const STATUS_TO_TRIGGER = {
+      confirmed: 'on_confirmed',
+      shipped: 'on_shipped',
+      delivered: 'on_delivered',
+      not_delivered: 'on_not_delivered',
+    }
+    const triggerKey = STATUS_TO_TRIGGER[newStatus]
+    if (!triggerKey) return
+
+    const [autoSettings, templates, sendMode] = await Promise.all([
+      Settings.get('whatsapp_auto_notifications'),
+      Settings.get('whatsapp_templates'),
+      Settings.get('whatsapp_send_mode'),
+    ])
+    if (!autoSettings?.[triggerKey]) return
+
+    const TRIGGER_TO_TEMPLATE = {
+      on_confirmed: 'order_confirm',
+      on_shipped: 'order_shipped',
+      on_delivered: 'order_delivered',
+      on_not_delivered: 'payment_reminder',
+    }
+    const tplKey = TRIGGER_TO_TEMPLATE[triggerKey]
+    const template = templates?.[tplKey]
+    if (!template) return
+
+    // Fill template variables
+    let phone = order.customer_phone?.replace(/[\s\-\(\)]/g, '') || ''
+    if (/^0/.test(phone)) phone = '971' + phone.slice(1)
+    else if (/^5/.test(phone)) phone = '971' + phone
+    else if (/^\+971/.test(phone)) phone = phone.slice(1)
+    if (!phone) return
+
+    const msg = template
+      .replace(/\{customer_name\}/g, order.customer_name || 'عزيزي العميل')
+      .replace(/\{order_number\}/g, order.order_number || '')
+      .replace(/\{total\}/g, String(order.total || ''))
+      .replace(/\{tracking_number\}/g, order.tracking_number || '')
+      .replace(/\{city\}/g, order.customer_city || '')
+      .replace(/\{date\}/g, new Date().toLocaleDateString('ar-AE'))
+
+    if (sendMode === 'wame') {
+      // Open wa.me link
+      const encoded = encodeURIComponent(msg)
+      window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank')
+      toast('تم فتح رابط wa.me للإرسال', 'success')
+    } else {
+      // Send via API
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-sender`
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: phone, message: msg }),
+        })
+        toast('تم إرسال إشعار واتساب تلقائياً ✓', 'success')
+      } catch {
+        // Silent fail — don't block the status change
+      }
+    }
+  }
+
   async function handleStatusChange(id, newStatus) {
     try {
       const order = orders.find(o => o.id === id)
@@ -92,6 +157,11 @@ export default function Orders({ user }) {
         toast('تم تسجيل عدم التسليم — خسارة محتسبة', 'error')
       } else {
         toast(`تم النقل إلى: ${getStatus(newStatus).label}`)
+      }
+
+      // ── Auto WhatsApp notification on status change ──
+      if (order?.customer_phone) {
+        triggerWhatsAppNotification(order, newStatus).catch(() => {})
       }
     } catch { toast('فشل تحديث الحالة', 'error') }
   }

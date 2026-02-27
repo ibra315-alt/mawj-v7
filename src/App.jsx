@@ -22,6 +22,7 @@ const SettingsPage = lazy(() => import('./pages/Settings'))
 const Import = lazy(() => import('./pages/Import'))
 const Hayyak = lazy(() => import('./pages/Hayyak'))
 const AgentPage = lazy(() => import('./pages/AgentPage'))
+const WhatsAppCenter = lazy(() => import('./pages/WhatsAppCenter'))
 const AIAssistant = lazy(() => import('./components/AIAssistant'))
 
 /* ══════════════════════════════════════════════════
@@ -33,7 +34,7 @@ const AIAssistant = lazy(() => import('./components/AIAssistant'))
    viewer     = read-only dashboard + orders
 ══════════════════════════════════════════════════ */
 const ROLE_ACCESS = {
-  admin:      ['dashboard','orders','customers','inventory','suppliers','expenses','accounting','partners','reports','settings','import','hayyak','agent'],
+  admin:      ['dashboard','orders','customers','inventory','suppliers','expenses','accounting','partners','reports','settings','import','hayyak','agent','whatsapp'],
   accountant: ['dashboard','orders','customers','inventory','suppliers','expenses','accounting','hayyak'],
   sales:      ['dashboard','orders','customers'],
   viewer:     ['dashboard','orders'],
@@ -213,8 +214,9 @@ export default function App() {
       case 'settings':    return <SettingsPage key={pageKey} {...props} />
       case 'import':      return <Import       key={pageKey} {...props} />
       case 'hayyak':      return <Hayyak       key={pageKey} {...props} />
-      case 'agent':       return <AgentPage    key={pageKey} {...props} />
-      default:            return <Dashboard    key={pageKey} {...props} />
+      case 'agent':       return <AgentPage      key={pageKey} {...props} />
+      case 'whatsapp':    return <WhatsAppCenter key={pageKey} {...props} />
+      default:            return <Dashboard      key={pageKey} {...props} />
     }
   }
 
