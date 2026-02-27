@@ -1,21 +1,13 @@
 // ─── COLORS ──────────────────────────────────────────────────
 export const COLORS = {
-  teal: '#00e4b8',
-  violet: '#7c3aed',
+  action: '#38BDF8',
+  info: '#3B82F6',
   amber: '#f59e0b',
-  red: '#ff4757',
+  red: '#EF4444',
   gold: '#e6b94a',
   blue: '#3b82f6',
   green: '#10b981',
   gray: '#6b7280',
-  bg: '#07080f',
-  bgCard: '#0d0f1a',
-  bgHover: '#13162a',
-  bgBorder: '#1e2035',
-  bgSurface: '#161929',
-  textPrimary: '#f0f2ff',
-  textSecondary: '#8b90b8',
-  textMuted: '#4a4f72',
 }
 
 export const FONTS = {

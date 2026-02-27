@@ -331,7 +331,7 @@ export default function ImportTool() {
                   <div key={step.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:'var(--r-sm)' }}>
                     <div style={{
                       width:28, height:28, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:12,
-                      background: status === 'done' ? 'var(--action)' : status === 'running' ? 'rgba(0,228,184,0.15)' : status === 'error' ? 'var(--danger)' : 'var(--bg-surface)',
+                      background: status === 'done' ? 'var(--action)' : status === 'running' ? 'rgba(56,189,248,0.15)' : status === 'error' ? 'var(--danger)' : 'var(--bg-surface)',
                       border: status ? 'none' : '1.5px solid var(--border)',
                       color: status === 'done' ? '#050c1a' : 'var(--text)',
                       animation: status === 'running' ? 'pulse 1s infinite' : 'none',
@@ -365,7 +365,7 @@ export default function ImportTool() {
         <div style={{ background:'#0a0818', borderRadius:'var(--r-md)', padding:'14px 16px', fontFamily:'monospace', fontSize:12, maxHeight:320, overflowY:'auto', boxShadow:'var(--card-shadow)' }}>
           {log.map((l, i) => (
             <div key={i} style={{
-              color: l.type === 'success' ? '#00e4b8' : l.type === 'error' ? '#ef4444' : l.type === 'warn' ? '#f59e0b' : '#a78bfa',
+              color: l.type === 'success' ? '#38BDF8' : l.type === 'error' ? '#ef4444' : l.type === 'warn' ? '#f59e0b' : '#a78bfa',
               marginBottom:3, display:'flex', gap:10,
             }}>
               <span style={{ opacity:0.4, flexShrink:0 }}>{l.time}</span>
@@ -377,7 +377,7 @@ export default function ImportTool() {
 
       {/* Done state */}
       {done && (
-        <div style={{ marginTop:16, padding:'24px', background:'rgba(0,228,184,0.06)', border:'2px solid rgba(0,228,184,0.25)', borderRadius:'var(--r-md)', textAlign:'center' }}>
+        <div style={{ marginTop:16, padding:'24px', background:'rgba(56,189,248,0.06)', border:'2px solid rgba(56,189,248,0.25)', borderRadius:'var(--r-md)', textAlign:'center' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
           <div style={{ fontWeight:900, fontSize:18, color:'var(--action)', marginBottom:8 }}>اكتمل الاستيراد!</div>
           <div style={{ fontSize:13, color:'var(--text-sec)', marginBottom:20 }}>

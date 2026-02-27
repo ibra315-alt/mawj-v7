@@ -3,14 +3,14 @@ import { supabase } from '../data/db'
 import { formatCurrency } from '../data/constants'
 
 /* ══════════════════════════════════════════════════
-   NOTIFICATION BELL v8.5 — Violet glass dropdown
-   Color-coded: teal=order · violet=update · pink=alert
+   NOTIFICATION BELL — Premium dropdown
+   Color-coded: sky=order · blue=update · amber=alert
 ══════════════════════════════════════════════════ */
 
 const TYPE = {
-  order:  { icon:'', color:'var(--teal)',   bg:'rgba(0,228,184,0.08)',   label:'طلب جديد' },
-  update: { icon:'', color:'var(--violet-light)', bg:'rgba(124,58,237,0.10)', label:'تحديث' },
-  alert:  { icon:'️', color:'var(--pink)',   bg:'rgba(236,72,153,0.08)', label:'تنبيه' },
+  order:  { icon:'', color:'var(--action)',     bg:'var(--action-faint)',  label:'طلب جديد' },
+  update: { icon:'', color:'var(--info-light)', bg:'var(--info-faint)',    label:'تحديث' },
+  alert:  { icon:'️', color:'var(--warning)',    bg:'rgba(245,158,11,0.06)', label:'تنبيه' },
 }
 
 export default function NotificationBell() {
@@ -120,11 +120,11 @@ export default function NotificationBell() {
           zIndex:500,overflow:'hidden',
           animation:'modalIn 0.22s var(--ease-io) both',
         }}>
-          {/* Violet-teal top accent */}
+          {/* Top accent */}
           <div style={{
             height:2,
-            background:'linear-gradient(90deg,transparent,var(--violet-light),var(--teal),var(--pink),transparent)',
-            opacity:0.7,
+            background:'linear-gradient(90deg,transparent,var(--action),var(--info-light),transparent)',
+            opacity:0.5,
           }} />
 
           {/* Header */}
@@ -136,14 +136,14 @@ export default function NotificationBell() {
               <span style={{fontWeight:800,fontSize:14,color:'var(--text)'}}>الإشعارات</span>
               {unread>0 && (
                 <span style={{
-                  background:'var(--violet-soft)',color:'var(--violet-light)',
+                  background:'var(--action-soft)',color:'var(--action)',
                   borderRadius:999,padding:'1px 7px',fontSize:10,fontWeight:700,
                 }}>{unread} جديد</span>
               )}
             </div>
             {notifs.length>0 && (
               <button onClick={markAllRead} style={{
-                fontSize:11,color:'var(--teal)',background:'none',border:'none',
+                fontSize:11,color:'var(--action)',background:'none',border:'none',
                 cursor:'pointer',fontFamily:'inherit',fontWeight:600,
               }}>قراءة الكل</button>
             )}
@@ -186,7 +186,7 @@ export default function NotificationBell() {
                       <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:2}}>{n.sub}</div>
                     )}
                     {n.amount && (
-                      <div style={{fontSize:12,color:'var(--teal)',fontWeight:700}}>{formatCurrency(n.amount)}</div>
+                      <div style={{fontSize:12,color:'var(--action)',fontWeight:700}}>{formatCurrency(n.amount)}</div>
                     )}
                     <div style={{fontSize:10,color:'var(--text-muted)',marginTop:4}}>
                       {relTime(n.time)}

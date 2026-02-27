@@ -115,15 +115,15 @@ export function Select({ label, children, containerStyle, style, ...props }) {
         borderRadius:'var(--r-sm)', color:'var(--text)',
         fontSize:'var(--t-body)', outline:'none', cursor:'pointer',
         appearance:'none',
-        backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239d8fd4'/%3E%3C/svg%3E")`,
+        backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2378756F'/%3E%3C/svg%3E")`,
         backgroundRepeat:'no-repeat', backgroundPosition:'left 12px center',
         boxSizing:'border-box',
         transition:'border-color 0.16s ease, box-shadow 0.16s ease',
         ...style,
       }}
         onFocus={e=>{
-          e.target.style.borderColor='var(--violet-light)'
-          e.target.style.boxShadow='0 0 0 3px rgba(124,58,237,0.14)'
+          e.target.style.borderColor='var(--input-focus)'
+          e.target.style.boxShadow='0 0 0 3px var(--action-faint)'
         }}
         onBlur={e=>{
           e.target.style.borderColor='var(--input-border)'
@@ -157,8 +157,8 @@ export function Textarea({ label, containerStyle, style, ...props }) {
         ...style,
       }}
         onFocus={e=>{
-          e.target.style.borderColor='var(--violet-light)'
-          e.target.style.boxShadow='0 0 0 3px rgba(124,58,237,0.14)'
+          e.target.style.borderColor='var(--input-focus)'
+          e.target.style.boxShadow='0 0 0 3px var(--action-faint)'
         }}
         onBlur={e=>{
           e.target.style.borderColor='var(--input-border)'
@@ -191,7 +191,7 @@ export function Card({ children, style, hover, glow, onClick, accentColor }) {
 }
 
 /* ══════════════════════════════════════════════════
-   STAT CARD — animated count-up, violet glass
+   STAT CARD — animated count-up
 ══════════════════════════════════════════════════ */
 export function StatCard({ label, value, color, trend, sub, icon }) {
   const [display, setDisplay] = useState(0)
@@ -200,7 +200,7 @@ export function StatCard({ label, value, color, trend, sub, icon }) {
   const isPct  = raw.includes('%')
   const num    = parseFloat(raw.replace(/[^0-9.-]/g,''))
   const isNum  = !isNaN(num) && num > 0
-  const c      = color || 'var(--teal)'
+  const c      = color || 'var(--action)'
 
   useEffect(() => {
     if (!isNum) { setDisplay(num); return }
@@ -221,7 +221,6 @@ export function StatCard({ label, value, color, trend, sub, icon }) {
     : value
 
   const glowColor = {
-    'var(--teal)': 'rgba(56,189,248,0.12)',
     'var(--action)': 'rgba(56,189,248,0.12)',
     'var(--violet)': 'rgba(59,130,246,0.12)',
     'var(--violet-light)': 'rgba(96,165,250,0.12)',
@@ -300,7 +299,7 @@ export function StatCard({ label, value, color, trend, sub, icon }) {
 }
 
 /* ══════════════════════════════════════════════════
-   SKELETON LOADERS — violet-teal shimmer
+   SKELETON LOADERS
 ══════════════════════════════════════════════════ */
 export function Skeleton({ width='100%', height=14, radius, style }) {
   return (
@@ -371,7 +370,7 @@ export function SkeletonRow() {
 }
 
 /* ══════════════════════════════════════════════════
-   BADGE — semantic color, violet glass base
+   BADGE — semantic color
 ══════════════════════════════════════════════════ */
 export function Badge({ children, color, style }) {
   return (
@@ -388,7 +387,7 @@ export function Badge({ children, color, style }) {
     </span>
   )
 }
-export function Spinner({ size=24, color='var(--teal)' }) {
+export function Spinner({ size=24, color='var(--action)' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={{animation:'spin 0.75s linear infinite',flexShrink:0}}>
       <circle cx="12" cy="12" r="10" fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round"/>
@@ -396,7 +395,7 @@ export function Spinner({ size=24, color='var(--teal)' }) {
   )
 }
 
-/* Full page loader — teal-violet-pink ring */
+/* Full page loader — sky blue ring */
 export function PageLoader() {
   return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'60vh',flexDirection:'column',gap:16}}>
@@ -472,7 +471,7 @@ export function Modal({ open, onClose, title, children, width=580, footer }) {
           <button onClick={onClose} style={{
             display:'flex', alignItems:'center', gap:6,
             background:'none', border:'none',
-            color:'var(--teal)', fontSize:14, fontWeight:700,
+            color:'var(--text-sec)', fontSize:14, fontWeight:700,
             cursor:'pointer', fontFamily:'inherit',
             WebkitTapHighlightColor:'transparent', padding:'4px 0',
           }}>
@@ -601,7 +600,7 @@ export function ToastContainer() {
             fontSize:'var(--t-sm)',fontWeight:700,
             background:v.bg,color:v.color,
             backdropFilter:'blur(20px)',
-            boxShadow:'0 8px 32px rgba(7,5,28,0.5)',
+            boxShadow:'0 8px 32px rgba(0,0,0,0.15)',
             animation:'toastIn 0.22s ease both',
             whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:8,
           }}>
@@ -636,7 +635,7 @@ export function ConfirmModal({ open, onClose, onConfirm, title, message, confirm
 }
 
 /* ══════════════════════════════════════════════════
-   PAGE HEADER — violet-teal-pink accent line
+   PAGE HEADER — sky blue accent line
 ══════════════════════════════════════════════════ */
 export function PageHeader({ title, subtitle, actions }) {
   return (
@@ -671,7 +670,7 @@ export function PageHeader({ title, subtitle, actions }) {
 }
 
 /* ══════════════════════════════════════════════════
-   TABS — glass pill, teal active
+   TABS — glass pill, sky blue active
 ══════════════════════════════════════════════════ */
 export function Tabs({ tabs, active, onChange }) {
   return (
@@ -700,7 +699,7 @@ export function Tabs({ tabs, active, onChange }) {
 }
 
 /* ══════════════════════════════════════════════════
-   TOGGLE — teal on, violet off glow
+   TOGGLE — sky blue on
 ══════════════════════════════════════════════════ */
 export function Toggle({ checked, onChange }) {
   return (
@@ -745,7 +744,7 @@ export function ColorPicker({ value, onChange }) {
 }
 
 /* ══════════════════════════════════════════════════
-   EMPTY STATE — موج branded violet wave icon
+   EMPTY STATE — wave icon
 ══════════════════════════════════════════════════ */
 export function Empty({ title='لا يوجد بيانات', sub, action, icon }) {
   return (
@@ -772,7 +771,7 @@ export function Empty({ title='لا يوجد بيانات', sub, action, icon })
 }
 
 /* ══════════════════════════════════════════════════
-   SECTION DIVIDER — violet-tinted
+   SECTION DIVIDER
 ══════════════════════════════════════════════════ */
 export function Divider({ label, style }) {
   return (
@@ -789,7 +788,7 @@ export function Divider({ label, style }) {
 }
 
 /* ══════════════════════════════════════════════════
-   PROGRESS BAR — violet-teal gradient fill
+   PROGRESS BAR — sky blue gradient fill
 ══════════════════════════════════════════════════ */
 export function ProgressBar({ value=0, max=100, color, height=6, showLabel=false, style }) {
   const pct = Math.min(100, Math.max(0, (value/max)*100))
@@ -810,7 +809,7 @@ export function ProgressBar({ value=0, max=100, color, height=6, showLabel=false
           height:'100%',width:`${pct}%`,borderRadius:999,
           background: fillColor,
           transition:'width 0.6s var(--ease-io)',
-          boxShadow: color ? undefined : '0 0 8px rgba(167,139,250,0.3)',
+          boxShadow: color ? undefined : '0 0 8px var(--action-glow)',
         }} />
       </div>
     </div>
@@ -820,7 +819,7 @@ export function ProgressBar({ value=0, max=100, color, height=6, showLabel=false
 /* ══════════════════════════════════════════════════
    DONUT CHART MINI — neon glow ring
 ══════════════════════════════════════════════════ */
-export function DonutMini({ value=0, max=100, color='var(--teal)', size=56, strokeWidth=5 }) {
+export function DonutMini({ value=0, max=100, color='var(--action)', size=56, strokeWidth=5 }) {
   const pct = Math.min(100, Math.max(0, (value/max)*100))
   const r = (size - strokeWidth * 2) / 2
   const circ = 2 * Math.PI * r

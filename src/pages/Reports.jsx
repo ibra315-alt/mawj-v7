@@ -375,7 +375,7 @@ export default function Reports() {
               <button key={s.value} onClick={() => setProdSort(s.value)} style={{
                 padding:'7px 14px', borderRadius:999,
                 border:`1.5px solid ${prodSort===s.value?'var(--action)':'var(--border)'}`,
-                background: prodSort===s.value?'rgba(0,228,184,0.1)':'var(--bg-hover)',
+                background: prodSort===s.value?'rgba(56,189,248,0.1)':'var(--bg-hover)',
                 color: prodSort===s.value?'var(--action)':'var(--text-muted)',
                 fontSize:12, fontWeight:prodSort===s.value?800:500, cursor:'pointer', fontFamily:'inherit',
               }}>{s.label}</button>
@@ -394,7 +394,7 @@ export default function Reports() {
                 const isTop = i===0
                 const rankColors = ['linear-gradient(135deg,#f59e0b,#fbbf24)','linear-gradient(135deg,#94a3b8,#cbd5e1)','linear-gradient(135deg,#cd7c3a,#d4a35a)']
                 return (
-                  <div key={`${p.name}-${p.size}`} style={{ background:'var(--bg-surface)', border:`1.5px solid ${isTop?'var(--action)':'var(--border)'}`, borderRadius:'var(--r-lg)', padding:'14px 16px', boxShadow: isTop?'0 0 16px rgba(0,228,184,0.08)':'var(--card-shadow)' }}>
+                  <div key={`${p.name}-${p.size}`} style={{ background:'var(--bg-surface)', border:`1.5px solid ${isTop?'var(--action)':'var(--border)'}`, borderRadius:'var(--r-lg)', padding:'14px 16px', boxShadow: isTop?'0 0 16px rgba(56,189,248,0.08)':'var(--card-shadow)' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
                       <div style={{ width:30,height:30,borderRadius:9,flexShrink:0, background:i<3?rankColors[i]:'var(--bg-hover)', display:'flex',alignItems:'center',justifyContent:'center', fontWeight:900,fontSize:12, color:i<3?'#050c1a':'var(--text-muted)' }}>
                         {i<3?`#${i+1}`:i+1}

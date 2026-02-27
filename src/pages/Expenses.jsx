@@ -174,8 +174,8 @@ export default function Expenses() {
             key={p.id}
             onClick={() => setFilterPaid(filterPaid === p.id ? 'all' : p.id)}
             style={{
-              background: filterPaid === p.id ? 'rgba(0,228,184,0.06)' : 'var(--bg-surface)',
-              border:`1.5px solid ${filterPaid === p.id ? 'rgba(0,228,184,0.3)' : 'var(--border)'}`,
+              background: filterPaid === p.id ? 'rgba(56,189,248,0.06)' : 'var(--bg-surface)',
+              border:`1.5px solid ${filterPaid === p.id ? 'rgba(56,189,248,0.3)' : 'var(--border)'}`,
               borderRadius:'var(--r-md)', padding:'12px 14px',
               cursor:'pointer', transition:'all 120ms', boxShadow:'var(--card-shadow)',
             }}
@@ -294,7 +294,7 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
       {/* Main info */}
       <div style={{ flex:1, minWidth:130 }}>
         <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', marginBottom:2 }}>
-          {exp.is_subscription && <span style={{ fontSize:10, background:'rgba(0,228,184,0.12)', color:'var(--action)', borderRadius:4, padding:'1px 5px', marginInlineEnd:5, fontWeight:700 }}>اشتراك</span>}
+          {exp.is_subscription && <span style={{ fontSize:10, background:'rgba(56,189,248,0.12)', color:'var(--action)', borderRadius:4, padding:'1px 5px', marginInlineEnd:5, fontWeight:700 }}>اشتراك</span>}
           {exp.title || exp.description || '—'}
         </div>
         <div style={{ fontSize:11, color:'var(--text-muted)', display:'flex', gap:8 }}>
@@ -323,7 +323,7 @@ function ExpenseRow({ exp, onEdit, onDelete, onToggleReimbursed }) {
           onClick={onToggleReimbursed}
           style={{
             padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', flexShrink:0,
-            background: exp.reimbursed ? 'rgba(0,228,184,0.12)' : 'rgba(245,158,11,0.1)',
+            background: exp.reimbursed ? 'rgba(56,189,248,0.12)' : 'rgba(245,158,11,0.1)',
             color: exp.reimbursed ? 'var(--action)' : '#f59e0b',
           }}
           title={exp.reimbursed ? `استُرجع ${exp.reimbursement_date ? 'بتاريخ ' + exp.reimbursement_date : ''} — انقر لإلغاء` : 'انقر لتسجيل الاسترداد'}

@@ -89,7 +89,7 @@ export default function Inventory() {
           <>
             {movements.length > 0 && (
               <Btn variant="secondary" onClick={() => { setMovesItem(null); setShowMoves(true) }}>
-                سجل الحركات {movements.length > 0 && <span style={{ marginInlineStart:4, padding:'1px 6px', background:'var(--violet)', color:'#fff', borderRadius:99, fontSize:10 }}>{movements.length}</span>}
+                سجل الحركات {movements.length > 0 && <span style={{ marginInlineStart:4, padding:'1px 6px', background:'var(--info-light)', color:'#fff', borderRadius:99, fontSize:10 }}>{movements.length}</span>}
               </Btn>
             )}
             <Btn onClick={() => { setEditItem(null); setShowForm(true) }}><IcPlus size={15} /> منتج جديد</Btn>
@@ -98,7 +98,7 @@ export default function Inventory() {
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <StatCard label="إجمالي المنتجات" value={items.filter(i => i.active).length} color="var(--violet)" />
+        <StatCard label="إجمالي المنتجات" value={items.filter(i => i.active).length} color="var(--info-light)" />
         <StatCard label="قيمة المخزون" value={formatCurrency(totalValue)} color="var(--amber)" />
         <StatCard label="مخزون منخفض" value={lowStockCount} color={lowStockCount > 0 ? 'var(--amber)' : 'var(--green)'} />
       </div>
@@ -180,7 +180,7 @@ export default function Inventory() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{item.name}</div>
                     {item.sku && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.sku}</div>}
-                    {item.category && <Badge color="var(--violet)" style={{ marginTop: 4, fontSize: 10 }}>{item.category}</Badge>}
+                    {item.category && <Badge color="var(--info-light)" style={{ marginTop: 4, fontSize: 10 }}>{item.category}</Badge>}
                   </div>
                   {isLow && (
                     <div style={{ padding: '4px 8px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, fontSize: 11, color: 'var(--amber)', fontWeight: 700, flexShrink: 0 }}>
@@ -192,7 +192,7 @@ export default function Inventory() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>سعر البيع</div>
-                    <div style={{ fontWeight: 800, color: 'var(--teal)', fontSize: 16 }}>{formatCurrency(item.sell_price)}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--action)', fontSize: 16 }}>{formatCurrency(item.sell_price)}</div>
                   </div>
                   <div style={{ textAlign: 'start' }}>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>التكلفة</div>

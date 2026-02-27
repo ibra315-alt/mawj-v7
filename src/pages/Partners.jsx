@@ -184,7 +184,7 @@ export default function Partners() {
                   {/* Header */}
                   <div style={{
                     padding:'16px', display:'flex', alignItems:'center', justifyContent:'space-between',
-                    background: s.netEquity >= 0 ? 'rgba(0,228,184,0.05)' : 'rgba(239,68,68,0.05)',
+                    background: s.netEquity >= 0 ? 'rgba(56,189,248,0.05)' : 'rgba(239,68,68,0.05)',
                     borderBottom:'1px solid var(--border)',
                   }}>
                     <div style={{ display:'flex', alignItems:'center', gap:12 }}>
