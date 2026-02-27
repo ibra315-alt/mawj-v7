@@ -1,22 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Settings } from '../data/db'
 
-// Preload Almarai font for PDF rendering
 const FONT_URL = 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Inter:wght@400;600;700;800&display=swap'
-
-async function loadFonts() {
-  // Load font stylesheet
-  const link = document.createElement('link')
-  link.rel = 'stylesheet'
-  link.href = FONT_URL
-  document.head.appendChild(link)
-  // Wait for fonts to be ready
-  if (document.fonts?.ready) {
-    await document.fonts.ready
-  }
-  // Extra wait for font rendering
-  await new Promise(r => setTimeout(r, 300))
-}
 
 function buildReceiptHTML(order, statusLabel, logoUrl) {
   const date = new Date(order.created_at || Date.now()).toLocaleDateString('ar-AE', {
@@ -39,6 +24,10 @@ function buildReceiptHTML(order, statusLabel, logoUrl) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="${FONT_URL}" rel="stylesheet">
 <style>
+  @page {
+    size: 148mm 210mm;
+    margin: 0;
+  }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     font-family: 'Almarai', 'Arial', sans-serif;
@@ -52,6 +41,7 @@ function buildReceiptHTML(order, statusLabel, logoUrl) {
     direction: rtl;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    color-adjust: exact;
   }
   .page {
     width: 148mm;
@@ -264,9 +254,61 @@ function buildReceiptHTML(order, statusLabel, logoUrl) {
     letter-spacing: 4px;
     opacity: 0.15;
   }
+
+  /* Print toolbar - hidden when printing */
+  .print-toolbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Almarai', sans-serif;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .print-toolbar button {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .print-toolbar .btn-print {
+    background: linear-gradient(135deg, #0d9488, #00e4b8);
+    color: #fff;
+  }
+  .print-toolbar .btn-print:hover { opacity: 0.9; }
+  .print-toolbar .btn-close {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .print-toolbar .btn-close:hover { background: rgba(255,255,255,0.2); }
+
+  @media print {
+    .print-toolbar { display: none !important; }
+    body { margin: 0; padding: 0; }
+    .page { padding-top: 14mm; }
+  }
+
+  /* Adjust page position when toolbar is visible (screen only) */
+  @media screen {
+    body { padding-top: 56px; }
+  }
 </style>
 </head>
 <body>
+<div class="print-toolbar">
+  <button class="btn-print" onclick="window.print()">🖨️ طباعة / تحميل PDF</button>
+  <button class="btn-close" onclick="window.close()">✕ إغلاق</button>
+</div>
+
 <div class="page">
   <div class="top-accent"></div>
 
@@ -347,59 +389,73 @@ function buildReceiptHTML(order, statusLabel, logoUrl) {
 </html>`
 }
 
-// Generate PDF blob from order data
-async function generatePDFBlob(order, statusLabel, logoUrl) {
-  const html2pdf = (await import('html2pdf.js')).default
+// Print invoice directly using a hidden iframe
+function printFromIframe(order, statusLabel, logoUrl) {
+  return new Promise((resolve, reject) => {
+    const html = buildReceiptHTML(order, statusLabel, logoUrl)
 
-  await loadFonts()
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;inset-inline-end:-9999px;top:-9999px;width:0;height:0;border:none;opacity:0;'
+    document.body.appendChild(iframe)
 
-  const container = document.createElement('div')
-  container.style.position = 'fixed'
-  container.style.left = '-9999px'
-  container.style.top = '0'
-  container.innerHTML = buildReceiptHTML(order, statusLabel, logoUrl)
-  document.body.appendChild(container)
+    const doc = iframe.contentDocument || iframe.contentWindow.document
+    doc.open()
+    doc.write(html)
+    doc.close()
 
-  // If there is a logo image, wait for it to load
-  const img = container.querySelector('img')
-  if (img && !img.complete) {
-    await new Promise((resolve) => {
-      img.onload = resolve
-      img.onerror = resolve
-      setTimeout(resolve, 2000)
-    })
-  }
+    // Remove toolbar from iframe print (we don't need it there)
+    const toolbar = doc.querySelector('.print-toolbar')
+    if (toolbar) toolbar.remove()
+    // Remove screen padding since no toolbar
+    const body = doc.querySelector('body')
+    if (body) body.style.paddingTop = '0'
 
-  const element = container.querySelector('.page')
+    const cleanup = () => {
+      if (iframe.parentNode) {
+        document.body.removeChild(iframe)
+      }
+    }
 
-  // Wait a bit for font rendering in the container
-  await new Promise(r => setTimeout(r, 200))
+    // Wait for fonts to load inside the iframe, then trigger print
+    const triggerPrint = () => {
+      try {
+        iframe.contentWindow.focus()
+        iframe.contentWindow.print()
+        // Clean up after the print dialog closes
+        setTimeout(cleanup, 1500)
+        resolve()
+      } catch (err) {
+        cleanup()
+        reject(err)
+      }
+    }
 
-  const worker = html2pdf().set({
-    margin: 0,
-    filename: `فاتورة-${order.order_number || 'mawj'}.pdf`,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      letterRendering: false,
-      width: 559,   // 148mm at 96dpi
-      height: 794,  // 210mm at 96dpi
-      windowWidth: 559,
-      windowHeight: 794,
-    },
-    jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all'] },
-  }).from(element)
+    // Use the fonts.ready API if available, with a fallback timeout
+    if (iframe.contentDocument.fonts?.ready) {
+      iframe.contentDocument.fonts.ready.then(() => {
+        setTimeout(triggerPrint, 200)
+      }).catch(() => {
+        setTimeout(triggerPrint, 600)
+      })
+    } else {
+      setTimeout(triggerPrint, 800)
+    }
+  })
+}
 
-  const blob = await worker.outputPdf('blob')
-  document.body.removeChild(container)
-  return blob
+// Open invoice preview in a new window (user can print/save from there)
+function openPreview(order, statusLabel, logoUrl) {
+  const html = buildReceiptHTML(order, statusLabel, logoUrl)
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const win = window.open(url, '_blank')
+  // Revoke after a delay to allow the window to load
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
+  return win
 }
 
 export default function PrintReceipt({ order, statuses }) {
-  const [loading, setLoading] = useState(false)
-  const [sharing, setSharing] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const [logoUrl, setLogoUrl] = useState(null)
   const statusObj = statuses?.find(s => s.id === order?.status) || { label: order?.status || '' }
 
@@ -409,57 +465,20 @@ export default function PrintReceipt({ order, statuses }) {
     }).catch(() => {})
   }, [])
 
-  async function downloadPDF() {
-    if (loading) return
-    setLoading(true)
+  async function handlePrint() {
+    if (printing) return
+    setPrinting(true)
     try {
-      const blob = await generatePDFBlob(order, statusObj.label, logoUrl)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `فاتورة-${order.order_number || 'mawj'}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await printFromIframe(order, statusObj.label, logoUrl)
     } catch (err) {
-      console.error('PDF generation failed:', err)
+      console.error('Print failed:', err)
     } finally {
-      setLoading(false)
+      setPrinting(false)
     }
   }
 
-  async function sharePDF() {
-    if (sharing) return
-    setSharing(true)
-    try {
-      const blob = await generatePDFBlob(order, statusObj.label, logoUrl)
-      const file = new File([blob], `فاتورة-${order.order_number || 'mawj'}.pdf`, { type: 'application/pdf' })
-
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: `فاتورة ${order.order_number || ''}`,
-          text: `فاتورة طلب ${order.order_number || ''} - موج للهدايا`,
-          files: [file],
-        })
-      } else {
-        // Fallback: download instead
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = file.name
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Share failed:', err)
-      }
-    } finally {
-      setSharing(false)
-    }
+  function handlePreview() {
+    openPreview(order, statusObj.label, logoUrl)
   }
 
   const btnBase = {
@@ -474,49 +493,43 @@ export default function PrintReceipt({ order, statuses }) {
 
   return (
     <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
-      {/* Download PDF */}
+      {/* Print / Download PDF */}
       <button
-        onClick={downloadPDF}
-        disabled={loading}
-        title="تحميل الفاتورة PDF"
+        onClick={handlePrint}
+        disabled={printing}
+        title="طباعة / تحميل PDF"
         style={{
           ...btnBase,
-          background: loading ? 'var(--bg-hover)' : 'linear-gradient(135deg, #0d9488, #00e4b8)',
-          color: loading ? 'var(--text-muted)' : '#fff',
-          opacity: loading ? 0.7 : 1,
-          cursor: loading ? 'wait' : 'pointer',
+          background: printing ? 'var(--bg-hover)' : 'linear-gradient(135deg, #0d9488, #00e4b8)',
+          color: printing ? 'var(--text-muted)' : '#fff',
+          opacity: printing ? 0.7 : 1,
+          cursor: printing ? 'wait' : 'pointer',
         }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
+          <polyline points="6 9 6 2 18 2 18 9"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect x="6" y="14" width="12" height="8"/>
         </svg>
-        {loading ? 'جاري التحميل...' : 'تحميل PDF'}
+        {printing ? 'جاري الطباعة...' : 'طباعة / تحميل PDF'}
       </button>
 
-      {/* Share */}
+      {/* Preview Invoice */}
       <button
-        onClick={sharePDF}
-        disabled={sharing}
-        title="مشاركة الفاتورة"
+        onClick={handlePreview}
+        title="عرض الفاتورة"
         style={{
           ...btnBase,
-          background: sharing ? 'var(--bg-hover)' : 'rgba(var(--action-rgb, 0,228,184), 0.12)',
-          color: sharing ? 'var(--text-muted)' : 'var(--action)',
+          background: 'rgba(var(--action-rgb, 0,228,184), 0.12)',
+          color: 'var(--action)',
           border: '1px solid rgba(var(--action-rgb, 0,228,184), 0.25)',
-          opacity: sharing ? 0.7 : 1,
-          cursor: sharing ? 'wait' : 'pointer',
         }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="18" cy="5" r="3"/>
-          <circle cx="6" cy="12" r="3"/>
-          <circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
         </svg>
-        {sharing ? 'جاري المشاركة...' : 'مشاركة'}
+        عرض الفاتورة
       </button>
     </div>
   )
