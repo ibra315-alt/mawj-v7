@@ -256,9 +256,6 @@ export default function Orders({ user }: PageProps) {
     <div className="page orders-cmd" style={{ paddingBottom: 80 }}>
       <style>{`
         .orders-cmd { }
-        .orders-split { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
-        .detail-sticky { position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; }
-        @media (max-width: 1100px) { .orders-split { grid-template-columns: 1fr; } .detail-sticky { position: static; max-height: none; } }
         @keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulseRed { 0%,100%{ box-shadow: 0 0 0 0 rgba(248,113,113,0); } 50%{ box-shadow: 0 0 0 6px rgba(248,113,113,0.15); } }
         @keyframes bannerIn { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:translateX(0); } }
@@ -386,11 +383,8 @@ export default function Orders({ user }: PageProps) {
         </div>
       ))}
 
-      {/* ══ SPLIT LAYOUT: FEED + DETAIL ══════════════════════════ */}
-      <div className={selectedOrder ? 'orders-split' : ''}>
-
-        {/* LEFT: Timeline Feed */}
-        <div>
+      {/* ══ FEED ═════════════════════════════════════════════════ */}
+      <div>
           {feedOrders.length === 0 ? (
             <div style={{
               textAlign:'center', padding:'64px 24px',
@@ -432,21 +426,19 @@ export default function Orders({ user }: PageProps) {
               ))}
             </div>
           )}
-        </div>
-
-        {/* RIGHT: Detail Panel */}
-        {selectedOrder && (
-          <div className="detail-sticky">
-            <DetailPanel
-              order={selectedOrder}
-              onClose={() => setSelectedOrder(null)}
-              onEdit={() => { setEditOrder(selectedOrder); setShowPanel(true) }}
-              onStatusChange={handleStatusChange}
-              onReplacement={orig => { setReplacementFor(orig); setEditOrder(null); setShowPanel(true); setSelectedOrder(null) }}
-            />
-          </div>
-        )}
       </div>
+
+      {/* ══ DETAIL PANEL — fixed portal, always in viewport ════════ */}
+      {selectedOrder && createPortal(
+        <DetailPanel
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onEdit={() => { setEditOrder(selectedOrder); setShowPanel(true) }}
+          onStatusChange={handleStatusChange}
+          onReplacement={orig => { setReplacementFor(orig); setEditOrder(null); setShowPanel(true); setSelectedOrder(null) }}
+        />,
+        document.body
+      )}
 
       {/* ══ PANELS & MODALS ════════════════════════════════════════ */}
       <OrderPanel
@@ -646,12 +638,19 @@ function OrderCard({ order, isSelected, onClick, onEdit, onDelete, onAdvance, on
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DETAIL PANEL — Right side inline panel
+   DETAIL PANEL — fixed portal: right panel desktop / bottom sheet mobile
 ═══════════════════════════════════════════════════════════════ */
 function DetailPanel({ order, onClose, onEdit, onStatusChange, onReplacement }) {
   const status = getStatus(order.status)
   const profit = order.gross_profit ?? 0
   const [waOpen, setWaOpen] = useState(false)
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
 
   function sendWhatsApp(templateKey) {
     const phone = normalizePhone(order.customer_phone)
@@ -666,171 +665,227 @@ function DetailPanel({ order, onClose, onEdit, onStatusChange, onReplacement }) 
   }
 
   return (
-    <div style={{
-      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
-      borderRadius:20, border:'1px solid var(--border)', boxShadow:'var(--card-shadow)',
-      overflow:'hidden', animation:'cardIn 0.25s ease both',
-    }}>
-      {/* Header */}
-      <div style={{
-        padding:'16px 18px', borderBottom:'1px solid var(--border)',
-        background:`color-mix(in srgb, ${status.color} 6%, transparent)`,
-        display:'flex', alignItems:'center', justifyContent:'space-between',
-      }}>
-        <div>
-          <div style={{ fontSize:16, fontWeight:900, color: status.color, fontFamily:'Inter,monospace', letterSpacing:'-0.01em' }}>
-            {order.order_number}
-          </div>
-          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
-            <span style={{ color: status.color, fontWeight:700 }}>{status.label}</span>
-            {order.is_replacement && <span style={{ color:'#F59E0B', marginInlineStart:8 }}>· استبدال</span>}
-          </div>
-        </div>
-        <button onClick={onClose} style={{ background:'var(--bg-hover)', border:'none', borderRadius:8, padding:7, cursor:'pointer', color:'var(--text-muted)', display:'flex' }}>
-          <IcClose size={15}/>
-        </button>
-      </div>
+    <>
+      <style>{`
+        .detail-panel-overlay { position:fixed; inset:0; z-index:500; }
+        .detail-panel-bg { position:fixed; inset:0; background:rgba(0,0,0,0.3); backdrop-filter:blur(2px); }
+        .detail-panel-box {
+          position:fixed; top:64px; bottom:0; inset-inline-end:0;
+          width:400px; max-width:100vw;
+          background:var(--modal-bg);
+          backdrop-filter:blur(52px) saturate(1.9);
+          -webkit-backdrop-filter:blur(52px) saturate(1.9);
+          border-inline-start:1px solid var(--border);
+          box-shadow:-8px 0 40px rgba(0,0,0,0.25);
+          display:flex; flex-direction:column;
+          z-index:501;
+          animation:detailSlideIn 0.22s ease both;
+          overflow:hidden;
+        }
+        @keyframes detailSlideIn {
+          from { transform: translateX(-100%); opacity:0; }
+          to   { transform: translateX(0);     opacity:1; }
+        }
+        /* RTL: slide from right */
+        [dir="rtl"] .detail-panel-box {
+          animation-name: detailSlideInRtl;
+        }
+        @keyframes detailSlideInRtl {
+          from { transform: translateX(100%); opacity:0; }
+          to   { transform: translateX(0);    opacity:1; }
+        }
+        @media (max-width: 768px) {
+          .detail-panel-box {
+            top: auto;
+            bottom: 0; left: 0; right: 0;
+            width: 100% !important;
+            max-height: 82vh;
+            border-inline-start: none;
+            border-top: 1px solid var(--border);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.3);
+            animation-name: detailSlideUp !important;
+          }
+          @keyframes detailSlideUp {
+            from { transform: translateY(100%); opacity:0; }
+            to   { transform: translateY(0);    opacity:1; }
+          }
+        }
+        .detail-panel-body { flex:1; overflow-y:auto; padding:16px 18px; display:flex; flex-direction:column; gap:14px; }
+      `}</style>
 
-      <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:14 }}>
+      {/* Backdrop — click to close */}
+      <div className="detail-panel-bg" onClick={onClose} />
 
-        {/* Customer block */}
-        <div style={{ background:'var(--bg-hover)', borderRadius:12, padding:'12px 14px' }}>
-          <div style={{ fontSize:15, fontWeight:800, color:'var(--text)', marginBottom:4 }}>{order.customer_name || 'عميل'}</div>
-          {order.customer_phone && (
-            <a
-              href={waLink(order.customer_phone, `مرحبا ${order.customer_name||''}، `)}
-              target="_blank" rel="noreferrer"
-              style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#25D366', fontFamily:'Inter,sans-serif', fontWeight:700, textDecoration:'none', marginBottom:3 }}
-            >
-              <IcWhatsapp size={13}/> +{normalizePhone(order.customer_phone)}
-            </a>
-          )}
-          {order.customer_city && (
-            <div style={{ fontSize:12, color:'var(--text-muted)' }}>
-              📍 {order.customer_city}{order.customer_address ? ` · ${order.customer_address}` : ''}
-            </div>
-          )}
-          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>
-            {formatDate(order.created_at)}
-          </div>
-        </div>
-
-        {/* Items */}
-        <div>
-          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:8 }}>المنتجات</div>
-          {(order.items || []).map((item, i) => (
-            <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:8, background:'var(--bg-hover)', marginBottom:5, border:'1px solid var(--border)' }}>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{item.name}{item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:4 }}>({item.size})</span>}</div>
-                {item.engraving_notes && <div style={{ fontSize:11, color:'var(--text-sec)', marginTop:2 }}>✏ {item.engraving_notes}</div>}
-              </div>
-              <div style={{ textAlign:'start', flexShrink:0, marginInlineStart:8 }}>
-                <div style={{ fontSize:12, fontWeight:800, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>×{item.qty}</div>
-              </div>
-            </div>
-          ))}
+      {/* Panel */}
+      <div className="detail-panel-box">
+        {/* Drag handle (mobile) */}
+        <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 4px', flexShrink:0 }}>
+          <div style={{ width:36, height:4, borderRadius:99, background:'var(--border)' }}/>
         </div>
 
-        {/* Financial summary */}
+        {/* Header */}
         <div style={{
-          padding:'12px 14px', borderRadius:12,
-          background: profit < 0 ? 'rgba(248,113,113,0.06)' : 'rgba(49,140,231,0.06)',
-          border:`1px solid ${profit < 0 ? 'rgba(248,113,113,0.18)' : 'rgba(49,140,231,0.18)'}`,
+          padding:'8px 18px 14px', borderBottom:'1px solid var(--border)',
+          background:`color-mix(in srgb, ${status.color} 5%, transparent)`,
+          display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0,
         }}>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:'4px 14px', marginBottom:8, fontSize:12, color:'var(--text-sec)' }}>
-            <span>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(order.subtotal)}</b></span>
-            {order.discount > 0 && <span style={{ color:'var(--danger)' }}>خصم: −{formatCurrency(order.discount)}</span>}
-            <span>تكلفة: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.product_cost||0)}</b></span>
-            <span>حياك: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.hayyak_fee??25)}</b></span>
+          <div>
+            <div style={{ fontSize:17, fontWeight:900, color: status.color, fontFamily:'Inter,monospace', letterSpacing:'-0.01em' }}>
+              {order.order_number}
+            </div>
+            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+              <span style={{ color: status.color, fontWeight:700 }}>{status.label}</span>
+              {order.is_replacement && <span style={{ color:'#F59E0B', marginInlineStart:8 }}>· استبدال</span>}
+            </div>
           </div>
-          <div style={{ display:'flex', gap:16, fontSize:15, fontWeight:900, fontFamily:'Inter,sans-serif' }}>
-            <span style={{ color:'var(--action)' }}>{formatCurrency(order.total)}</span>
-            <span style={{ color: profit >= 0 ? '#5DD8A4' : '#F87171' }}>
-              {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
-            </span>
-          </div>
+          <button onClick={onClose} style={{ background:'var(--bg-hover)', border:'none', borderRadius:8, padding:8, cursor:'pointer', color:'var(--text-muted)', display:'flex' }}>
+            <IcClose size={16}/>
+          </button>
         </div>
 
-        {/* Status change */}
-        <div>
-          <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, marginBottom:8 }}>تغيير الحالة</div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-            {ORDER_STATUSES.map(s => (
-              <button key={s.id} onClick={() => onStatusChange(order.id, s.id)} style={{
-                padding:'5px 11px', borderRadius:99, fontSize:10, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-                border:`1px solid ${order.status === s.id ? s.color : `${s.color}30`}`,
-                background: order.status === s.id ? `${s.color}20` : 'transparent',
-                color: s.color,
-              }}>{s.label}</button>
+        {/* Scrollable body */}
+        <div className="detail-panel-body">
+
+          {/* Customer block */}
+          <div style={{ background:'var(--bg-hover)', borderRadius:12, padding:'12px 14px' }}>
+            <div style={{ fontSize:15, fontWeight:800, color:'var(--text)', marginBottom:4 }}>{order.customer_name || 'عميل'}</div>
+            {order.customer_phone && (
+              <a
+                href={waLink(order.customer_phone, `مرحبا ${order.customer_name||''}، `)}
+                target="_blank" rel="noreferrer"
+                style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#25D366', fontFamily:'Inter,sans-serif', fontWeight:700, textDecoration:'none', marginBottom:3 }}
+              >
+                <IcWhatsapp size={13}/> +{normalizePhone(order.customer_phone)}
+              </a>
+            )}
+            {order.customer_city && (
+              <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+                📍 {order.customer_city}{order.customer_address ? ` · ${order.customer_address}` : ''}
+              </div>
+            )}
+            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>
+              {formatDate(order.created_at)}
+            </div>
+          </div>
+
+          {/* Items */}
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:8 }}>المنتجات</div>
+            {(order.items || []).map((item, i) => (
+              <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:8, background:'var(--bg-hover)', marginBottom:5, border:'1px solid var(--border)' }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{item.name}{item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:4 }}>({item.size})</span>}</div>
+                  {item.engraving_notes && <div style={{ fontSize:11, color:'var(--text-sec)', marginTop:2 }}>✏ {item.engraving_notes}</div>}
+                </div>
+                <div style={{ textAlign:'start', flexShrink:0, marginInlineStart:8 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</div>
+                  <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>×{item.qty}</div>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Notes */}
-        {order.notes && (
-          <div style={{ padding:'10px 12px', background:'var(--bg-hover)', borderRadius:10, border:'1px solid var(--border)', fontSize:12, color:'var(--text-sec)' }}>
-            <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, marginBottom:4 }}>ملاحظات</div>
-            {order.notes}
+          {/* Financial summary */}
+          <div style={{
+            padding:'12px 14px', borderRadius:12,
+            background: profit < 0 ? 'rgba(248,113,113,0.06)' : 'rgba(49,140,231,0.06)',
+            border:`1px solid ${profit < 0 ? 'rgba(248,113,113,0.18)' : 'rgba(49,140,231,0.18)'}`,
+          }}>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:'4px 14px', marginBottom:8, fontSize:12, color:'var(--text-sec)' }}>
+              <span>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(order.subtotal)}</b></span>
+              {order.discount > 0 && <span style={{ color:'var(--danger)' }}>خصم: −{formatCurrency(order.discount)}</span>}
+              <span>تكلفة: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.product_cost||0)}</b></span>
+              <span>حياك: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.hayyak_fee??25)}</b></span>
+            </div>
+            <div style={{ display:'flex', gap:16, fontSize:15, fontWeight:900, fontFamily:'Inter,sans-serif' }}>
+              <span style={{ color:'var(--action)' }}>{formatCurrency(order.total)}</span>
+              <span style={{ color: profit >= 0 ? '#5DD8A4' : '#F87171' }}>
+                {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
+              </span>
+            </div>
           </div>
-        )}
 
-        {/* Internal timeline */}
-        {order.internal_notes?.length > 0 && <OrderTimeline notes={order.internal_notes}/>}
+          {/* Status change */}
+          <div>
+            <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, marginBottom:8 }}>تغيير الحالة</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+              {ORDER_STATUSES.map(s => (
+                <button key={s.id} onClick={() => onStatusChange(order.id, s.id)} style={{
+                  padding:'5px 11px', borderRadius:99, fontSize:10, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+                  border:`1px solid ${order.status === s.id ? s.color : `${s.color}30`}`,
+                  background: order.status === s.id ? `${s.color}20` : 'transparent',
+                  color: s.color,
+                }}>{s.label}</button>
+              ))}
+            </div>
+          </div>
 
-        {/* Action buttons */}
-        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-          {order.customer_phone && (
-            <div style={{ position:'relative' }}>
-              <button onClick={() => setWaOpen(p=>!p)} style={{
-                display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
-                border:'1.5px solid rgba(37,211,102,0.3)', background:'rgba(37,211,102,0.06)',
-                color:'#25D366', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-              }}>
-                <IcWhatsapp size={13}/> واتساب ▾
-              </button>
-              {waOpen && (
-                <div style={{
-                  position:'absolute', bottom:'calc(100% + 6px)', insetInlineStart:0, zIndex:200,
-                  background:'var(--modal-bg)', border:'1px solid var(--border)',
-                  borderRadius:12, overflow:'hidden', minWidth:190, boxShadow:'var(--float-shadow)',
-                }}>
-                  {[
-                    { key:'order_confirm',   label:'✅ تأكيد الطلب' },
-                    { key:'order_delivered', label:'🎁 تم التسليم' },
-                    { key:'not_delivered',   label:'😕 لم يتم — متابعة' },
-                  ].map(t => (
-                    <button key={t.key} onClick={() => sendWhatsApp(t.key)} style={{
-                      display:'block', width:'100%', padding:'10px 14px',
-                      background:'none', border:'none', cursor:'pointer',
-                      fontSize:12, color:'var(--text)', textAlign:'right',
-                      fontFamily:'inherit', fontWeight:600,
-                    }}>{t.label}</button>
-                  ))}
-                </div>
-              )}
+          {/* Notes */}
+          {order.notes && (
+            <div style={{ padding:'10px 12px', background:'var(--bg-hover)', borderRadius:10, border:'1px solid var(--border)', fontSize:12, color:'var(--text-sec)' }}>
+              <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, marginBottom:4 }}>ملاحظات</div>
+              {order.notes}
             </div>
           )}
-          {order.status === 'delivered' && !order.is_replacement && (
-            <button onClick={() => onReplacement?.(order)} style={{
+
+          {/* Internal timeline */}
+          {order.internal_notes?.length > 0 && <OrderTimeline notes={order.internal_notes}/>}
+
+          {/* Action buttons */}
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', paddingBottom:4 }}>
+            {order.customer_phone && (
+              <div style={{ position:'relative' }}>
+                <button onClick={() => setWaOpen(p=>!p)} style={{
+                  display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
+                  border:'1.5px solid rgba(37,211,102,0.3)', background:'rgba(37,211,102,0.06)',
+                  color:'#25D366', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+                }}>
+                  <IcWhatsapp size={13}/> واتساب ▾
+                </button>
+                {waOpen && (
+                  <div style={{
+                    position:'absolute', bottom:'calc(100% + 6px)', insetInlineStart:0, zIndex:600,
+                    background:'var(--modal-bg)', border:'1px solid var(--border)',
+                    borderRadius:12, overflow:'hidden', minWidth:190, boxShadow:'var(--float-shadow)',
+                  }}>
+                    {[
+                      { key:'order_confirm',   label:'✅ تأكيد الطلب' },
+                      { key:'order_delivered', label:'🎁 تم التسليم' },
+                      { key:'not_delivered',   label:'😕 لم يتم — متابعة' },
+                    ].map(t => (
+                      <button key={t.key} onClick={() => sendWhatsApp(t.key)} style={{
+                        display:'block', width:'100%', padding:'10px 14px',
+                        background:'none', border:'none', cursor:'pointer',
+                        fontSize:12, color:'var(--text)', textAlign:'right',
+                        fontFamily:'inherit', fontWeight:600,
+                      }}>{t.label}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {order.status === 'delivered' && !order.is_replacement && (
+              <button onClick={() => onReplacement?.(order)} style={{
+                display:'flex', alignItems:'center', gap:5, padding:'8px 14px', borderRadius:10,
+                border:'1.5px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.06)',
+                color:'#F59E0B', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+              }}>
+                <IcRefresh size={13}/> استبدال
+              </button>
+            )}
+            <button onClick={onEdit} style={{
               display:'flex', alignItems:'center', gap:5, padding:'8px 14px', borderRadius:10,
-              border:'1.5px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.06)',
-              color:'#F59E0B', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+              border:'1.5px solid var(--border)', background:'var(--bg-hover)',
+              color:'var(--text)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', flex:1,
             }}>
-              <IcRefresh size={13}/> استبدال
+              <IcEdit size={13}/> تعديل
             </button>
-          )}
-          <button onClick={onEdit} style={{
-            display:'flex', alignItems:'center', gap:5, padding:'8px 14px', borderRadius:10,
-            border:'1.5px solid var(--border)', background:'var(--bg-hover)',
-            color:'var(--text)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', flex:1,
-          }}>
-            <IcEdit size={13}/> تعديل
-          </button>
-          <PrintReceipt order={order} statuses={ORDER_STATUSES}/>
+            <PrintReceipt order={order} statuses={ORDER_STATUSES}/>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
