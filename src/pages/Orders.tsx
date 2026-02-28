@@ -253,9 +253,18 @@ export default function Orders({ user }: PageProps) {
   ]
 
   return (
-    <div className="page orders-cmd" style={{ paddingBottom: 80 }}>
+    <div className="page orders-cmd">
       <style>{`
-        .orders-cmd { }
+        .orders-cmd { padding-bottom: 80px; }
+        /* ── Mobile layout ─────────────────────────── */
+        .orders-toprow { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+        .orders-stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+        .orders-stat-chip { display:flex; align-items:center; gap:6px; padding:5px 12px; border-radius:99px; font-size:12px; font-weight:700; }
+        @media (max-width: 768px) {
+          .orders-cmd { padding-bottom: 140px; }
+          .orders-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+          .orders-stat-chip { justify-content:center; padding:8px 10px; }
+        }
         @keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulseRed { 0%,100%{ box-shadow: 0 0 0 0 rgba(248,113,113,0); } 50%{ box-shadow: 0 0 0 6px rgba(248,113,113,0.15); } }
         @keyframes bannerIn { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:translateX(0); } }
@@ -275,30 +284,12 @@ export default function Orders({ user }: PageProps) {
       <Confetti active={confetti} />
 
       {/* ══ COMMAND BAR ══════════════════════════════════════════ */}
-      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16, flexWrap:'wrap' }}>
-        {/* Live indicator */}
+      {/* Row 1: LIVE indicator + New order button (always on same row) */}
+      <div className="orders-toprow">
         <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:99, background:'rgba(0,228,184,0.08)', border:'1px solid rgba(0,228,184,0.2)', flexShrink:0 }}>
           <div style={{ width:7, height:7, borderRadius:'50%', background:'#00E4B8', animation:'pulseDot 2s infinite', flexShrink:0 }}/>
           <span style={{ fontSize:11, fontWeight:700, color:'#00E4B8', fontFamily:'Inter,sans-serif' }}>LIVE</span>
         </div>
-
-        {/* Stat chips */}
-        <div style={{ display:'flex', gap:8, flexWrap:'wrap', flex:1 }}>
-          {STATS.map(s => (
-            <div key={s.l} style={{
-              display:'flex', alignItems:'center', gap:6,
-              padding:'5px 12px', borderRadius:99,
-              background:`color-mix(in srgb, ${s.c} 8%, transparent)`,
-              border:`1px solid color-mix(in srgb, ${s.c} 22%, transparent)`,
-              fontSize:12, fontWeight:700,
-            }}>
-              <span>{s.i}</span>
-              <span style={{ color:s.c, fontFamily:'Inter,sans-serif' }}>{s.v}</span>
-              <span style={{ color:'var(--text-muted)', fontWeight:500 }}>{s.l}</span>
-            </div>
-          ))}
-        </div>
-
         <button
           onClick={() => { setEditOrder(null); setReplacementFor(null); setShowPanel(true) }}
           style={{
@@ -310,6 +301,20 @@ export default function Orders({ user }: PageProps) {
         >
           <IcPlus size={15}/> طلب جديد
         </button>
+      </div>
+
+      {/* Row 2: Stat chips (2×2 grid on mobile, flex row on desktop) */}
+      <div className="orders-stats">
+        {STATS.map(s => (
+          <div key={s.l} className="orders-stat-chip" style={{
+            background:`color-mix(in srgb, ${s.c} 8%, transparent)`,
+            border:`1px solid color-mix(in srgb, ${s.c} 22%, transparent)`,
+          }}>
+            <span>{s.i}</span>
+            <span style={{ color:s.c, fontFamily:'Inter,sans-serif' }}>{s.v}</span>
+            <span style={{ color:'var(--text-muted)', fontWeight:500 }}>{s.l}</span>
+          </div>
+        ))}
       </div>
 
       {/* ══ PIPELINE TABS ════════════════════════════════════════ */}
@@ -352,7 +357,8 @@ export default function Orders({ user }: PageProps) {
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="بحث بالاسم، رقم الطلب، الهاتف، المدينة..."
           style={{
-            width:'100%', padding:'10px 12px 10px 38px',
+            width:'100%', paddingTop:10, paddingBottom:10,
+            paddingInlineStart:38, paddingInlineEnd:12,
             background:'var(--bg-surface)', border:'1.5px solid var(--input-border)',
             borderRadius:12, color:'var(--text)', fontSize:13,
             fontFamily:'inherit', outline:'none', boxSizing:'border-box',
