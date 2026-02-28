@@ -186,7 +186,7 @@ export default function Inventory(_: PageProps) {
         }
 
         /* ── page ── */
-        .inv-page { padding-bottom: 140px; }
+        .inv-page { padding: 20px 16px 140px; }
 
         /* ── top row ── */
         .inv-toprow {
@@ -445,7 +445,7 @@ export default function Inventory(_: PageProps) {
 
         /* ── desktop ── */
         @media (min-width: 769px) {
-          .inv-page  { padding-bottom: 80px; }
+          .inv-page  { padding: 24px 32px 80px; }
           .inv-stats { grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:16px; }
           .inv-stat-val { font-size:20px; }
           .inv-grid  { grid-template-columns: repeat(3, 1fr); gap:14px; }

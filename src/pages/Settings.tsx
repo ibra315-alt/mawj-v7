@@ -164,7 +164,7 @@ export default function Settings({ user }: PageProps) {
   ) : null
 
   return (
-    <div className="page" style={{paddingTop:8}}>
+    <div className="page">
       {/* Header */}
       <div style={{marginBottom:20}}>
         <h1 style={{fontSize:22,fontWeight:900,marginBottom:4,color:'var(--text)'}}>الإعدادات</h1>

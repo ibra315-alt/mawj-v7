@@ -531,6 +531,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
       {/* ══════════ MAIN CONTENT ══════════ */}
       <main
         key={page}
+        className="page-main"
         style={{
           position: 'relative', zIndex: 1,
           flex: 1, width: '100%',

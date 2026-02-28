@@ -288,15 +288,23 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* ══════════════════════════════════════════════════════════════
    PAGE
 ══════════════════════════════════════════════════════════════ */
+/* Nav clearance lives here — all pages inherit it from <main class="page-main"> */
+.page-main {
+  padding-top: 64px; /* desktop fixed nav height */
+}
+@media (max-width: 768px) {
+  .page-main { padding-top: 56px; } /* mobile header height */
+}
+
 .page {
   padding: var(--sp-8);
-  padding-top: calc(var(--sp-8) + 64px); /* account for top nav */
+  padding-top: var(--sp-8); /* nav offset now on .page-main, not here */
   padding-bottom: 32px;
   min-height: 100vh;
   animation: pageSlideIn var(--dur-page) var(--ease-out) both;
 }
 @media (max-width: 768px) {
-  .page { padding: 16px 14px 32px; padding-top: calc(56px + 16px); }
+  .page { padding: 16px 14px 32px; padding-top: 16px; }
 }
 
 
