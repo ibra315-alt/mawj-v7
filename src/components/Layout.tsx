@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import BgCanvas from './BgCanvas'
 import {
   IcDashboard, IcOrders, IcCustomers, IcExpenses,
@@ -132,14 +133,25 @@ interface DropdownProps {
 
 function NavDropdown({ group, page, onNavigate }: DropdownProps) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
   const isGroupActive = group.items.some(i => i.id === page)
 
-  // Close on click outside
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
+    }
+    setOpen(o => !o)
+  }
+
+  // Close on click outside (checks both button and portal dropdown)
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const t = e.target as Node
+      if (!btnRef.current?.contains(t) && !dropRef.current?.contains(t)) {
         setOpen(false)
       }
     }
@@ -156,24 +168,27 @@ function NavDropdown({ group, page, onNavigate }: DropdownProps) {
   }, [open])
 
   return (
-    <div ref={ref} className="top-nav-group" style={{ position: 'relative' }}>
+    <div className="top-nav-group">
       <button
+        ref={btnRef}
         className={`top-nav-tab ${isGroupActive ? 'top-nav-tab-active' : ''}`}
         style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-        onClick={() => setOpen(o => !o)}
+        onClick={handleToggle}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
         <span>{group.label}</span>
-        <span
-          className="top-nav-chevron"
-          style={{ transition: 'transform 0.2s var(--ease-io)', transform: open ? 'rotate(180deg)' : 'none', display: 'flex' }}
-        >
+        <span style={{ transition: 'transform 0.2s var(--ease-io)', transform: open ? 'rotate(180deg)' : 'none', display: 'flex' }}>
           <IcChevronDown size={12} strokeWidth={2.5} />
         </span>
       </button>
-      {open && (
-        <div className="top-nav-dropdown top-nav-dropdown-open">
+
+      {open && createPortal(
+        <div
+          ref={dropRef}
+          className="top-nav-dropdown top-nav-dropdown-open"
+          style={{ position: 'fixed', top: pos.top, right: pos.right, left: 'auto' }}
+        >
           {group.items.map(item => {
             const Icon = item.icon
             const active = page === item.id
@@ -190,7 +205,8 @@ function NavDropdown({ group, page, onNavigate }: DropdownProps) {
               </button>
             )
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
