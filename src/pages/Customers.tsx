@@ -41,6 +41,13 @@ function waLink(phone, msg = '') {
   return msg ? `https://wa.me/${p}?text=${encodeURIComponent(msg)}` : `https://wa.me/${p}`
 }
 
+// When customer has no name, show their latest order number instead
+function customerName(c) {
+  if (c.name) return c.name
+  const latestOrder = c.orders?.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+  return latestOrder?.order_number || c.phone || '—'
+}
+
 /* ── Smart logic functions ─────────────────────────────────── */
 function churnRisk(c) {
   const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
@@ -493,7 +500,7 @@ function PodiumCard({ rank, customer: c, onClick }) {
   }
   const { emoji, color, shadow, delay } = medals[rank]
   const cfg = SEGMENT_CONFIG[c.segment?.label] || {}
-  const initial = (c.name || c.phone || '?')[0]
+  const initial = customerName(c)[0]
   return (
     <div
       className={`podium-card rank-${rank}`}
@@ -516,7 +523,7 @@ function PodiumCard({ rank, customer: c, onClick }) {
         {initial}
       </div>
       <div style={{ fontSize: rank === 1 ? 13 : 12, fontWeight:800, color:'var(--text)', marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>
-        {c.name || 'بدون اسم'}
+        {customerName(c)}
       </div>
       <div style={{ fontSize: rank === 1 ? 15 : 13, fontWeight:900, color, fontFamily:'Inter,sans-serif' }}>
         {formatCurrency(c.totalSpent)}
@@ -534,7 +541,7 @@ function CustomerRow({ customer: c, onClick, animDelay }) {
   const cfg = SEGMENT_CONFIG[seg.label] || {}
   const risk = churnRisk(c)
   const nba  = nextBestAction(c)
-  const initial = (c.name || c.phone || '?')[0]
+  const initial = customerName(c)[0]
   const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
 
   return (
@@ -568,7 +575,7 @@ function CustomerRow({ customer: c, onClick, animDelay }) {
         {/* Name + segment */}
         <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3, flexWrap:'wrap' }}>
           <span style={{ fontSize:14, fontWeight:800, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:170 }}>
-            {c.name || 'بدون اسم'}
+            {customerName(c)}
           </span>
           <span style={{
             fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:99, flexShrink:0,
@@ -628,7 +635,7 @@ function CustomerDrawer({ customer: c, onClose }) {
   const loyalty = loyaltyScore(c)
   const risk    = churnRisk(c)
   const nba     = nextBestAction(c)
-  const initial = (c.name || c.phone || '?')[0]
+  const initial = customerName(c)[0]
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -668,7 +675,7 @@ function CustomerDrawer({ customer: c, onClose }) {
             {initial}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:16, fontWeight:900, color:'var(--text)', marginBottom:4 }}>{c.name || 'بدون اسم'}</div>
+            <div style={{ fontSize:16, fontWeight:900, color:'var(--text)', marginBottom:4 }}>{customerName(c)}</div>
             <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
               <span style={{
                 fontSize:10, fontWeight:800, padding:'2px 8px', borderRadius:99,
