@@ -4,43 +4,67 @@ import { DB } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency } from '../data/constants'
 import { SkeletonStats, SkeletonCard } from '../components/ui'
-import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcAlert, IcTruck } from '../components/Icons'
 import Sparkline from '../components/Sparkline'
 import type { PageProps } from '../types'
 
-const STATUS_COLORS = {
-  new:'var(--info)', ready:'var(--warning)', with_hayyak:'var(--info)',
-  confirmed:'var(--warning)', processing:'var(--action)',
-  delivered:'var(--success)', not_delivered:'var(--danger)', cancelled:'var(--text-muted)',
-  shipped:'var(--action)', returned:'var(--text-muted)',
-}
-const STATUS_LABELS = {
-  new:'جديد', ready:'جاهز', with_hayyak:'مع حياك', confirmed:'مؤكد',
-  processing:'قيد المعالجة', shipped:'تم الشحن',
-  delivered:'مسلّم', not_delivered:'لم يتم', cancelled:'ملغي', returned:'مرتجع',
-}
+/* ─── Pipeline config ─────────────────────────────────────── */
+const PIPELINE = [
+  { id:'new',           label:'جديد',    color:'#7EB8F7' },
+  { id:'confirmed',     label:'مؤكد',    color:'#F59E0B' },
+  { id:'processing',    label:'معالجة',  color:'#318CE7' },
+  { id:'with_hayyak',   label:'حياك',   color:'#8B5CF6' },
+  { id:'shipped',       label:'شُحن',    color:'#38BDF8' },
+  { id:'delivered',     label:'مسلّم',   color:'#5DD8A4' },
+  { id:'not_delivered', label:'لم يتم',  color:'#F87171' },
+  { id:'cancelled',     label:'ملغي',    color:'#6B7280' },
+]
 
+/* ─── Helpers ─────────────────────────────────────────────── */
 function getGreeting() {
   const h = new Date().getHours()
   if (h < 12) return 'صباح الخير'
   if (h < 17) return 'مساء الخير'
   return 'مساء النور'
 }
-
-function timeAgo(dateStr) {
-  const diff = (Date.now() - new Date(dateStr)) / 1000
-  if (diff < 60) return 'الآن'
-  if (diff < 3600) return `منذ ${Math.floor(diff/60)}د`
-  if (diff < 86400) return `منذ ${Math.floor(diff/3600)}س`
-  return `منذ ${Math.floor(diff/86400)}ي`
+function timeAgo(d) {
+  const s = (Date.now() - new Date(d)) / 1000
+  if (s < 60)    return 'الآن'
+  if (s < 3600)  return `${Math.floor(s/60)}د`
+  if (s < 86400) return `${Math.floor(s/3600)}س`
+  return `${Math.floor(s/86400)}ي`
 }
 
+/* ─── Animated counter ────────────────────────────────────── */
+function AnimNum({ to, fmt = v => Math.round(v).toLocaleString() }) {
+  const [v, setV] = useState(0)
+  const ref = useRef(0)
+  useEffect(() => {
+    const start = ref.current, end = to; ref.current = to
+    if (Math.abs(start - end) < 1) return
+    const dur = 1000, t0 = performance.now()
+    const tick = now => {
+      const p = Math.min((now - t0) / dur, 1)
+      setV(start + (end - start) * (1 - Math.pow(1 - p, 3)))
+      if (p < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [to])
+  return <>{fmt(v)}</>
+}
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD — Command Center v3
+   New smart logic: insights, funnel, top products, projection
+══════════════════════════════════════════════════════════ */
 export default function Dashboard({ onNavigate }: PageProps) {
-  const [data,      setData]      = useState(null)
-  const [orders,    setOrders]    = useState([])
-  const [loading,   setLoading]   = useState(true)
-  const [sparkData, setSparkData] = useState({ revenue:[], orders:[], profit:[] })
-  const [chartData, setChartData] = useState([])
+  const [metrics,     setMetrics]     = useState(null)
+  const [allOrders,   setAllOrders]   = useState([])
+  const [chartData,   setChartData]   = useState([])
+  const [sparkData,   setSparkData]   = useState([])
+  const [topProducts, setTopProducts] = useState([])
+  const [insights,    setInsights]    = useState([])
+  const [newCusts,    setNewCusts]    = useState(0)
+  const [loading,     setLoading]     = useState(true)
 
   useEffect(() => {
     loadData()
@@ -50,353 +74,310 @@ export default function Dashboard({ onNavigate }: PageProps) {
 
   async function loadData() {
     try {
-      const cutoff = new Date()
-      cutoff.setDate(cutoff.getDate() - 90)
-      const cutoffISO = cutoff.toISOString()
-
-      const [allOrders, expenses] = await Promise.all([
-        DB.list('orders',   { orderBy: 'created_at', filters: [['created_at', 'gte', cutoffISO]] }),
-        DB.list('expenses', { orderBy: 'date', filters: [['date', 'gte', cutoffISO.split('T')[0]]] }),
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90)
+      const [orders, expenses] = await Promise.all([
+        DB.list('orders',   { orderBy:'created_at', filters:[['created_at','gte',cutoff.toISOString()]] }),
+        DB.list('expenses', { orderBy:'date',        filters:[['date','gte',cutoff.toISOString().split('T')[0]]] }),
       ])
 
       const now        = new Date()
+      const day        = now.getDate()
+      const daysInMon  = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
       const prevStart  = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1)
 
-      const monthOrders    = allOrders.filter(o => new Date(o.order_date||o.created_at) >= monthStart && o.status !== 'cancelled')
-      const prevOrders     = allOrders.filter(o => { const d = new Date(o.order_date||o.created_at); return d >= prevStart && d < monthStart && o.status !== 'cancelled' })
-      const monthExpenses  = expenses.filter(e => new Date(e.date) >= monthStart)
-      const todayOrders    = allOrders.filter(o => new Date(o.order_date||o.created_at) >= todayStart)
-      const yestOrders     = allOrders.filter(o => { const d = new Date(o.order_date||o.created_at); return d >= yestStart && d < todayStart })
+      const revFilter   = o => !o.is_replacement && o.status !== 'not_delivered'
+      const monthOrders = orders.filter(o => new Date(o.order_date||o.created_at) >= monthStart && o.status !== 'cancelled')
+      const prevOrders  = orders.filter(o => { const d = new Date(o.order_date||o.created_at); return d >= prevStart && d < monthStart && o.status !== 'cancelled' })
+      const todayOrds   = orders.filter(o => new Date(o.order_date||o.created_at) >= todayStart)
+      const yestOrds    = orders.filter(o => { const d = new Date(o.order_date||o.created_at); return d >= yestStart && d < todayStart })
+      const monthExp    = expenses.filter(e => new Date(e.date) >= monthStart)
 
-      const revFilter      = o => !o.is_replacement && o.status !== 'not_delivered'
-      const revenue        = monthOrders.filter(revFilter).reduce((s, o) => s + (o.total || 0), 0)
-      const prevRevenue    = prevOrders.filter(revFilter).reduce((s, o) => s + (o.total || 0), 0)
-      const grossProfit    = monthOrders.reduce((s, o) => s + (o.gross_profit || 0), 0)
-      const opExpenses     = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0)
-      const netProfit      = grossProfit - opExpenses
+      const revenue     = monthOrders.filter(revFilter).reduce((s,o) => s+(o.total||0), 0)
+      const prevRev     = prevOrders.filter(revFilter).reduce((s,o) => s+(o.total||0), 0)
+      const grossProfit = monthOrders.reduce((s,o) => s+(o.gross_profit||0), 0)
+      const opExp       = monthExp.reduce((s,e) => s+(e.amount||0), 0)
+      const netProfit   = grossProfit - opExp
+      const todayRev    = todayOrds.filter(revFilter).reduce((s,o) => s+(o.total||0), 0)
+      const yestRev     = yestOrds.filter(revFilter).reduce((s,o) => s+(o.total||0), 0)
+      const todayChg    = yestRev > 0 ? Math.round((todayRev - yestRev) / yestRev * 100) : null
+      const profitMargin= revenue > 0 ? Math.round((netProfit / revenue) * 100) : 0
+      const delivered   = monthOrders.filter(o => o.status === 'delivered').length
+      const notDlv      = monthOrders.filter(o => o.status === 'not_delivered').length
+      const delivRate   = monthOrders.length ? Math.round((delivered / monthOrders.length) * 100) : 0
+      const prevChg     = prevRev > 0 ? Math.round(((revenue - prevRev) / prevRev) * 100) : null
 
-      const todayRev  = todayOrders.filter(revFilter).reduce((s, o) => s + (o.total || 0), 0)
-      const yestRev   = yestOrders.filter(revFilter).reduce((s, o) => s + (o.total || 0), 0)
-      const revChange = yestRev > 0 ? Math.round((todayRev - yestRev) / yestRev * 100) : null
+      // Projected month-end revenue
+      const projected = day > 0 ? Math.round((revenue / day) * daysInMon) : revenue
+      const remainDays = daysInMon - day
 
-      const pendingOrders = allOrders.filter(o => o.status === 'delivered' && !o.hayyak_remittance_id)
-      const pendingCOD    = pendingOrders.reduce((s, o) => s + (o.total || 0), 0)
-      const pendingHayyak = pendingOrders.reduce((s, o) => s + (o.hayyak_fee || 0), 0)
+      // Pending COD
+      const pendingCOD   = orders.filter(o => o.status === 'delivered' && !o.hayyak_remittance_id)
+      const pendingCODVal= pendingCOD.reduce((s,o) => s+(o.total||0), 0)
 
-      const delivered    = monthOrders.filter(o => o.status === 'delivered').length
-      const notDelivered = monthOrders.filter(o => o.status === 'not_delivered').length
-      const inProgress   = monthOrders.filter(o => ['new','ready','with_hayyak','confirmed','processing','shipped'].includes(o.status)).length
-      const deliveryRate = monthOrders.length ? Math.round((delivered / monthOrders.length) * 100) : 0
-      const profitMargin = revenue > 0 ? Math.round((netProfit / revenue) * 100) : 0
-      const revenueProgress = prevRevenue > 0 ? Math.min(200, Math.round((revenue / prevRevenue) * 100)) : 100
+      // Stuck orders (in processing > 2 days)
+      const stuck = orders.filter(o =>
+        ['new','confirmed','processing'].includes(o.status) &&
+        (Date.now() - new Date(o.created_at)) > 2 * 86400000
+      )
 
-      setData({
-        revenue, prevRevenue, grossProfit, netProfit, opExpenses,
-        totalOrders: monthOrders.length,
-        delivered, notDelivered, inProgress, deliveryRate,
-        todayOrders: todayOrders.length,
-        todayRevenue: todayRev,
-        revChange,
-        pendingCOD, pendingNet: pendingCOD - pendingHayyak, pendingCount: pendingOrders.length,
-        profitMargin, revenueProgress,
+      // Top products by revenue this month
+      const pMap = {}
+      monthOrders.forEach(o => (o.items || []).forEach(it => {
+        if (!pMap[it.name]) pMap[it.name] = { name:it.name, qty:0, rev:0 }
+        pMap[it.name].qty += it.qty || 1
+        pMap[it.name].rev += (it.price || 0) * (it.qty || 1)
+      }))
+      const prods = Object.values(pMap).sort((a,b) => b.rev - a.rev).slice(0, 5)
+      setTopProducts(prods)
+
+      // New customers this month (first order in this month)
+      const custFirst = {}
+      orders.forEach(o => {
+        const k = o.customer_phone || o.customer_name
+        if (k && (!custFirst[k] || new Date(o.created_at) < new Date(custFirst[k]))) custFirst[k] = o.created_at
       })
+      const newC = Object.values(custFirst).filter(d => new Date(d) >= monthStart).length
+      setNewCusts(newC)
 
-      setOrders(allOrders)
+      // Best revenue weekday
+      const dayMap = {}
+      monthOrders.filter(revFilter).forEach(o => {
+        const d = new Date(o.order_date||o.created_at).toLocaleDateString('ar-AE', { weekday:'long' })
+        dayMap[d] = (dayMap[d] || 0) + (o.total || 0)
+      })
+      const bestDay = Object.entries(dayMap).sort((a,b) => b[1]-a[1])[0]
 
-      // 14-day sparklines
-      const revByDay = [], ordByDay = [], profByDay = []
+      // Average order value
+      const avgOrder = monthOrders.length > 0 ? Math.round(revenue / monthOrders.length) : 0
+
+      // Build smart insights
+      const ins = []
+      if (bestDay && bestDay[1] > 0) ins.push({ icon:'📈', text:`أفضل يوم: ${bestDay[0]} — ${formatCurrency(bestDay[1])}`, color:'#5DD8A4' })
+      if (stuck.length > 0)  ins.push({ icon:'⚠️', text:`${stuck.length} طلب عالق +٢ أيام دون تحديث`, color:'#F59E0B', page:'orders' })
+      if (pendingCOD.length > 0) ins.push({ icon:'💰', text:`${pendingCOD.length} طلب COD معلق — ${formatCurrency(pendingCODVal)}`, color:'#F87171', page:'hayyak' })
+      if (remainDays > 0 && day > 3) ins.push({ icon:'🎯', text:`بمعدل اليوم — ${formatCurrency(projected)} بنهاية الشهر`, color:'#318CE7' })
+      if (newC > 0)  ins.push({ icon:'👥', text:`${newC} عميل جديد هذا الشهر`, color:'#A78BFA' })
+      if (avgOrder > 0) ins.push({ icon:'🧾', text:`متوسط قيمة الطلب: ${formatCurrency(avgOrder)}`, color:'#38BDF8' })
+      if (delivRate < 70 && monthOrders.length > 5) ins.push({ icon:'📉', text:`معدل التسليم منخفض: ${delivRate}% فقط`, color:'#F87171', page:'orders' })
+      if (prods.length > 0) ins.push({ icon:'🏆', text:`الأكثر مبيعاً: ${prods[0].name} (${prods[0].qty} قطعة)`, color:'#FCD34D' })
+      setInsights(ins.slice(0, 6))
+
+      setMetrics({
+        revenue, prevRev, prevChg, netProfit, grossProfit, opExp, profitMargin,
+        todayRev, todayOrds: todayOrds.length, todayChg,
+        totalOrders: monthOrders.length, delivered, notDlv, delivRate,
+        pendingCODVal, pendingCODCount: pendingCOD.length,
+        projected, remainDays, avgOrder, newC,
+        monthGoalPct: prevRev > 0 ? Math.min(200, Math.round((revenue / prevRev) * 100)) : 100,
+      })
+      setAllOrders(orders)
+
+      // 14-day sparkline
+      const spark = []
       for (let i = 13; i >= 0; i--) {
-        const d  = new Date(); d.setDate(d.getDate() - i)
+        const d = new Date(); d.setDate(d.getDate() - i)
         const ds = d.toDateString()
-        const dayOrds = allOrders.filter(o => new Date(o.order_date||o.created_at).toDateString() === ds && o.status !== 'cancelled')
-        revByDay.push(dayOrds.reduce((s, o) => s + (o.total || 0), 0))
-        ordByDay.push(dayOrds.length)
-        profByDay.push(dayOrds.reduce((s, o) => s + (o.gross_profit || 0), 0))
+        spark.push(orders.filter(o => new Date(o.order_date||o.created_at).toDateString() === ds && o.status !== 'cancelled').reduce((s,o) => s+(o.total||0), 0))
       }
-      setSparkData({ revenue: revByDay, orders: ordByDay, profit: profByDay })
+      setSparkData(spark)
 
-      // 30-day chart data
-      const chartDays = []
+      // 30-day chart
+      const chart = []
       for (let i = 29; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i)
         const ds = d.toDateString()
-        const dayOrds = allOrders.filter(o =>
-          new Date(o.order_date||o.created_at).toDateString() === ds &&
-          o.status !== 'cancelled' && !o.is_replacement && o.status !== 'not_delivered'
-        )
-        chartDays.push({
-          label: d.toLocaleDateString('ar', { day: 'numeric', month: 'short' }),
-          value: dayOrds.reduce((s, o) => s + (o.total || 0), 0),
-        })
+        const v = orders.filter(o => new Date(o.order_date||o.created_at).toDateString() === ds && o.status !== 'cancelled' && !o.is_replacement && o.status !== 'not_delivered').reduce((s,o) => s+(o.total||0), 0)
+        chart.push({ label: d.toLocaleDateString('ar', { day:'numeric', month:'short' }), value: v })
       }
-      setChartData(chartDays)
+      setChartData(chart)
 
-    } catch (err) { console.error(err) }
+    } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
 
-  const stream = useMemo(() => {
-    if (!orders.length) return []
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    return orders
-      .filter(o => new Date(o.order_date||o.created_at) >= todayStart)
-      .sort((a, b) => new Date(b.order_date||b.created_at) - new Date(a.order_date||a.created_at))
-  }, [orders])
+  const todayStream = useMemo(() => {
+    const ts = new Date(); ts.setHours(0,0,0,0)
+    return allOrders.filter(o => new Date(o.order_date||o.created_at) >= ts).sort((a,b) => new Date(b.created_at)-new Date(a.created_at)).slice(0,8)
+  }, [allOrders])
 
-  const inProgressOrders = useMemo(() => {
-    return orders
-      .filter(o => ['new','ready','with_hayyak','confirmed','processing','shipped'].includes(o.status))
-      .sort((a, b) => new Date(b.order_date||b.created_at) - new Date(a.order_date||a.created_at))
-      .slice(0, 12)
-  }, [orders])
+  const pipelineCounts = useMemo(() => {
+    const c = {}; PIPELINE.forEach(s => { c[s.id] = allOrders.filter(o => o.status === s.id).length }); return c
+  }, [allOrders])
 
   if (loading) return (
     <div className="page">
-      <SkeletonStats count={4} />
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16, marginTop:16 }}>
-        <SkeletonCard rows={4}/><SkeletonCard rows={4}/>
+      <div style={{ height:72, borderRadius:20, background:'var(--bg-surface)', marginBottom:14, opacity:0.5 }} />
+      <SkeletonStats count={3} />
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:14 }}>
+        <SkeletonCard rows={5}/><SkeletonCard rows={4}/><SkeletonCard rows={3}/>
       </div>
     </div>
   )
 
   return (
-    <div className="page stagger">
+    <div className="page">
+      <style>{`
+        @keyframes gradMesh { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+        @keyframes pulseDot { 0%,100%{box-shadow:0 0 0 0 rgba(0,228,184,0.6)} 60%{box-shadow:0 0 0 7px rgba(0,228,184,0)} }
+        @keyframes insIn    { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes barIn    { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+        @keyframes heroIn   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+        .ins-item { animation: insIn .35s ease both; }
+        .ins-item:nth-child(1){animation-delay:.04s} .ins-item:nth-child(2){animation-delay:.10s}
+        .ins-item:nth-child(3){animation-delay:.16s} .ins-item:nth-child(4){animation-delay:.22s}
+        .ins-item:nth-child(5){animation-delay:.28s} .ins-item:nth-child(6){animation-delay:.34s}
+        .hero-m { animation: heroIn .4s ease both; transition: transform .2s, box-shadow .2s; }
+        .hero-m:nth-child(1){animation-delay:.03s} .hero-m:nth-child(2){animation-delay:.08s} .hero-m:nth-child(3){animation-delay:.13s}
+        .hero-m:hover { transform:translateY(-4px) !important; }
+        .db-grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12; margin-bottom:14px; }
+        .db-grid2r { display:grid; grid-template-columns:1fr 320px; gap:12; margin-bottom:14px; }
+        .db-grid2l { display:grid; grid-template-columns:300px 1fr; gap:12; }
+        @media(max-width:900px) {
+          .db-grid3  { grid-template-columns:1fr 1fr !important; }
+          .db-grid2r { grid-template-columns:1fr !important; }
+          .db-grid2l { grid-template-columns:1fr !important; }
+        }
+        @media(max-width:600px) {
+          .db-grid3 { grid-template-columns:1fr !important; }
+        }
+      `}</style>
 
-      {/* ─── HERO: Revenue today ──────────────────────────── */}
-      <div
-        className="dash-hero"
-        onClick={() => onNavigate('orders')}
-        style={{ cursor:'pointer' }}
-      >
-        {/* Left: stats */}
-        <div className="dash-hero-left">
-          <div style={{ fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.55)', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:10 }}>
-            {getGreeting()} · {new Date().toLocaleDateString('ar-AE', { weekday:'long', day:'numeric', month:'long' })}
-          </div>
-          <div style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,0.65)', marginBottom:8 }}>
-            إيرادات اليوم
-          </div>
-          <div style={{
-            fontSize:48, fontWeight:900, color:'#fff',
-            fontFamily:'Inter,sans-serif', lineHeight:1, letterSpacing:'-0.03em',
-            marginBottom:14, textShadow:'0 0 40px rgba(255,255,255,0.20)',
-          }}>
-            {formatCurrency(data?.todayRevenue || 0)}
-          </div>
-          <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-            {data?.revChange !== null && (
-              <span style={{
-                padding:'5px 14px', borderRadius:999,
-                fontSize:12, fontWeight:800,
-                background: (data?.revChange ?? 0) >= 0 ? 'rgba(93,216,164,0.25)' : 'rgba(248,113,113,0.25)',
-                color: (data?.revChange ?? 0) >= 0 ? '#5DD8A4' : '#F87171',
-                border: `1px solid ${(data?.revChange ?? 0) >= 0 ? 'rgba(93,216,164,0.35)' : 'rgba(248,113,113,0.35)'}`,
-              }}>
-                {(data?.revChange ?? 0) >= 0 ? '↑' : '↓'} {Math.abs(data?.revChange || 0)}% مقارنة بالأمس
-              </span>
-            )}
-            <span style={{ fontSize:13, color:'rgba(255,255,255,0.55)', fontWeight:600 }}>
-              {data?.todayOrders || 0} طلب اليوم
-            </span>
+      {/* ══ GREETING BAR ════════════════════════════════════ */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ width:10, height:10, borderRadius:'50%', background:'#00E4B8', animation:'pulseDot 2.2s infinite', flexShrink:0 }} />
+          <div>
+            <div style={{ fontSize:20, fontWeight:900, color:'var(--text)', lineHeight:1.2 }}>{getGreeting()} 👋</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)' }}>{new Date().toLocaleDateString('ar-AE', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
           </div>
         </div>
-
-        {/* Right: sparkline chart */}
-        <div className="dash-hero-right">
-          <div style={{ fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.45)', marginBottom:8, letterSpacing:'0.06em' }}>
-            آخر 14 يوم
+        {metrics?.projected > 0 && metrics?.remainDays > 0 && (
+          <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:999, background:'rgba(49,140,231,0.09)', border:'1px solid rgba(49,140,231,0.2)', fontSize:12, color:'#7EB8F7', fontWeight:700 }}>
+            🎯 توقع نهاية الشهر: <span style={{ color:'#318CE7', fontWeight:900, fontFamily:'Inter' }}>{formatCurrency(metrics.projected)}</span>
+            <span style={{ color:'var(--text-muted)' }}>({metrics.remainDays} يوم متبقٍ)</span>
           </div>
-          {sparkData.revenue.length > 1 && (
-            <HeroSparkline data={sparkData.revenue} color="rgba(255,255,255,0.85)" />
-          )}
-        </div>
+        )}
       </div>
 
-      {/* ─── KPI ROW: 4 cards ─────────────────────────────── */}
-      <div className="dash-kpi-row">
-        <KpiCard
-          label="إيرادات الشهر"
-          value={formatCurrency(data?.revenue || 0)}
-          sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% مقارنة بالشهر السابق` : 'أول شهر'}
-          color="var(--action)"
-          icon={<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
-          trend={data?.revenueProgress > 100 ? 'up' : data?.revenueProgress < 100 ? 'down' : null}
+      {/* ══ HERO METRICS — 3 BIG CARDS ══════════════════════ */}
+      <div className="db-grid3">
+        <HeroMetric
+          title="إيراد اليوم"
+          value={metrics?.todayRev || 0}
+          fmt={v => formatCurrency(v)}
+          change={metrics?.todayChg}
+          changeSuffix="% عن الأمس"
+          sub={`${metrics?.todayOrds || 0} طلب اليوم`}
+          color="#318CE7"
+          sparkData={sparkData}
+          onClick={() => onNavigate('orders')}
+          delay={0}
         />
-        <KpiCard
-          label="طلبات الشهر"
-          value={data?.totalOrders || 0}
-          sub={`${data?.inProgress || 0} قيد المعالجة · ${data?.notDelivered || 0} لم يتم`}
-          color="var(--info)"
-          icon={<IcOrders size={20}/>}
-          trend={null}
+        <HeroMetric
+          title="إيراد الشهر"
+          value={metrics?.revenue || 0}
+          fmt={v => formatCurrency(v)}
+          change={metrics?.prevChg}
+          changeSuffix="% عن الشهر السابق"
+          sub={`${metrics?.totalOrders || 0} طلب · ${metrics?.delivered || 0} مسلّم`}
+          color="#8B5CF6"
+          progress={metrics?.monthGoalPct}
+          onClick={() => onNavigate('reports')}
+          delay={1}
         />
-        <KpiCard
-          label="معدل التسليم"
-          value={`${data?.deliveryRate || 0}%`}
-          sub={`${data?.delivered || 0} مسلّم من ${data?.totalOrders || 0} طلب`}
-          color={data?.deliveryRate >= 75 ? 'var(--success)' : 'var(--warning)'}
-          icon={<IcTruck size={20}/>}
-          trend={data?.deliveryRate >= 75 ? 'up' : 'down'}
-        />
-        <KpiCard
-          label="هامش الربح"
-          value={`${data?.profitMargin || 0}%`}
-          sub={`${formatCurrency(data?.netProfit || 0)} صافي · ${formatCurrency(data?.opExpenses || 0)} مصاريف`}
-          color={data?.profitMargin >= 0 ? 'var(--success)' : 'var(--danger)'}
-          icon={<IcTrendUp size={20}/>}
-          trend={data?.profitMargin > 0 ? 'up' : 'down'}
+        <HeroMetric
+          title="صافي الربح"
+          value={metrics?.netProfit || 0}
+          fmt={v => formatCurrency(v)}
+          change={metrics?.profitMargin}
+          changeSuffix="% هامش ربح"
+          sub={`${formatCurrency(metrics?.opExp || 0)} مصاريف تشغيلية`}
+          color={metrics?.netProfit >= 0 ? '#5DD8A4' : '#F87171'}
+          onClick={() => onNavigate('accounting')}
+          delay={2}
         />
       </div>
 
-      {/* ─── 30-Day Revenue Chart ─────────────────────────── */}
-      {chartData.length > 1 && (
-        <RevenueChart data={chartData} />
-      )}
+      {/* ══ PIPELINE FUNNEL + SMART INSIGHTS ════════════════ */}
+      <div className="db-grid2r">
+        <PipelineFunnel counts={pipelineCounts} onNavigate={onNavigate} />
+        <SmartInsights insights={insights} onNavigate={onNavigate} metrics={metrics} newCusts={newCusts} />
+      </div>
 
-      {/* ─── COD Alert ──────────────────────────────────────── */}
-      {data?.pendingCOD > 0 && (
-        <div
-          onClick={() => onNavigate('hayyak')}
-          style={{
-            display:'flex', alignItems:'center', gap:14, padding:'16px 20px',
-            marginBottom:14, cursor:'pointer',
-            background:'rgba(251,191,36,0.08)',
-            backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
-            border:'1.5px solid rgba(251,191,36,0.25)',
-            borderRadius:'var(--r-lg)',
-            transition:'background 0.12s ease',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background='rgba(251,191,36,0.13)'}
-          onMouseLeave={e => e.currentTarget.style.background='rgba(251,191,36,0.08)'}
-        >
-          <div style={{
-            width:40, height:40, borderRadius:'var(--r-md)', flexShrink:0,
-            background:'rgba(251,191,36,0.15)', display:'flex', alignItems:'center', justifyContent:'center',
-          }}>
-            <IcAlert size={20} style={{ color:'var(--warning)' }} />
-          </div>
-          <div style={{ flex:1 }}>
-            <div style={{ fontWeight:800, fontSize:'var(--t-body)', color:'var(--warning)', marginBottom:2 }}>
-              {formatCurrency(data.pendingCOD)} — COD معلق
-            </div>
-            <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)' }}>
-              {data.pendingCount} طلب بانتظار التسوية · صافي المتوقع: {formatCurrency(data.pendingNet)}
-            </div>
-          </div>
-          <div style={{ color:'var(--warning)', fontSize:18, fontWeight:700 }}>←</div>
-        </div>
-      )}
+      {/* ══ 30-DAY REVENUE CHART ════════════════════════════ */}
+      {chartData.length > 1 && <RevenueChart data={chartData} />}
 
-      {/* ─── Bottom: Activity + Ring Stats ─────────────────── */}
-      <div className="dash-bottom">
-        {/* Activity Feed */}
-        <div className="dash-activity">
-          <ActivityStream
-            stream={stream}
-            inProgressOrders={inProgressOrders}
-            onNavigate={onNavigate}
-          />
-        </div>
-
-        {/* Ring stats sidebar */}
-        <div className="dash-rings">
-          <RingCard
-            label="إيرادات الشهر"
-            value={formatCurrency(data?.revenue || 0)}
-            pct={Math.min(100, data?.revenueProgress || 0)}
-            color="var(--action)"
-            sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% الشهر السابق` : 'أول شهر'}
-          />
-          <RingCard
-            label="معدل التسليم"
-            value={`${data?.deliveryRate || 0}%`}
-            pct={data?.deliveryRate || 0}
-            color="var(--info)"
-            sub={`${data?.delivered || 0} من ${data?.totalOrders || 0}`}
-          />
-          <RingCard
-            label="هامش الربح"
-            value={`${data?.profitMargin || 0}%`}
-            pct={Math.max(0, Math.min(100, data?.profitMargin || 0))}
-            color={data?.profitMargin >= 0 ? 'var(--success)' : 'var(--danger)'}
-            sub={formatCurrency(data?.netProfit || 0)}
-          />
-
-          {/* Quick actions */}
-          <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:4 }}>
-            {[
-              { label:'+ طلب جديد',    color:'var(--action)',  bg:'var(--action-soft)',  border:'rgba(49,140,231,0.20)',  page:'orders'     },
-              { label:'+ مصروف جديد',  color:'var(--warning)', bg:'rgba(251,191,36,0.08)', border:'rgba(251,191,36,0.20)', page:'expenses'   },
-              { label:'التقارير',       color:'var(--success)', bg:'rgba(93,216,164,0.08)', border:'rgba(93,216,164,0.20)', page:'reports'    },
-              { label:'المحاسبة',       color:'var(--info)',    bg:'var(--info-faint)',   border:'rgba(126,184,247,0.18)', page:'accounting' },
-            ].map(a => (
-              <button
-                key={a.label}
-                onClick={() => onNavigate(a.page)}
-                style={{
-                  width:'100%', padding:'10px 14px', borderRadius:'var(--r-md)',
-                  border:`1px solid ${a.border}`, background:a.bg,
-                  color:a.color, fontSize:12, fontWeight:700,
-                  cursor:'pointer', fontFamily:'inherit',
-                  transition:'all 0.15s ease', textAlign:'start',
-                }}
-                onMouseEnter={e => e.currentTarget.style.filter='brightness(1.2)'}
-                onMouseLeave={e => e.currentTarget.style.filter='none'}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* ══ TOP PRODUCTS + LIVE FEED ════════════════════════ */}
+      <div className="db-grid2l">
+        <TopProductsPanel products={topProducts} />
+        <LiveFeed orders={todayStream} onNavigate={onNavigate} />
       </div>
     </div>
   )
 }
 
 
-/* ─── HERO SPARKLINE ──────────────────────────────────── */
-function HeroSparkline({ data, color }) {
-  const ref = useRef(null)
-  const [w, setW] = useState(300)
-  useEffect(() => {
-    if (!ref.current) return
-    const measure = () => setW(ref.current.offsetWidth)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(ref.current)
-    return () => ro.disconnect()
-  }, [])
-  return (
-    <div ref={ref} style={{ width:'100%' }}>
-      <Sparkline data={data} color={color} width={w} height={64} />
-    </div>
-  )
-}
+/* ══════════════════════════════════════════════════════════
+   HERO METRIC CARD — animated counter + sparkline + progress
+══════════════════════════════════════════════════════════ */
+function HeroMetric({ title, value, fmt, change, changeSuffix, sub, color, sparkData, progress, onClick, delay }) {
+  const isPos = change === null || change === undefined ? null : change >= 0
 
-
-/* ─── KPI CARD ─────────────────────────────────────────── */
-function KpiCard({ label, value, sub, color, icon, trend }) {
   return (
-    <div className="dash-kpi-card">
-      <div style={{ position:'absolute', top:0, insetInlineStart:0, insetInlineEnd:0, height:3, background:`linear-gradient(90deg, transparent, ${color}, transparent)`, borderRadius:'var(--r-lg) var(--r-lg) 0 0', opacity:0.7 }} />
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase' }}>{label}</div>
-        <div style={{ color, opacity:0.85 }}>{icon}</div>
+    <div
+      className="hero-m"
+      onClick={onClick}
+      style={{
+        background:'var(--bg-surface)',
+        backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+        borderRadius:20, padding:'22px 22px 18px',
+        border:`1px solid ${color}22`,
+        borderTop:`2.5px solid ${color}`,
+        boxShadow:`0 0 40px ${color}0d, var(--card-shadow)`,
+        position:'relative', overflow:'hidden', cursor: onClick ? 'pointer' : 'default',
+        animationDelay:`${delay * 0.06}s`,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 0 56px ${color}20, var(--card-shadow-hover)` }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow=`0 0 40px ${color}0d, var(--card-shadow)` }}
+    >
+      {/* ambient glow */}
+      <div style={{ position:'absolute', top:0, insetInlineStart:0, insetInlineEnd:0, height:60, background:`radial-gradient(ellipse at 50% 0%,${color}16,transparent 70%)`, pointerEvents:'none' }} />
+
+      {/* title */}
+      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.07em', textTransform:'uppercase', marginBottom:10 }}>{title}</div>
+
+      {/* big value */}
+      <div style={{ fontSize:28, fontWeight:900, color, fontFamily:'Inter,sans-serif', lineHeight:1, marginBottom:8 }}>
+        <AnimNum to={value} fmt={fmt} />
       </div>
-      <div style={{ fontSize:22, fontWeight:900, color, fontFamily:'Inter,sans-serif', lineHeight:1.1, marginBottom:6 }}>{value}</div>
-      <div style={{ fontSize:11, color:'var(--text-muted)', lineHeight:1.4 }}>{sub}</div>
-      {trend && (
-        <div style={{
-          position:'absolute', top:14, insetInlineEnd:14,
-          fontSize:16, fontWeight:900,
-          color: trend === 'up' ? 'var(--success)' : 'var(--danger)',
-          opacity:0.6,
-        }}>
-          {trend === 'up' ? '↑' : '↓'}
+
+      {/* change badge */}
+      {change !== null && change !== undefined && (
+        <div style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 12px', borderRadius:999, marginBottom:8, fontSize:11, fontWeight:800, background: isPos ? 'rgba(93,216,164,0.15)' : 'rgba(248,113,113,0.15)', color: isPos ? '#5DD8A4' : '#F87171', border:`1px solid ${isPos ? 'rgba(93,216,164,0.3)' : 'rgba(248,113,113,0.3)'}` }}>
+          {isPos ? '↑' : '↓'} {Math.abs(change)}{changeSuffix}
+        </div>
+      )}
+
+      {/* sub */}
+      <div style={{ fontSize:11, color:'var(--text-muted)' }}>{sub}</div>
+
+      {/* progress bar (month vs prev) */}
+      {progress !== undefined && (
+        <div style={{ marginTop:12 }}>
+          <div style={{ height:3, borderRadius:99, background:'var(--bg-hover)', overflow:'hidden' }}>
+            <div style={{ height:'100%', width:`${Math.min(100, progress || 0)}%`, background:`linear-gradient(90deg,${color},${color}99)`, borderRadius:99, transition:'width 1s ease' }} />
+          </div>
+          <div style={{ fontSize:9, color:'var(--text-muted)', marginTop:4 }}>{progress || 0}% من إيراد الشهر السابق</div>
+        </div>
+      )}
+
+      {/* mini sparkline */}
+      {sparkData && sparkData.length > 1 && (
+        <div style={{ position:'absolute', bottom:0, insetInlineStart:0, insetInlineEnd:0, opacity:0.18, pointerEvents:'none' }}>
+          <Sparkline data={sparkData} color={color} width={300} height={36} />
         </div>
       )}
     </div>
@@ -404,265 +385,372 @@ function KpiCard({ label, value, sub, color, icon, trend }) {
 }
 
 
-/* ─── 30-DAY REVENUE CHART ────────────────────────────── */
-function RevenueChart({ data: days }) {
-  const [mounted, setMounted] = useState(false)
-  const pathRef = useRef(null)
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 100)
-    return () => clearTimeout(t)
-  }, [])
-
-  const W = 800, H = 110
-  const PL = 8, PR = 8, PT = 10, PB = 28
-  const maxVal = Math.max(...days.map(d => d.value), 1)
-
-  const pts = days.map((d, i) => ({
-    x: PL + (i / (days.length - 1)) * (W - PL - PR),
-    y: PT + (1 - d.value / maxVal) * (H - PT - PB),
-  }))
-
-  // Smooth cubic bezier path
-  const linePath = pts.reduce((acc, pt, i) => {
-    if (i === 0) return `M${pt.x},${pt.y}`
-    const prev = pts[i - 1]
-    const cx = (prev.x + pt.x) / 2
-    return `${acc} C${cx},${prev.y} ${cx},${pt.y} ${pt.x},${pt.y}`
-  }, '')
-
-  const areaPath = linePath +
-    ` L${pts[pts.length-1].x},${H - PB} L${pts[0].x},${H - PB} Z`
-
-  // Label every 7th point
-  const labelPts = days
-    .map((d, i) => ({ ...d, i, pt: pts[i] }))
-    .filter((_, i) => i === 0 || i === days.length - 1 || i % 7 === 0)
+/* ══════════════════════════════════════════════════════════
+   PIPELINE FUNNEL — visual horizontal bar per status
+══════════════════════════════════════════════════════════ */
+function PipelineFunnel({ counts, onNavigate }) {
+  const total = Object.values(counts).reduce((s, v) => s + v, 0)
+  const max   = Math.max(...Object.values(counts), 1)
 
   return (
     <div style={{
-      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)',
-      WebkitBackdropFilter:'blur(52px) saturate(1.9)',
-      borderRadius:'var(--r-lg)', padding:'20px 20px 16px',
+      background:'var(--bg-surface)',
+      backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:20, padding:'20px 22px',
       border:'1px solid var(--border-strong)', borderTopColor:'var(--glass-edge)',
       boxShadow:'var(--card-shadow)',
-      marginBottom:14,
     }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-        <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase' }}>
-          الإيراد اليومي — آخر 30 يوم
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
+        <div>
+          <div style={{ fontSize:14, fontWeight:800, color:'var(--text)', marginBottom:2 }}>مسار الطلبات</div>
+          <div style={{ fontSize:11, color:'var(--text-muted)' }}>{total} طلب إجمالي</div>
         </div>
-        <div style={{ fontSize:13, fontWeight:800, color:'var(--action)', fontFamily:'Inter' }}>
-          {formatCurrency(days.reduce((s, d) => s + d.value, 0))}
-        </div>
+        <button onClick={() => onNavigate('orders')} style={{ background:'none', border:'none', color:'var(--action)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+          إدارة ←
+        </button>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', overflow:'visible' }}>
-        <defs>
-          <linearGradient id="areaGrad30" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--action)" stopOpacity="0.30"/>
-            <stop offset="100%" stopColor="var(--action)" stopOpacity="0"/>
-          </linearGradient>
-        </defs>
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        {PIPELINE.map((s, i) => {
+          const count = counts[s.id] || 0
+          const pct   = Math.round((count / max) * 100)
+          return (
+            <div key={s.id} style={{ display:'flex', alignItems:'center', gap:10 }}>
+              {/* label */}
+              <div style={{ width:64, flexShrink:0, fontSize:11, fontWeight:700, color: count > 0 ? s.color : 'var(--text-muted)', textAlign:'end' }}>{s.label}</div>
+              {/* bar */}
+              <div style={{ flex:1, height:8, borderRadius:99, background:'var(--bg-hover)', overflow:'hidden', position:'relative' }}>
+                <div style={{
+                  height:'100%', width:`${pct}%`,
+                  background:`linear-gradient(90deg,${s.color}99,${s.color})`,
+                  borderRadius:99, transformOrigin:'left center',
+                  animation:'barIn 0.8s cubic-bezier(.4,0,.2,1) both',
+                  animationDelay: `${i * 0.07}s`,
+                }} />
+              </div>
+              {/* count badge */}
+              <div style={{
+                width:28, flexShrink:0, fontSize:12, fontWeight:900,
+                fontFamily:'Inter,sans-serif', textAlign:'center',
+                color: count > 0 ? s.color : 'var(--text-muted)',
+              }}>
+                {count}
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
-        {/* Gridlines */}
-        {[0.25, 0.5, 0.75, 1].map(f => (
-          <line key={f}
-            x1={PL} y1={PT + (1-f)*(H-PT-PB)}
-            x2={W-PR} y2={PT + (1-f)*(H-PT-PB)}
-            stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4"
-          />
+      {/* Summary footer */}
+      <div style={{ display:'flex', gap:16, marginTop:18, paddingTop:14, borderTop:'1px solid var(--border)', flexWrap:'wrap' }}>
+        {[
+          { l:'مسلّم',  v:counts.delivered||0,     c:'#5DD8A4' },
+          { l:'لم يتم', v:counts.not_delivered||0, c:'#F87171' },
+          { l:'جارية',  v:(counts.new||0)+(counts.confirmed||0)+(counts.processing||0)+(counts.with_hayyak||0)+(counts.shipped||0), c:'#7EB8F7' },
+        ].map(s => (
+          <div key={s.l} style={{ textAlign:'center' }}>
+            <div style={{ fontSize:18, fontWeight:900, color:s.c, fontFamily:'Inter' }}>{s.v}</div>
+            <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600 }}>{s.l}</div>
+          </div>
         ))}
-
-        {/* Area fill */}
-        <path d={areaPath} fill="url(#areaGrad30)" />
-
-        {/* Line */}
-        <path
-          ref={pathRef}
-          d={linePath}
-          fill="none"
-          stroke="var(--action)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            filter:'drop-shadow(0 0 8px rgba(49,140,231,0.55))',
-            transition: mounted ? 'none' : 'stroke-dashoffset 1.5s ease',
-          }}
-        />
-
-        {/* Data points on max */}
-        {(() => {
-          const maxIdx = days.findIndex(d => d.value === maxVal)
-          const pt = pts[maxIdx]
-          return pt ? (
-            <g>
-              <circle cx={pt.x} cy={pt.y} r={5} fill="var(--action)" style={{ filter:'drop-shadow(0 0 6px rgba(49,140,231,0.8))' }} />
-              <circle cx={pt.x} cy={pt.y} r={9} fill="rgba(49,140,231,0.15)" />
-            </g>
-          ) : null
-        })()}
-
-        {/* X-axis labels */}
-        {labelPts.map(({ label, pt }) => (
-          <text key={label + pt.x}
-            x={pt.x} y={H - 4}
-            textAnchor="middle"
-            fill="var(--text-muted)"
-            fontSize={9}
-            fontFamily="Inter,sans-serif"
-          >
-            {label}
-          </text>
-        ))}
-      </svg>
-    </div>
-  )
-}
-
-
-/* ─── RING CARD ─────────────────────────────────────────── */
-function RingCard({ label, value, pct, color, sub }) {
-  const size = 60, sw = 4.5
-  const r = (size - sw * 2) / 2
-  const circ = 2 * Math.PI * r
-  const dash = circ * Math.min(100, pct) / 100
-
-  return (
-    <div style={{
-      background:'var(--bg-surface)', backdropFilter:'blur(36px)',
-      WebkitBackdropFilter:'blur(36px)',
-      borderRadius:'var(--r-md)', padding:'14px 16px',
-      boxShadow:'var(--card-shadow)', border:'1px solid var(--border)',
-      borderTopColor:'var(--glass-edge)',
-      display:'flex', alignItems:'center', gap:12,
-    }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink:0 }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--bg-hover)" strokeWidth={sw}/>
-        <circle
-          cx={size/2} cy={size/2} r={r}
-          fill="none" stroke={color} strokeWidth={sw}
-          strokeDasharray={`${dash} ${circ}`}
-          strokeLinecap="round"
-          transform={`rotate(-90 ${size/2} ${size/2})`}
-          style={{ filter:`drop-shadow(0 0 5px ${color})`, transition:'stroke-dasharray 0.8s ease' }}
-        />
-        <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
-          fill={color} fontSize={size*0.22} fontWeight="800" fontFamily="Inter,sans-serif"
-        >
-          {pct}%
-        </text>
-      </svg>
-      <div>
-        <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:2 }}>{label}</div>
-        <div style={{ fontSize:16, fontWeight:900, color, fontFamily:'Inter,sans-serif', lineHeight:1.1 }}>{value}</div>
-        {sub && <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>{sub}</div>}
       </div>
     </div>
   )
 }
 
 
-/* ─── ACTIVITY STREAM ───────────────────────────────────── */
-function ActivityStream({ stream, inProgressOrders, onNavigate }) {
-  const [tab, setTab] = useState('today')
-  const items = tab === 'today' ? stream : inProgressOrders
-
+/* ══════════════════════════════════════════════════════════
+   SMART INSIGHTS — auto-generated business observations
+══════════════════════════════════════════════════════════ */
+function SmartInsights({ insights, onNavigate, metrics, newCusts }) {
   return (
     <div style={{
-      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)',
-      WebkitBackdropFilter:'blur(52px) saturate(1.9)',
-      borderRadius:'var(--r-lg)', border:'1px solid var(--border-strong)',
-      borderTopColor:'var(--glass-edge)', boxShadow:'var(--card-shadow)',
-      display:'flex', flexDirection:'column', height:'100%',
+      background:'var(--bg-surface)',
+      backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:20, padding:'20px 18px',
+      border:'1px solid var(--border-strong)', borderTopColor:'var(--glass-edge)',
+      boxShadow:'var(--card-shadow)', display:'flex', flexDirection:'column',
     }}>
-      {/* Header */}
-      <div style={{
-        display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'14px 18px', borderBottom:'1px solid var(--border)',
-        flexShrink:0,
-      }}>
-        <div style={{ display:'flex', gap:4, background:'var(--bg-hover)', borderRadius:999, padding:3 }}>
-          {[
-            { id:'today',    label:`طلبات اليوم (${stream.length})`,     activeColor:'var(--action)'  },
-            { id:'progress', label:`قيد المعالجة (${inProgressOrders.length})`, activeColor:'var(--warning)' },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+        <div style={{ width:32, height:32, borderRadius:10, background:'rgba(49,140,231,0.12)', border:'1px solid rgba(49,140,231,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>💡</div>
+        <div>
+          <div style={{ fontSize:13, fontWeight:800, color:'var(--text)' }}>تنبيهات ذكية</div>
+          <div style={{ fontSize:10, color:'var(--text-muted)' }}>مُحدَّثة لحظياً</div>
+        </div>
+      </div>
+
+      {insights.length === 0 ? (
+        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:12, flexDirection:'column', gap:8, padding:'20px 0' }}>
+          <div style={{ fontSize:30 }}>✅</div>
+          <div>كل شيء على ما يرام</div>
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {insights.map((ins, i) => (
+            <div
+              key={i}
+              className="ins-item"
+              onClick={ins.page ? () => onNavigate(ins.page) : undefined}
               style={{
-                padding:'6px 14px', borderRadius:999, border:'none',
-                background: tab === t.id ? (t.id === 'today' ? 'var(--action)' : 'var(--warning)') : 'transparent',
-                color: tab === t.id ? '#fff' : 'var(--text-muted)',
-                fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-                transition:'all 0.15s ease', whiteSpace:'nowrap',
+                display:'flex', alignItems:'flex-start', gap:10,
+                padding:'10px 12px', borderRadius:12,
+                background:`${ins.color}0a`,
+                border:`1px solid ${ins.color}22`,
+                cursor: ins.page ? 'pointer' : 'default',
+                transition:'all 0.14s ease',
               }}
+              onMouseEnter={e => { if (ins.page) { e.currentTarget.style.background=`${ins.color}16`; e.currentTarget.style.transform='translateX(-3px)' }}}
+              onMouseLeave={e => { e.currentTarget.style.background=`${ins.color}0a`; e.currentTarget.style.transform='' }}
             >
-              {t.label}
-            </button>
+              <span style={{ fontSize:16, flexShrink:0, lineHeight:1.3 }}>{ins.icon}</span>
+              <span style={{ fontSize:12, color:'var(--text-sec)', lineHeight:1.5, fontWeight:600 }}>{ins.text}</span>
+              {ins.page && <span style={{ color:ins.color, fontSize:13, flexShrink:0, marginRight:'auto', opacity:0.6 }}>←</span>}
+            </div>
           ))}
         </div>
-        <button
-          onClick={() => onNavigate('orders')}
-          style={{
-            background:'none', border:'none', color:'var(--action)',
-            fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-            whiteSpace:'nowrap',
-          }}
-        >
+      )}
+
+      {/* Quick stats footer */}
+      <div style={{ marginTop:'auto', paddingTop:14, borderTop:'1px solid var(--border)', display:'flex', gap:12, flexWrap:'wrap' }}>
+        <div style={{ textAlign:'center', flex:1 }}>
+          <div style={{ fontSize:16, fontWeight:900, color:'#A78BFA', fontFamily:'Inter' }}>{newCusts}</div>
+          <div style={{ fontSize:9, color:'var(--text-muted)', fontWeight:600 }}>عميل جديد</div>
+        </div>
+        <div style={{ textAlign:'center', flex:1 }}>
+          <div style={{ fontSize:16, fontWeight:900, color:'#5DD8A4', fontFamily:'Inter' }}>{metrics?.delivRate || 0}%</div>
+          <div style={{ fontSize:9, color:'var(--text-muted)', fontWeight:600 }}>معدل التسليم</div>
+        </div>
+        <div style={{ textAlign:'center', flex:1 }}>
+          <div style={{ fontSize:16, fontWeight:900, color:'#F59E0B', fontFamily:'Inter' }}>{metrics?.pendingCODCount || 0}</div>
+          <div style={{ fontSize:9, color:'var(--text-muted)', fontWeight:600 }}>COD معلق</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   30-DAY REVENUE CHART — animated SVG with hover tooltip
+══════════════════════════════════════════════════════════ */
+function RevenueChart({ data: days }) {
+  const pathRef  = useRef(null)
+  const [drawn,  setDrawn]   = useState(false)
+  const [tip,    setTip]     = useState(null)
+
+  useEffect(() => {
+    if (!pathRef.current || drawn) return
+    const len = pathRef.current.getTotalLength()
+    pathRef.current.style.strokeDasharray = `${len} ${len}`
+    pathRef.current.style.strokeDashoffset = `${len}`
+    const t = setTimeout(() => {
+      if (pathRef.current) {
+        pathRef.current.style.transition = 'stroke-dashoffset 1.8s cubic-bezier(.25,.46,.45,.94)'
+        pathRef.current.style.strokeDashoffset = '0'
+      }
+      setDrawn(true)
+    }, 200)
+    return () => clearTimeout(t)
+  }, [days])
+
+  const W=800, H=130, PL=10, PR=10, PT=14, PB=32
+  const maxV = Math.max(...days.map(d=>d.value), 1)
+  const total = days.reduce((s,d) => s+d.value, 0)
+
+  const pts = days.map((d,i) => ({
+    x: PL + (i/(days.length-1))*(W-PL-PR),
+    y: PT + (1-d.value/maxV)*(H-PT-PB),
+  }))
+
+  const line = pts.reduce((acc,pt,i) => {
+    if (!i) return `M${pt.x},${pt.y}`
+    const p = pts[i-1]; const cx = (p.x+pt.x)/2
+    return `${acc} C${cx},${p.y} ${cx},${pt.y} ${pt.x},${pt.y}`
+  }, '')
+  const area = line + ` L${pts[pts.length-1].x},${H-PB} L${pts[0].x},${H-PB} Z`
+
+  const labels = days.map((d,i)=>({...d,i,pt:pts[i]})).filter((_,i)=>!i||i===days.length-1||!(i%7))
+  const maxI   = days.findIndex(d=>d.value===maxV)
+
+  return (
+    <div style={{
+      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:20, padding:'20px 22px 14px',
+      border:'1px solid var(--border-strong)', borderTopColor:'var(--glass-edge)',
+      boxShadow:'var(--card-shadow)', marginBottom:14, position:'relative',
+    }}>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:14 }}>
+        <div>
+          <div style={{ fontSize:14, fontWeight:800, color:'var(--text)', marginBottom:2 }}>الإيراد اليومي</div>
+          <div style={{ fontSize:11, color:'var(--text-muted)' }}>آخر 30 يوم</div>
+        </div>
+        <div style={{ textAlign:'end' }}>
+          <div style={{ fontSize:22, fontWeight:900, color:'#318CE7', fontFamily:'Inter' }}>{formatCurrency(total)}</div>
+          <div style={{ fontSize:10, color:'var(--text-muted)' }}>إجمالي الفترة</div>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {tip && (
+        <div style={{ position:'absolute', zIndex:20, top:tip.y, left:tip.x, transform:'translate(-50%,-110%)', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:10, padding:'7px 12px', pointerEvents:'none', boxShadow:'0 4px 20px rgba(0,0,0,0.35)', whiteSpace:'nowrap' }}>
+          <div style={{ fontSize:13, fontWeight:900, color:'#318CE7', fontFamily:'Inter' }}>{formatCurrency(tip.value)}</div>
+          <div style={{ fontSize:10, color:'var(--text-muted)' }}>{tip.label}</div>
+        </div>
+      )}
+
+      <div style={{ position:'relative' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', overflow:'visible', display:'block' }} onMouseLeave={()=>setTip(null)}>
+          <defs>
+            <linearGradient id="dba30" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#318CE7" stopOpacity="0.28"/>
+              <stop offset="100%" stopColor="#318CE7" stopOpacity="0.01"/>
+            </linearGradient>
+            <filter id="glow30"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          {[0.25,0.5,0.75,1].map(f=>(
+            <line key={f} x1={PL} y1={PT+(1-f)*(H-PT-PB)} x2={W-PR} y2={PT+(1-f)*(H-PT-PB)} stroke="var(--border)" strokeWidth="0.7" strokeDasharray="3 4"/>
+          ))}
+          <path d={area} fill="url(#dba30)"/>
+          <path ref={pathRef} d={line} fill="none" stroke="#318CE7" strokeWidth="2.5" strokeLinecap="round" filter="url(#glow30)"/>
+          {pts[maxI] && <><circle cx={pts[maxI].x} cy={pts[maxI].y} r={10} fill="rgba(49,140,231,0.12)"/><circle cx={pts[maxI].x} cy={pts[maxI].y} r={4.5} fill="#318CE7" style={{filter:'drop-shadow(0 0 5px rgba(49,140,231,0.9))'}}/></>}
+          {pts.map((pt,i)=>(
+            <circle key={i} cx={pt.x} cy={pt.y} r={12} fill="transparent" style={{cursor:'crosshair'}}
+              onMouseEnter={e=>{
+                const rect=e.target.closest('svg').getBoundingClientRect()
+                setTip({ x:pt.x*(rect.width/W)+22, y:pt.y*(rect.height/H)+36, label:days[i].label, value:days[i].value })
+              }}
+            />
+          ))}
+          {labels.map(({label,pt})=>(
+            <text key={label+pt.x} x={pt.x} y={H-6} textAnchor="middle" fill="var(--text-muted)" fontSize={9} fontFamily="Inter,sans-serif">{label}</text>
+          ))}
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   TOP PRODUCTS — derived from order items this month
+══════════════════════════════════════════════════════════ */
+function TopProductsPanel({ products }) {
+  const maxRev = Math.max(...products.map(p=>p.rev), 1)
+
+  return (
+    <div style={{
+      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:20, padding:'20px 18px',
+      border:'1px solid var(--border-strong)', borderTopColor:'var(--glass-edge)',
+      boxShadow:'var(--card-shadow)',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
+        <span style={{ fontSize:20 }}>🏆</span>
+        <div>
+          <div style={{ fontSize:13, fontWeight:800, color:'var(--text)' }}>الأكثر مبيعاً</div>
+          <div style={{ fontSize:10, color:'var(--text-muted)' }}>هذا الشهر</div>
+        </div>
+      </div>
+
+      {products.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'32px 0', color:'var(--text-muted)', fontSize:12 }}>لا توجد بيانات</div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          {products.map((p, i) => {
+            const pct = Math.round((p.rev / maxRev) * 100)
+            const colors = ['#318CE7','#8B5CF6','#F59E0B','#5DD8A4','#F87171']
+            const c = colors[i % colors.length]
+            return (
+              <div key={p.name}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+                    <div style={{ width:22, height:22, borderRadius:7, background:`${c}20`, border:`1px solid ${c}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:900, color:c, flexShrink:0, fontFamily:'Inter' }}>{i+1}</div>
+                    <span style={{ fontSize:12, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:800, color:c, fontFamily:'Inter', flexShrink:0, marginRight:8 }}>{formatCurrency(p.rev)}</span>
+                </div>
+                <div style={{ height:5, borderRadius:99, background:'var(--bg-hover)', overflow:'hidden' }}>
+                  <div style={{ height:'100%', width:`${pct}%`, background:`linear-gradient(90deg,${c}80,${c})`, borderRadius:99, transition:'width 1s ease', transitionDelay:`${i*0.12}s` }} />
+                </div>
+                <div style={{ fontSize:9, color:'var(--text-muted)', marginTop:3 }}>{p.qty} قطعة مباعة</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   LIVE FEED — today's orders with status colors
+══════════════════════════════════════════════════════════ */
+function LiveFeed({ orders, onNavigate }) {
+  const statusMap = Object.fromEntries(PIPELINE.map(s=>[s.id,s]))
+
+  return (
+    <div style={{
+      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:20, border:'1px solid var(--border-strong)', borderTopColor:'var(--glass-edge)',
+      boxShadow:'var(--card-shadow)', display:'flex', flexDirection:'column', overflow:'hidden',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#00E4B8', animation:'pulseDot 2s infinite' }} />
+          <div>
+            <div style={{ fontSize:13, fontWeight:800, color:'var(--text)' }}>طلبات اليوم</div>
+            <div style={{ fontSize:10, color:'var(--text-muted)' }}>{orders.length} طلب</div>
+          </div>
+        </div>
+        <button onClick={()=>onNavigate('orders')} style={{ background:'none', border:'none', color:'var(--action)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
           عرض الكل ←
         </button>
       </div>
 
-      {/* Items */}
-      <div style={{ flex:1, overflowY:'auto', padding:'10px 12px', display:'flex', flexDirection:'column', gap:5, maxHeight:380 }}>
-        {items.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'40px 0', color:'var(--text-muted)', fontSize:'var(--t-body)' }}>
-            {tab === 'today' ? 'لا يوجد طلبات اليوم بعد' : 'لا يوجد طلبات قيد المعالجة'}
+      <div style={{ flex:1, overflowY:'auto', padding:'10px 14px', display:'flex', flexDirection:'column', gap:6, maxHeight:340 }}>
+        {orders.length === 0 ? (
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 0', gap:10 }}>
+            <div style={{ fontSize:36, opacity:0.35 }}>📭</div>
+            <div style={{ fontSize:13, color:'var(--text-muted)', fontWeight:600 }}>لا توجد طلبات اليوم بعد</div>
           </div>
-        ) : (
-          items.map(o => {
-            const color = STATUS_COLORS[o.status] || 'var(--text-muted)'
-            return (
-              <div
-                key={o.id}
-                style={{
-                  display:'flex', alignItems:'center', gap:10,
-                  padding:'10px 12px',
-                  background:'var(--bg-hover)',
-                  borderRadius:'var(--r-md)',
-                  borderInlineStart:`3px solid ${color}`,
-                  transition:'background 0.12s ease',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background='var(--bg-active)'}
-                onMouseLeave={e => e.currentTarget.style.background='var(--bg-hover)'}
-              >
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontWeight:700, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text)' }}>
-                    {o.customer_name || 'عميل'}
-                  </div>
-                  <div style={{ fontSize:10, color:'var(--text-muted)', display:'flex', gap:6 }}>
-                    <span style={{ direction:'ltr' }}>{o.order_number}</span>
-                    {o.customer_city && <span>· {o.customer_city}</span>}
-                    <span>· {timeAgo(o.order_date || o.created_at)}</span>
-                  </div>
-                </div>
-                <span style={{
-                  padding:'3px 8px', borderRadius:999, fontSize:9, fontWeight:700,
-                  background:`${color}18`, color, flexShrink:0,
-                }}>
-                  {STATUS_LABELS[o.status] || o.status}
-                </span>
-                <div style={{
-                  fontWeight:800, color:'var(--action)', fontSize:13,
-                  fontFamily:'Inter,sans-serif', flexShrink:0, minWidth:64, textAlign:'start',
-                }}>
-                  {formatCurrency(o.total || 0)}
+        ) : orders.map(o => {
+          const s = statusMap[o.status] || { label:o.status, color:'#6B7280' }
+          return (
+            <div key={o.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:12, background:'var(--bg-hover)', borderInlineStart:`3px solid ${s.color}`, transition:'background 0.12s' }}
+              onMouseEnter={e=>e.currentTarget.style.background='var(--bg-active)'}
+              onMouseLeave={e=>e.currentTarget.style.background='var(--bg-hover)'}
+            >
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>{o.customer_name || 'عميل'}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', display:'flex', gap:6 }}>
+                  <span style={{ direction:'ltr', fontFamily:'monospace', color:s.color, fontWeight:600 }}>{o.order_number}</span>
+                  {o.customer_city && <span>· {o.customer_city}</span>}
+                  <span>· {timeAgo(o.created_at)}</span>
                 </div>
               </div>
-            )
-          })
-        )}
+              <span style={{ padding:'3px 9px', borderRadius:999, fontSize:9, fontWeight:700, background:`${s.color}18`, color:s.color, flexShrink:0 }}>{s.label}</span>
+              <div style={{ fontWeight:800, color:'var(--action)', fontSize:13, fontFamily:'Inter,sans-serif', flexShrink:0, minWidth:60, textAlign:'start' }}>{formatCurrency(o.total||0)}</div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Quick actions footer */}
+      <div style={{ padding:'12px 14px', borderTop:'1px solid var(--border)', display:'flex', gap:8, flexShrink:0, flexWrap:'wrap' }}>
+        {[
+          { l:'+ طلب',    c:'#318CE7', bg:'rgba(49,140,231,0.1)',  border:'rgba(49,140,231,0.2)',  p:'orders'     },
+          { l:'+ مصروف',  c:'#F59E0B', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.2)',  p:'expenses'   },
+          { l:'التقارير', c:'#5DD8A4', bg:'rgba(93,216,164,0.08)', border:'rgba(93,216,164,0.2)',  p:'reports'    },
+          { l:'المحاسبة', c:'#8B5CF6', bg:'rgba(139,92,246,0.08)', border:'rgba(139,92,246,0.2)',  p:'accounting' },
+        ].map(a => (
+          <button key={a.l} onClick={()=>onNavigate(a.p)} style={{ flex:1, padding:'8px 0', borderRadius:10, border:`1px solid ${a.border}`, background:a.bg, color:a.c, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit', transition:'all 0.14s', minWidth:60 }}
+            onMouseEnter={e=>e.currentTarget.style.filter='brightness(1.25)'}
+            onMouseLeave={e=>e.currentTarget.style.filter='none'}
+          >
+            {a.l}
+          </button>
+        ))}
       </div>
     </div>
   )
