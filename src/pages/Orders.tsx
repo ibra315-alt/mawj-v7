@@ -494,6 +494,7 @@ function OrderCard({ order, isSelected, onClick, onEdit, onDelete, onAdvance, on
   return (
     <div
       className={`order-card mawj-card${isSelected ? ' selected' : ''}${isStuck ? ' stuck' : ''}`}
+      onClick={onClick}
       style={{
         borderRadius: 16,
         borderInlineStart: `3px solid ${isRepl ? '#F59E0B' : status.color}`,
@@ -505,30 +506,18 @@ function OrderCard({ order, isSelected, onClick, onEdit, onDelete, onAdvance, on
         cursor: 'pointer',
       }}
     >
-      {/* ── Main clickable area ──────────────────────────── */}
-      <div onClick={onClick} style={{ padding:'14px 16px 10px' }}>
+      {/* ── Main content area ──────────────────────────── */}
+      <div style={{ padding:'14px 16px 10px' }}>
 
         {/* Row 1: Order ID (header) + status pill + replacement badge */}
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-          {/* ORDER ID — primary header */}
-          <button
-            onClick={e => { e.stopPropagation(); onCopy() }}
-            title="نسخ رقم الطلب"
-            style={{
-              display:'flex', alignItems:'center', gap:5,
-              background:'none', border:'none', cursor:'pointer', padding:0,
-              fontFamily:'Inter,monospace', fontSize:15, fontWeight:900,
-              color: status.color, letterSpacing:'-0.01em',
-            }}
-          >
+          {/* ORDER ID — plain text, whole card is clickable */}
+          <span style={{
+            fontFamily:'Inter,monospace', fontSize:15, fontWeight:900,
+            color: status.color, letterSpacing:'-0.01em',
+          }}>
             {order.order_number || '#—'}
-            <span style={{
-              fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:6,
-              background: isCopied ? 'rgba(93,216,164,0.15)' : 'transparent',
-              color: isCopied ? '#5DD8A4' : 'transparent',
-              transition:'all 0.2s', border: isCopied ? '1px solid rgba(93,216,164,0.3)' : '1px solid transparent',
-            }}>{isCopied ? '✓ نُسخ' : ''}</span>
-          </button>
+          </span>
 
           {/* Status pill */}
           <span style={{
@@ -592,7 +581,7 @@ function OrderCard({ order, isSelected, onClick, onEdit, onDelete, onAdvance, on
       </div>
 
       {/* ── Actions bar ───────────────────────────────────── */}
-      <div style={{
+      <div onClick={e => e.stopPropagation()} style={{
         padding:'8px 14px', borderTop:'1px solid var(--border)',
         display:'flex', alignItems:'center', gap:6, justifyContent:'space-between', flexWrap:'wrap',
       }}>
