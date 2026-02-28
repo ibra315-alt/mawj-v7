@@ -329,9 +329,9 @@ export default function Orders({ user }: PageProps) {
 function PipelineBar({ statuses, counts, active, onSelect }) {
   return (
     <div style={{
-      display:'flex', gap:6, overflowX:'auto',
-      paddingBottom:6, scrollbarWidth:'none',
-      WebkitOverflowScrolling:'touch', marginBottom:16,
+      display:'flex', gap:10, overflowX:'auto',
+      paddingBottom:8, scrollbarWidth:'none',
+      WebkitOverflowScrolling:'touch', marginBottom:20,
     }}>
       {statuses.map(s => {
         const isActive = active === s.id
@@ -342,7 +342,7 @@ function PipelineBar({ statuses, counts, active, onSelect }) {
             onClick={() => onSelect(s.id)}
             style={{
               display:'flex', alignItems:'center', gap:7,
-              padding:'8px 18px', borderRadius:99, flexShrink:0,
+              padding:'9px 20px', borderRadius:99, flexShrink:0,
               border: isActive ? `1.5px solid ${s.color}` : '1.5px solid var(--border)',
               background: isActive ? `${s.color}1A` : 'var(--bg-surface)',
               color: isActive ? s.color : 'var(--text-muted)',

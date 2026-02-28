@@ -545,8 +545,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .top-nav-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  inset-inline-start: 50%;
-  transform: translateX(50%) translateY(-6px);
+  inset-inline-end: 0;
+  transform: translateY(-6px);
   min-width: 180px;
   background: var(--bg-elevated);
   backdrop-filter: var(--glass-blur-lg);
@@ -558,14 +558,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   padding: var(--sp-2);
   opacity: 0;
   pointer-events: none;
-  transform: translateX(50%) translateY(-6px);
   transition: opacity var(--dur-fast) var(--ease-io), transform var(--dur-fast) var(--ease-spring);
   z-index: 300;
 }
 .top-nav-dropdown-open {
   opacity: 1;
   pointer-events: all;
-  transform: translateX(50%) translateY(0);
+  transform: translateY(0);
 }
 .top-nav-dropdown-item {
   display: flex;
@@ -719,19 +718,20 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .mobile-fabs {
   display: none;
   position: fixed;
-  inset-inline-end: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   z-index: 90;
-  flex-direction: column;
-  gap: 14px;
+  flex-direction: row;
+  gap: 16px;
   align-items: center;
 }
 @media (max-width: 768px) {
   .mobile-fabs { display: flex; }
 }
 .mobile-fab {
-  width: 54px;
-  height: 54px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
