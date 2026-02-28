@@ -15,18 +15,18 @@ import type { PageProps } from '../types'
 ══════════════════════════════════════════════════ */
 
 const SECTIONS = [
-  { id:'business',      label:'المتجر',           desc:'معلومات المتجر والمنتجات', icon:'🏪' },
-  { id:'financial',     label:'المالية',           desc:'الإيرادات والضرائب والميزانية', icon:'💰' },
-  { id:'partners',      label:'الشركاء',          desc:'إبراهيم وإحسان والحصص',   icon:'🤝', adminOnly:true },
-  { id:'statuses',      label:'الحالات',          desc:'حالات الطلبات وألوانها',  icon:'🔖' },
-  { id:'team',          label:'الفريق',           desc:'أعضاء وصلاحيات',          icon:'👥' },
-  { id:'whatsapp',      label:'واتساب',           desc:'قوالب الرسائل',           icon:'💬' },
-  { id:'ai',            label:'الذكاء الاصطناعي', desc:'المساعد والإجراءات',      icon:'🤖' },
-  { id:'appearance',    label:'المظهر',           desc:'الوضع الداكن والفاتح',    icon:'🎨' },
-  { id:'delivery',      label:'التوصيل',          desc:'مناطق وتكاليف',           icon:'🚚' },
-  { id:'notifications', label:'الإشعارات',        desc:'تنبيهات وتذكيرات',        icon:'🔔' },
-  { id:'security',      label:'الأمان',           desc:'كلمة المرور والجلسة',     icon:'🔐' },
-  { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد',          icon:'💾' },
+  { id:'business',      label:'المتجر',           desc:'معلومات المتجر والمنتجات', icon:'🏪', color:'#318CE7' },
+  { id:'financial',     label:'المالية',           desc:'الإيرادات والضرائب',       icon:'💰', color:'#38BDF8' },
+  { id:'partners',      label:'الشركاء',          desc:'إبراهيم وإحسان والحصص',   icon:'🤝', color:'#F59E0B', adminOnly:true },
+  { id:'statuses',      label:'الحالات',          desc:'حالات الطلبات وألوانها',  icon:'🔖', color:'#8B5CF6' },
+  { id:'team',          label:'الفريق',           desc:'أعضاء وصلاحيات',          icon:'👥', color:'#EC4899' },
+  { id:'whatsapp',      label:'واتساب',           desc:'قوالب الرسائل',           icon:'💬', color:'#25D366' },
+  { id:'ai',            label:'الذكاء الاصطناعي', desc:'المساعد والإجراءات',      icon:'🤖', color:'#A78BFA' },
+  { id:'appearance',    label:'المظهر',           desc:'الوضع الداكن والفاتح',    icon:'🎨', color:'#F472B6' },
+  { id:'delivery',      label:'التوصيل',          desc:'مناطق وتكاليف',           icon:'🚚', color:'#FB923C' },
+  { id:'notifications', label:'الإشعارات',        desc:'تنبيهات وتذكيرات',        icon:'🔔', color:'#FCD34D' },
+  { id:'security',      label:'الأمان',           desc:'كلمة المرور والجلسة',     icon:'🔐', color:'#F87171' },
+  { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد',          icon:'💾', color:'#6EE7B7' },
 ]
 
 export default function Settings({ user }: PageProps) {
@@ -204,24 +204,32 @@ export default function Settings({ user }: PageProps) {
             <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',fontSize:14,color:'var(--text-muted)',pointerEvents:'none'}}>🔍</span>
           </div>
           {visibleSections.map(s => {
-            const active = section === s.id
+            const isActive = section === s.id
+            const c = s.color || 'var(--action)'
             return (
               <button key={s.id} onClick={() => setSection(s.id)} style={{
                 width:'100%', display:'flex', alignItems:'center', gap:10,
-                padding:'10px 12px', borderRadius:'var(--r-md)',
-                border:'none', background: active
-                  ? 'linear-gradient(135deg,rgba(var(--action-rgb),0.12),rgba(var(--info-rgb),0.08))'
-                  : 'transparent',
+                padding:'9px 10px', borderRadius:'var(--r-md)',
+                border:'none',
+                background: isActive ? `${c}14` : 'transparent',
                 cursor:'pointer', fontFamily:'inherit',
                 transition:'all 0.15s ease', textAlign:'right',
-                borderInlineStart: active ? '2.5px solid var(--action)' : '2.5px solid transparent',
+                borderInlineStart: isActive ? `2.5px solid ${c}` : '2.5px solid transparent',
+                boxShadow: isActive ? `inset 0 0 0 1px ${c}18` : 'none',
               }}>
-                <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
+                <div style={{
+                  width:34, height:34, borderRadius:'var(--r-sm)', flexShrink:0,
+                  background: isActive ? `${c}28` : `${c}12`,
+                  border: isActive ? `1px solid ${c}40` : `1px solid ${c}18`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:17, transition:'all 0.15s ease',
+                  boxShadow: isActive ? `0 0 14px ${c}35` : 'none',
+                }}>{s.icon}</div>
                 <div style={{minWidth:0,flex:1}}>
-                  <div style={{fontSize:13,fontWeight: active?800:600,color: active?'var(--action)':'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.label}</div>
+                  <div style={{fontSize:13,fontWeight:isActive?800:600,color:isActive?c:'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.label}</div>
                   <div style={{fontSize:10,color:'var(--text-muted)',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.desc}</div>
                 </div>
-                {active && <div style={{width:6,height:6,borderRadius:'50%',background:'var(--action)',flexShrink:0,boxShadow:'0 0 8px var(--action)'}} />}
+                {isActive && <div style={{width:6,height:6,borderRadius:'50%',background:c,flexShrink:0,boxShadow:`0 0 8px ${c}`}} />}
               </button>
             )
           })}
@@ -230,61 +238,70 @@ export default function Settings({ user }: PageProps) {
         {/* Content panel */}
         <div style={{flex:1,minWidth:0}} className="settings-content">
           {/* Section header */}
-          <div style={{
-            display:'flex', alignItems:'center', gap:12, marginBottom:20,
-            padding:'14px 18px',
-            background:'var(--bg-surface)',
-            backdropFilter:'var(--glass-blur)',
-            WebkitBackdropFilter:'var(--glass-blur)',
-            border:'1px solid var(--border)',
-            borderTopColor:'var(--glass-edge)',
-            borderRadius:'var(--r-lg)',
-            boxShadow:'var(--card-shadow)',
-          }}>
-            <div style={{
-              width:44,height:44,borderRadius:'var(--r-md)',
-              background:'linear-gradient(135deg,rgba(var(--action-rgb),0.15),rgba(var(--info-rgb),0.10))',
-              border:'1px solid var(--action-soft)',
-              display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
-            }}>{active?.icon}</div>
-            <div>
-              <div style={{fontWeight:900,fontSize:17,color:'var(--text)'}}>{active?.label}</div>
-              <div style={{fontSize:12,color:'var(--text-muted)'}}>{active?.desc}</div>
-            </div>
-          </div>
+          {(() => {
+            const ac = active?.color || 'var(--action)'
+            return (
+              <div style={{
+                display:'flex', alignItems:'center', gap:14, marginBottom:20,
+                padding:'16px 20px',
+                background:`linear-gradient(135deg, ${ac}10, transparent)`,
+                backdropFilter:'var(--glass-blur)',
+                WebkitBackdropFilter:'var(--glass-blur)',
+                border:`1px solid ${ac}28`,
+                borderTopColor:`${ac}40`,
+                borderRadius:'var(--r-lg)',
+                boxShadow:`0 0 32px ${ac}0a, var(--card-shadow)`,
+              }}>
+                <div style={{
+                  width:50, height:50, borderRadius:'var(--r-md)', flexShrink:0,
+                  background:`linear-gradient(135deg,${ac}28,${ac}10)`,
+                  border:`1px solid ${ac}35`,
+                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:26,
+                  boxShadow:`0 0 24px ${ac}25`,
+                }}>{active?.icon}</div>
+                <div>
+                  <div style={{fontWeight:900,fontSize:18,color:'var(--text)'}}>{active?.label}</div>
+                  <div style={{fontSize:12,color:'var(--text-muted)',marginTop:2}}>{active?.desc}</div>
+                </div>
+              </div>
+            )
+          })()}
           <div className="stagger">{renderSection()}</div>
         </div>
       </div>
 
       {/* ── Mobile: section list ── */}
       <div className="settings-mobile-list">
-        {visibleSections.map(s => (
-          <button key={s.id} onClick={()=>{ setSection(s.id); setMobileOpen(true) }} style={{
-            width:'100%', display:'flex', alignItems:'center', gap:14,
-            padding:'14px 16px', marginBottom:10,
-            background:'var(--bg-surface)',
-            backdropFilter:'var(--glass-blur)',
-            WebkitBackdropFilter:'var(--glass-blur)',
-            border:'1px solid var(--border)',
-            borderTopColor:'var(--glass-edge)',
-            borderRadius:'var(--r-lg)',
-            cursor:'pointer', fontFamily:'inherit',
-            transition:'all 0.15s ease',
-            boxShadow:'var(--card-shadow)',
-          }} className="mawj-card mawj-card-hover">
-            <div style={{
-              width:44,height:44,borderRadius:'var(--r-md)',flexShrink:0,
-              background:'linear-gradient(135deg,rgba(var(--action-rgb),0.10),rgba(var(--info-rgb),0.08))',
-              border:'none',
-              display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
-            }}>{s.icon}</div>
-            <div style={{flex:1,textAlign:'right'}}>
-              <div style={{fontWeight:700,fontSize:14,color:'var(--text)'}}>{s.label}</div>
-              <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{s.desc}</div>
-            </div>
-            <span style={{color:'var(--text-muted)',fontSize:18}}>‹</span>
-          </button>
-        ))}
+        {visibleSections.map(s => {
+          const c = s.color || 'var(--action)'
+          return (
+            <button key={s.id} onClick={()=>{ setSection(s.id); setMobileOpen(true) }} style={{
+              width:'100%', display:'flex', alignItems:'center', gap:14,
+              padding:'14px 16px', marginBottom:10,
+              background:'var(--bg-surface)',
+              backdropFilter:'var(--glass-blur)',
+              WebkitBackdropFilter:'var(--glass-blur)',
+              border:`1px solid ${c}22`,
+              borderRadius:'var(--r-lg)',
+              cursor:'pointer', fontFamily:'inherit',
+              transition:'all 0.15s ease',
+              boxShadow:'var(--card-shadow)',
+            }}>
+              <div style={{
+                width:48, height:48, borderRadius:'var(--r-md)', flexShrink:0,
+                background:`linear-gradient(135deg,${c}22,${c}0a)`,
+                border:`1px solid ${c}28`,
+                display:'flex', alignItems:'center', justifyContent:'center', fontSize:24,
+                boxShadow:`0 0 16px ${c}18`,
+              }}>{s.icon}</div>
+              <div style={{flex:1,textAlign:'right'}}>
+                <div style={{fontWeight:700,fontSize:14,color:'var(--text)'}}>{s.label}</div>
+                <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{s.desc}</div>
+              </div>
+              <span style={{color:c,fontSize:16,opacity:0.6}}>‹</span>
+            </button>
+          )
+        })}
       </div>
 
       {MobileSection}

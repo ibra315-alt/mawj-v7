@@ -235,6 +235,37 @@ export default function Orders({ user }: PageProps) {
         }
       />
 
+      {/* ── Stats Mini-Row ───────────────────────── */}
+      {(() => {
+        const delivered  = orders.filter(o => o.status === 'delivered').length
+        const pending    = orders.filter(o => ['new','confirmed','processing'].includes(o.status)).length
+        const revenue    = orders.filter(o => o.status === 'delivered').reduce((s,o) => s+(o.total||0), 0)
+        const withHayyak = orders.filter(o => o.status === 'with_hayyak').length
+        return (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:16 }}>
+            {[
+              { v:orders.length, l:'إجمالي الطلبات', c:'#318CE7',     i:'📦' },
+              { v:pending,       l:'قيد التنفيذ',    c:'#F59E0B',     i:'⏳' },
+              { v:withHayyak,    l:'مع حياك',         c:'#8B5CF6',     i:'🚚' },
+              { v:delivered,     l:'مسلّم',           c:'#5DD8A4',     i:'✅' },
+            ].map(s => (
+              <div key={s.l} style={{
+                background:'var(--bg-surface)',
+                backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
+                borderRadius:'var(--r-lg)',
+                border:`1px solid ${s.c}22`,
+                borderTop:`2px solid ${s.c}`,
+                padding:'12px 14px',
+                boxShadow:`0 0 20px ${s.c}0e, var(--card-shadow)`,
+              }}>
+                <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, marginBottom:6, letterSpacing:'0.04em' }}>{s.i} {s.l}</div>
+                <div style={{ fontSize:24, fontWeight:900, fontFamily:'Inter,sans-serif', color:s.c, lineHeight:1 }}>{s.v}</div>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
+
       {/* ── Pipeline Status Bar ───────────────────── */}
       <PipelineBar
         statuses={PIPELINE_STATUSES}

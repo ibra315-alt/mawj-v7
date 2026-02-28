@@ -102,22 +102,30 @@ export default function Customers(_: PageProps) {
     <div className="page">
 
       {/* ─── Header ──────────────────────────────────────── */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:10 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:12 }}>
         <div>
-          <h1 style={{ fontSize:'var(--t-title)', fontWeight:900, color:'var(--text)', margin:0 }}>العملاء</h1>
-          <p style={{ fontSize:13, color:'var(--text-muted)', margin:'4px 0 0', fontWeight:600 }}>
-            {customers.length} عميل مسجل · {vipCount} VIP
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+            <div style={{ width:40, height:40, borderRadius:12, background:'linear-gradient(135deg,#318CE730,#38BDF818)', border:'1px solid #318CE730', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>👥</div>
+            <h1 style={{ fontSize:26, fontWeight:900, color:'var(--text)', margin:0 }}>العملاء</h1>
+          </div>
+          <p style={{ fontSize:13, color:'var(--text-muted)', margin:0, fontWeight:600 }}>
+            <span style={{ color:'var(--action)', fontWeight:800 }}>{customers.length}</span> عميل مسجل ·{' '}
+            <span style={{ color:'#F59E0B', fontWeight:800 }}>{vipCount}</span> VIP
           </p>
         </div>
         {customers.length > 0 && (
           <button
             onClick={() => setBroadcastOpen(true)}
             style={{
-              display:'flex', alignItems:'center', gap:8, padding:'10px 18px',
-              background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.25)',
+              display:'flex', alignItems:'center', gap:8, padding:'10px 20px',
+              background:'rgba(37,211,102,0.10)', border:'1px solid rgba(37,211,102,0.28)',
               borderRadius:'var(--r-md)', color:'var(--whatsapp)', fontSize:13, fontWeight:700,
               cursor:'pointer', fontFamily:'inherit',
+              boxShadow:'0 0 16px rgba(37,211,102,0.10)',
+              transition:'all 0.15s',
             }}
+            onMouseEnter={e => { e.currentTarget.style.background='rgba(37,211,102,0.16)'; e.currentTarget.style.boxShadow='0 0 24px rgba(37,211,102,0.2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background='rgba(37,211,102,0.10)'; e.currentTarget.style.boxShadow='0 0 16px rgba(37,211,102,0.10)' }}
           >
             <IcWhatsapp size={16}/> رسالة جماعية
           </button>
@@ -127,22 +135,30 @@ export default function Customers(_: PageProps) {
       {/* ─── KPI Row ─────────────────────────────────────── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
         {[
-          { label:'إجمالي العملاء',    value: customers.length,              color:'var(--info)',    icon:'👥' },
-          { label:'إيرادات العملاء',   value: formatCurrency(totalRevenue),  color:'var(--action)', icon:'💰' },
-          { label:'متوسط قيمة العميل', value: formatCurrency(avgLTV),        color:'var(--success)',icon:'📊' },
-          { label:'عملاء VIP',         value: vipCount,                      color:'#F59E0B',       icon:'👑' },
+          { label:'إجمالي العملاء',    value: customers.length,              color:'#38BDF8', icon:'👥', sub:`${vipCount} VIP` },
+          { label:'إيرادات العملاء',   value: formatCurrency(totalRevenue),  color:'#318CE7', icon:'💰', sub:'إجمالي الإنفاق' },
+          { label:'متوسط قيمة العميل', value: formatCurrency(avgLTV),        color:'#5DD8A4', icon:'📊', sub:'متوسط LTV' },
+          { label:'عملاء VIP',         value: vipCount,                      color:'#F59E0B', icon:'👑', sub:'2000+ درهم أو 5+ طلبات' },
         ].map(s => (
           <div key={s.label} style={{
             background:'var(--bg-surface)',
             backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
-            border:'1px solid var(--border-strong)', borderTopColor:'var(--glass-edge)',
+            border:`1px solid ${s.color}22`,
+            borderTop:`2px solid ${s.color}`,
             borderRadius:'var(--r-lg)', padding:'16px 18px',
-            boxShadow:'var(--card-shadow)', position:'relative', overflow:'hidden',
-          }}>
-            <div style={{ position:'absolute', top:0, insetInlineStart:0, insetInlineEnd:0, height:3, background:`linear-gradient(90deg, transparent, ${s.color}, transparent)`, opacity:0.7 }} />
-            <div style={{ fontSize:20, marginBottom:8 }}>{s.icon}</div>
-            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:4 }}>{s.label}</div>
-            <div style={{ fontSize:22, fontWeight:900, color:s.color, fontFamily:'Inter,sans-serif', lineHeight:1.1 }}>{s.value}</div>
+            boxShadow:`0 0 28px ${s.color}0e, var(--card-shadow)`,
+            position:'relative', overflow:'hidden',
+            transition:'transform 0.18s, box-shadow 0.18s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow=`0 0 40px ${s.color}18, var(--card-shadow-hover)` }}
+            onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow=`0 0 28px ${s.color}0e, var(--card-shadow)` }}
+          >
+            {/* ambient glow */}
+            <div style={{ position:'absolute', top:0, insetInlineStart:0, insetInlineEnd:0, height:60, background:`radial-gradient(ellipse at 50% 0%,${s.color}18,transparent 70%)`, pointerEvents:'none' }} />
+            <div style={{ fontSize:26, marginBottom:10, lineHeight:1 }}>{s.icon}</div>
+            <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6 }}>{s.label}</div>
+            <div style={{ fontSize:26, fontWeight:900, color:s.color, fontFamily:'Inter,sans-serif', lineHeight:1.1, marginBottom:4 }}>{s.value}</div>
+            <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600 }}>{s.sub}</div>
           </div>
         ))}
       </div>
