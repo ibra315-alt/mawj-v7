@@ -1,0 +1,473 @@
+import React, { useState, useRef, useEffect } from 'react'
+import { DB, supabase } from '../data/db'
+import { Settings as SettingsDB } from '../data/db'
+import { formatCurrency } from '../data/constants'
+
+interface Message {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  pending_action?: boolean
+}
+
+interface QuickPrompt {
+  id?: string
+  label: string
+  text: string
+}
+
+interface AiConfig {
+  system_prompt?: string
+  quick_prompts?: QuickPrompt[]
+  model?: string
+  max_tokens?: number
+  actions_enabled?: Record<string, boolean>
+  api_keys?: Record<string, string>
+  panel_position?: string
+  context_includes?: Record<string, boolean>
+}
+
+const DEFAULT_SYSTEM = `أنت مستشار أعمال ذكي لشركة موج للهدايا الكريستالية المخصصة في الإمارات.
+الشركة تبيع هدايا كريستالية مخصصة بالحفر ثلاثي الأبعاد بالليزر، وتشحن عبر حياك في جميع أنحاء الإمارات.
+الشركاء: إبراهيم وإحسان — يتقاسمان الأرباح بالتساوي.
+نظام الشحن: حياك للتوصيل مع تسويات COD دورية (حوالات).
+
+البيانات المتاحة:
+- الطلبات: الحالة (جديد/جاهز/مع حياك/مسلّم/لم يُسلَّم/ملغى)، الإيرادات، الربح الإجمالي، المنطقة، نوع الطلب
+- المصاريف: حسب الفئة والتاريخ
+- المخزون: الكميات والمنتجات
+- التسويات: حوالات حياك وربطها بالطلبات
+- الموردين والمشتريات والسحوبات
+
+أسلوب الرد:
+- أجب دائماً بالعربية الواضحة
+- ابدأ بالإجابة مباشرة بدون مقدمات
+- قدّم أرقاماً محددة دائماً عند توفرها
+- بعد كل تحليل أضف توصية عملية واحدة على الأقل
+- إذا لاحظت مشكلة في البيانات نبّه عليها مباشرة
+
+قواعد صارمة:
+- لا تُظهر تفكيرك الداخلي أبداً
+- لا تكتب THOUGHT أو افكر أو منهجيتي
+- إذا البيانات غير كافية قل ذلك في جملة واحدة فقط
+- لا تكرر السؤال قبل الإجابة`
+
+const DEFAULT_QUICK: QuickPrompt[] = [
+  { id: 'q1', label: '📊 ملخص اليوم',    text: 'كيف كانت المبيعات اليوم مقارنة بالأمس؟' },
+  { id: 'q2', label: '📈 أداء الشهر',     text: 'ما أبرز مؤشرات الأداء هذا الشهر؟' },
+  { id: 'q3', label: '🔄 الاستبدالات',   text: 'ما نسبة الاستبدالات وما سببها المرجح؟' },
+  { id: 'q4', label: '🏆 أفضل المنتجات', text: 'ما المنتجات الأكثر مبيعاً وربحاً؟' },
+  { id: 'q5', label: '🌆 أفضل المناطق',  text: 'أي الإمارات تحقق أعلى مبيعات؟' },
+  { id: 'q6', label: '💡 توصية',          text: 'بناءً على البيانات، ما أهم شيء يجب التركيز عليه الآن؟' },
+]
+
+function detectProvider(model: string): string {
+  if (model.startsWith('claude'))   return 'anthropic'
+  if (model.startsWith('gemini'))   return 'google'
+  if (model.startsWith('gpt') || model.startsWith('o1') || model.startsWith('o3')) return 'openai'
+  if (model.startsWith('deepseek')) return 'deepseek'
+  return 'anthropic'
+}
+
+async function callAI(messages: any[], systemPrompt: string, model = 'claude-sonnet-4-20250514', maxTokens = 1500, apiKeys: Record<string, string> = {}): Promise<any> {
+  const provider = detectProvider(model)
+
+  if (provider === 'anthropic') {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('غير مسجّل الدخول')
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ model, max_tokens: maxTokens, system: systemPrompt, messages }),
+    })
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || `خطأ ${res.status}`) }
+    const data = await res.json()
+    if (data.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
+    return data
+  }
+
+  if (provider === 'google') {
+    const key = apiKeys.google_api_key
+    if (!key) throw new Error('مفتاح Google AI غير موجود — أضفه في الإعدادات → الذكاء الاصطناعي')
+    const geminiMessages = messages.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] }, contents: geminiMessages, generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 } }),
+    })
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error?.message || `خطأ Gemini ${res.status}`) }
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!text) throw new Error('لم يُرجع Gemini رداً')
+    return { content: [{ text }] }
+  }
+
+  if (provider === 'openai') {
+    const key = apiKeys.openai_api_key
+    if (!key) throw new Error('مفتاح OpenAI غير موجود')
+    const oaiMessages = [{ role: 'system', content: systemPrompt }, ...messages.map((m: any) => ({ role: m.role, content: m.content }))]
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages: oaiMessages, temperature: 0.7 }),
+    })
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error?.message || `خطأ OpenAI ${res.status}`) }
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content
+    if (!text) throw new Error('لم يُرجع GPT رداً')
+    return { content: [{ text }] }
+  }
+
+  if (provider === 'deepseek') {
+    const key = apiKeys.deepseek_api_key
+    if (!key) throw new Error('مفتاح DeepSeek غير موجود')
+    const dsMessages = [{ role: 'system', content: systemPrompt }, ...messages.map((m: any) => ({ role: m.role, content: m.content }))]
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages: dsMessages, temperature: 0.7 }),
+    })
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error?.message || `خطأ DeepSeek ${res.status}`) }
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content
+    if (!text) throw new Error('لم يُرجع DeepSeek رداً')
+    return { content: [{ text }] }
+  }
+
+  throw new Error(`مزود غير معروف: ${provider}`)
+}
+
+async function buildContext(cfg: AiConfig = {}): Promise<string> {
+  const inc = cfg.context_includes || {}
+  const always = inc.orders_summary !== false
+  try {
+    const [orders, expenses] = await Promise.all([
+      DB.list('orders', { orderBy: 'created_at' }),
+      DB.list('expenses', { orderBy: 'date' }),
+    ])
+    const now        = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1)
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastMS     = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const lastME     = new Date(now.getFullYear(), now.getMonth(), 0)
+
+    const byDate = (o: any, from: Date, to?: Date) => { const d = new Date(o.order_date || o.created_at); return d >= from && (!to || d <= to) }
+
+    const todayOrds = orders.filter((o: any) => byDate(o, todayStart))
+    const yestOrds  = orders.filter((o: any) => byDate(o, yestStart, todayStart))
+    const monthOrds = orders.filter((o: any) => byDate(o, monthStart))
+    const lastMOrds = orders.filter((o: any) => byDate(o, lastMS, lastME))
+    const monthExps = expenses.filter((e: any) => new Date(e.date) >= monthStart)
+
+    const tRev  = todayOrds.reduce((s: number, o: any) => s + (o.total || 0), 0)
+    const yRev  = yestOrds.reduce((s: number, o: any) => s + (o.total || 0), 0)
+    const mRev  = monthOrds.reduce((s: number, o: any) => s + (o.total || 0), 0)
+    const mGP   = monthOrds.reduce((s: number, o: any) => s + (o.gross_profit || 0), 0)
+    const mExp  = monthExps.reduce((s: number, e: any) => s + (e.amount || 0), 0)
+    const mNet  = mGP - mExp
+    const mDeliv  = monthOrds.filter((o: any) => o.status === 'delivered').length
+    const mND     = monthOrds.filter((o: any) => o.status === 'not_delivered').length
+    const mRepl   = monthOrds.filter((o: any) => o.is_replacement).length
+    const mHayyak = monthOrds.reduce((s: number, o: any) => s + (o.hayyak_fee || 0), 0)
+    const lmRev   = lastMOrds.reduce((s: number, o: any) => s + (o.total || 0), 0)
+    const lmGP    = lastMOrds.reduce((s: number, o: any) => s + (o.gross_profit || 0), 0)
+    const lmExp   = expenses.filter((e: any) => { const d = new Date(e.date); return d >= lastMS && d <= lastME }).reduce((s: number, e: any) => s + (e.amount || 0), 0)
+
+    let ctx = `=== موج للهدايا — ${now.toLocaleDateString('ar-AE')} ===\n`
+
+    if (always) {
+      ctx += `\n── اليوم (${now.toLocaleDateString('ar-AE')}) ──`
+      ctx += `\nطلبات: ${todayOrds.length} | إيرادات: ${formatCurrency(tRev)} | ربح إجمالي: ${formatCurrency(todayOrds.reduce((s: number, o: any) => s + (o.gross_profit || 0), 0))}`
+      ctx += `\n\n── أمس ──`
+      ctx += `\nطلبات: ${yestOrds.length} | إيرادات: ${formatCurrency(yRev)}`
+      if (yRev > 0) { const chg = ((tRev - yRev) / yRev * 100).toFixed(0); ctx += `\nتغير الإيرادات: ${Number(chg) >= 0 ? '+' : ''}${chg}%` }
+      ctx += `\n\n── هذا الشهر ──\nالطلبات: ${monthOrds.length} | الإيرادات: ${formatCurrency(mRev)}\nربح إجمالي: ${formatCurrency(mGP)} | رسوم حياك: ${formatCurrency(mHayyak)}`
+    }
+
+    if (inc.expenses_summary !== false) {
+      ctx += `\nمصاريف: ${formatCurrency(mExp)} | صافي الربح: ${formatCurrency(mNet)}`
+    }
+
+    if (always) {
+      ctx += `\nتسليم: ${mDeliv}/${monthOrds.length} | لم يتم: ${mND}`
+    }
+
+    if (inc.replacements !== false) {
+      ctx += `\nاستبدالات: ${mRepl}`
+    }
+
+    ctx += `\n\n── الشهر الماضي ──\nإيرادات: ${formatCurrency(lmRev)} | ربح: ${formatCurrency(lmGP)} | صافي: ${formatCurrency(lmGP - lmExp)} | طلبات: ${lastMOrds.length}`
+
+    if (inc.pending_cod !== false) {
+      const pendingOrds = orders.filter((o: any) => o.status === 'delivered' && !o.hayyak_remittance_id)
+      const pendingCOD = pendingOrds.reduce((s: number, o: any) => s + (o.total || 0), 0)
+      if (pendingCOD > 0) ctx += `\n\n── COD معلق ──\n${pendingOrds.length} طلب — ${formatCurrency(pendingCOD)}`
+    }
+
+    const inProg = orders.filter((o: any) => ['new', 'ready', 'with_hayyak'].includes(o.status))
+    if (inProg.length > 0) ctx += `\n\n── قيد المعالجة ──\n${inProg.length} طلب`
+
+    if (inc.products_breakdown !== false) {
+      const pm: Record<string, { qty: number; rev: number; profit: number }> = {}
+      orders.forEach((o: any) => (o.items || []).forEach((item: any) => {
+        if (!pm[item.name]) pm[item.name] = { qty: 0, rev: 0, profit: 0 }
+        pm[item.name].qty += (item.qty || 1); pm[item.name].rev += (item.price || 0) * (item.qty || 1)
+        pm[item.name].profit += ((item.price || 0) - (item.cost || 0)) * (item.qty || 1)
+      }))
+      const top = Object.entries(pm).sort((a, b) => b[1].rev - a[1].rev).slice(0, 5)
+      if (top.length) {
+        ctx += `\n\n── أفضل المنتجات ──`
+        top.forEach(([n, d]) => { ctx += `\n${n}: ${d.qty} وحدة، ${formatCurrency(d.rev)}` })
+      }
+    }
+
+    if (inc.cities_breakdown !== false) {
+      const cm: Record<string, { count: number; rev: number }> = {}
+      monthOrds.forEach((o: any) => { const c = o.customer_city || 'غير محدد'; if (!cm[c]) cm[c] = { count: 0, rev: 0 }; cm[c].count++; cm[c].rev += (o.total || 0) })
+      const topC = Object.entries(cm).sort((a, b) => b[1].count - a[1].count).slice(0, 5)
+      if (topC.length) {
+        ctx += `\n\n── توزيع الإمارات ──`
+        topC.forEach(([c, d]) => { ctx += `\n${c}: ${d.count} طلب (${formatCurrency(d.rev)})` })
+      }
+    }
+
+    return ctx.trim()
+  } catch (err: any) { return `[خطأ في تحميل السياق: ${err.message}]` }
+}
+
+async function executeAction(action: string, params: any, onNavigate?: (page: string) => void): Promise<string> {
+  switch (action) {
+    case 'navigate':
+      if (onNavigate && params.page) { onNavigate(params.page); return `✅ تم فتح صفحة ${params.page}` }
+      return '⚠️ لا يمكن التنقل الآن'
+    case 'update_status':
+      if (!params.order_id || !params.status) return '⚠️ بيانات الإجراء غير مكتملة'
+      await DB.update('orders', params.order_id, { status: params.status, updated_at: new Date().toISOString() })
+      return `✅ تم تغيير حالة الطلب إلى "${params.status}"`
+    case 'mark_delivered':
+      if (!params.order_id) return '⚠️ رقم الطلب مطلوب'
+      await DB.update('orders', params.order_id, { status: 'delivered', updated_at: new Date().toISOString() })
+      return `✅ تم تسجيل تسليم الطلب`
+    case 'add_expense':
+      if (!params.amount || !params.category) return '⚠️ المبلغ والفئة مطلوبان'
+      await DB.insert('expenses', { amount: parseFloat(params.amount), category: params.category, description: params.description || '', date: params.date || new Date().toISOString().split('T')[0], paid_by: params.paid_by || 'company', reimbursed: false, created_at: new Date().toISOString() })
+      return `✅ تم إضافة مصروف: ${formatCurrency(parseFloat(params.amount))} — ${params.category}`
+    default:
+      return `⚠️ إجراء غير معروف: ${action}`
+  }
+}
+
+function buildSystemPrompt(baseCfg: AiConfig | null, actionsEnabled: Record<string, boolean>): string {
+  let prompt = (baseCfg?.system_prompt || DEFAULT_SYSTEM) + '\n\nلا تُظهر تفكيرك الداخلي أبداً. ابدأ مباشرة بالإجابة.\n\n'
+  const enabledActions = Object.entries(actionsEnabled || {}).filter(([, v]) => v).map(([k]) => k)
+  if (enabledActions.length > 0) {
+    prompt += `يمكنك تنفيذ الإجراءات التالية عند الطلب الصريح من المستخدم فقط:\n`
+    if (actionsEnabled?.navigate)       prompt += `- navigate: الانتقال لصفحة\n`
+    if (actionsEnabled?.update_status)  prompt += `- update_status: تغيير حالة طلب\n`
+    if (actionsEnabled?.mark_delivered) prompt += `- mark_delivered: تسجيل تسليم طلب\n`
+    if (actionsEnabled?.add_expense)    prompt += `- add_expense: إضافة مصروف\n`
+    prompt += `\nعند تنفيذ إجراء، أجب بالصيغة:\n[ACTION:{"action":"اسم_الإجراء","params":{...}}]\n`
+  }
+  return prompt
+}
+
+export default function AIAssistant({ onClose, onNavigate }: { onClose: () => void; onNavigate?: (page: string) => void }) {
+  const [messages,  setMessages]  = useState<Message[]>([
+    { role: 'assistant', content: 'مرحباً! أنا مساعد موج 🤖\nيمكنني تحليل مبيعاتك، مقارنة الأداء، وتقديم توصيات عملية.\nكيف يمكنني مساعدتك؟' }
+  ])
+  const [input,     setInput]     = useState('')
+  const [loading,   setLoading]   = useState(false)
+  const [context,   setContext]   = useState<string | null>(null)
+  const [aiCfg,     setAiCfg]     = useState<AiConfig | null>(null)
+  const [executing, setExecuting] = useState(false)
+  const [tab,       setTab]       = useState<'chat' | 'context'>('chat')
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    SettingsDB.get('ai_settings').then((cfg: any) => {
+      setAiCfg(cfg || {})
+      buildContext(cfg || {}).then(setContext)
+    }).catch(() => {
+      setAiCfg({})
+      buildContext({}).then(setContext)
+    })
+  }, [])
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  const quickPrompts = aiCfg?.quick_prompts || DEFAULT_QUICK
+  const model        = aiCfg?.model || 'claude-sonnet-4-20250514'
+  const maxTokens    = aiCfg?.max_tokens || 1500
+  const actEnabled   = aiCfg?.actions_enabled || {}
+  const sysPrompt    = buildSystemPrompt(aiCfg, actEnabled)
+  const hasActions   = Object.values(actEnabled).some(Boolean)
+
+  async function send(text?: string) {
+    const userText = (text || input).trim()
+    if (!userText || loading) return
+    setInput('')
+    const userMsg: Message = { role: 'user', content: userText }
+    setMessages(p => [...p, userMsg])
+    setLoading(true)
+    try {
+      const ctx     = context || await buildContext(aiCfg || {})
+      const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
+      const data    = await callAI(history, sysPrompt + '\n\n' + ctx, model, maxTokens, aiCfg?.api_keys || {})
+      const reply   = data.content?.[0]?.text || 'عذراً، لم أتمكن من الإجابة.'
+
+      const ACTION_START = '[ACTION:{'
+      const ACTION_END   = '}]'
+      const aStart = reply.indexOf(ACTION_START)
+      const aEnd   = aStart >= 0 ? reply.indexOf(ACTION_END, aStart) : -1
+      const actionMatch = aStart >= 0 && aEnd >= 0
+        ? { full: reply.slice(aStart, aEnd + ACTION_END.length), json: reply.slice(aStart + ACTION_START.length - 1, aEnd + 1) }
+        : null
+
+      if (actionMatch && hasActions) {
+        const clean = reply.replace(actionMatch.full, '').trim()
+        setMessages(p => [...p, { role: 'assistant', content: clean, pending_action: true }])
+        setExecuting(true)
+        try {
+          const { action, params } = JSON.parse(actionMatch.json)
+          const result = await executeAction(action, params, onNavigate)
+          setMessages(p => [...p, { role: 'system', content: result }])
+        } catch (e: any) {
+          setMessages(p => [...p, { role: 'system', content: `⚠️ فشل الإجراء: ${e.message}` }])
+        } finally { setExecuting(false) }
+      } else {
+        setMessages(p => [...p, { role: 'assistant', content: reply }])
+      }
+    } catch (e: any) {
+      setMessages(p => [...p, { role: 'assistant', content: `حدث خطأ: ${e?.message || e}` }])
+    } finally { setLoading(false) }
+  }
+
+  async function refreshContext() {
+    setContext(null)
+    const ctx = await buildContext(aiCfg || {})
+    setContext(ctx)
+  }
+
+  function handleKey(e: React.KeyboardEvent) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }
+
+  const showQuick = messages.length === 1 && tab === 'chat'
+  const posRight  = aiCfg?.panel_position === 'bottom-right'
+  const isMobile  = window.innerWidth < 640
+
+  return (
+    <div style={{
+      position: 'fixed',
+      ...(isMobile ? { bottom: 60, left: 0, right: 0, top: 'auto', width: '100%', maxWidth: '100%', height: '72vh', borderRadius: '20px 20px 0 0', direction: 'rtl' }
+        : { bottom: 80, [posRight ? 'right' : 'left']: 20, width: 380, height: 560, borderRadius: 24, direction: 'rtl' }),
+      zIndex: 800,
+      background: 'var(--modal-bg)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
+      border: '1px solid var(--border)',
+      boxShadow: 'var(--float-shadow)',
+      display: 'flex', flexDirection: 'column',
+      animation: 'modalIn 0.28s ease both',
+      overflow: 'hidden',
+      boxSizing: 'border-box',
+    }}>
+      {/* Header */}
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--action-faint)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,var(--action),var(--info))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, boxShadow: '0 0 10px var(--action-glow)' }}>🤖</div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 12.5, color: 'var(--text-primary)' }}>مساعد موج</div>
+            <div style={{ fontSize: 9, color: context ? 'var(--action)' : 'var(--warning)', marginTop: 1 }}>
+              {context ? '● بيانات محمّلة' : '○ جارٍ التحميل...'}
+              {hasActions && <span style={{ color: 'var(--warning)', marginInlineStart: 6 }}>· إجراءات مفعّلة</span>}
+            </div>
+            <div style={{ fontSize: 8, color: 'var(--text-muted)', marginTop: 1, direction: 'ltr', textAlign: 'left' }}>
+              {model.startsWith('claude') ? 'Anthropic' : model.startsWith('gemini') ? 'Google' : model.startsWith('gpt') ? 'OpenAI' : 'DeepSeek'} · {model.split('-').slice(0, 3).join('-')}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 2, background: 'var(--bg-hover)', borderRadius: 8, padding: 2 }}>
+            {([{ id: 'chat', l: '💬' }, { id: 'context', l: '📊' }] as const).map(t => (
+              <button key={t.id} onClick={() => setTab(t.id as any)} style={{ padding: '4px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', background: tab === t.id ? 'var(--action)' : 'transparent', color: tab === t.id ? '#ffffff' : 'var(--text-muted)', fontSize: 12, fontFamily: 'inherit' }}>{t.l}</button>
+            ))}
+          </div>
+          {messages.length > 1 && (
+            <button onClick={() => setMessages([messages[0]])} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 10, cursor: 'pointer', fontFamily: 'inherit', padding: '4px 6px' }}>مسح</button>
+          )}
+          <button onClick={onClose} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 7, width: 24, height: 24, cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        </div>
+      </div>
+
+      {/* Context tab */}
+      {tab === 'context' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-secondary)' }}>البيانات المرسلة للمساعد</div>
+            <button onClick={refreshContext} style={{ fontSize: 11, color: 'var(--action)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>🔄 تحديث</button>
+          </div>
+          <pre style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'pre-wrap', lineHeight: 1.7, margin: 0, fontFamily: 'monospace' }}>
+            {context || 'جارٍ التحميل...'}
+          </pre>
+        </div>
+      )}
+
+      {/* Chat tab */}
+      {tab === 'chat' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: 7, WebkitOverflowScrolling: 'touch' as any }}>
+          {messages.map((m, i) => {
+            const isSystem = m.role === 'system'
+            return (
+              <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-start' : 'flex-end' }}>
+                {isSystem ? (
+                  <div style={{ width: '100%', padding: '7px 11px', borderRadius: 'var(--r-md)', background: m.content.startsWith('✅') ? 'rgba(93,216,164,0.1)' : 'rgba(251,191,36,0.1)', border: `1px solid ${m.content.startsWith('✅') ? 'rgba(93,216,164,0.2)' : 'rgba(251,191,36,0.2)'}`, fontSize: 12, color: m.content.startsWith('✅') ? 'var(--success)' : 'var(--warning)', fontWeight: 700 }}>{m.content}</div>
+                ) : (
+                  <div style={{ maxWidth: '88%', padding: '8px 12px', borderRadius: m.role === 'user' ? '15px 15px 15px 4px' : '15px 15px 4px 15px', background: m.role === 'user' ? 'var(--action)' : 'var(--bg-hover)', border: m.role === 'user' ? 'none' : '1px solid var(--border)', color: m.role === 'user' ? '#ffffff' : 'var(--text-primary)', fontSize: 12.5, lineHeight: 1.65, fontWeight: m.role === 'user' ? 700 : 400, whiteSpace: 'pre-wrap', wordBreak: 'break-word', opacity: m.pending_action ? 0.75 : 1 }}>{m.content}</div>
+                )}
+              </div>
+            )
+          })}
+          {(loading || executing) && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '9px 13px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '15px 15px 4px 15px', display: 'flex', gap: 5, alignItems: 'center', fontSize: 11, color: 'var(--text-muted)' }}>
+                {executing ? '⚡ جارٍ التنفيذ...' : [0, 1, 2].map(i => (
+                  <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--action)', animation: `bounce 1.2s ease infinite ${i * 0.2}s` }} />
+                ))}
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+      )}
+
+      {/* Quick prompts */}
+      {showQuick && (
+        <div style={{ padding: '0 8px 6px', display: 'flex', flexWrap: 'wrap', gap: 4, flexShrink: 0 }}>
+          {quickPrompts.map(p => (
+            <button key={p.id || p.text} onClick={() => send(p.text)} style={{ fontSize: 10.5, padding: '5px 9px', borderRadius: 999, background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit' }}>{p.label}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      {tab === 'chat' && (
+        <div style={{ padding: '7px 10px', borderTop: '1px solid var(--border)', display: 'flex', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder={hasActions ? 'اسأل أو اطلب إجراءً...' : 'اسأل عن مبيعاتك...'}
+            rows={1}
+            style={{ flex: 1, resize: 'none', overflowY: 'auto', maxHeight: 80, padding: '8px 11px', background: 'var(--bg-surface)', border: '1.5px solid var(--border)', borderRadius: 11, color: 'var(--text-primary)', fontSize: 12.5, fontFamily: 'inherit', outline: 'none' }}
+          />
+          <button onClick={() => send()} disabled={loading || executing || !input.trim()} style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: input.trim() ? 'var(--action)' : 'var(--bg-hover)', border: 'none', cursor: input.trim() ? 'pointer' : 'default', color: input.trim() ? '#ffffff' : 'var(--text-muted)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>➤</button>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes bounce {
+          0%,60%,100%{ transform:translateY(0) }
+          30%{ transform:translateY(-6px) }
+        }
+      `}</style>
+    </div>
+  )
+}
