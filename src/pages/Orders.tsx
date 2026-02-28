@@ -1,18 +1,35 @@
 // @ts-nocheck
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { DB, Settings, generateOrderNumber, supabase } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency, formatDate, SOURCE_LABELS, UAE_CITIES } from '../data/constants'
 import { calcOrderProfit, ORDER_STATUSES, PIPELINE_STATUSES, getStatusInfo, getNextStatus } from '../data/finance'
 import { Btn, Badge, Input, Select, Textarea, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
-import { IcPlus, IcSearch, IcEdit, IcDelete, IcEye, IcWhatsapp, IcSave, IcNote, IcRefresh, IcClose, IcCheck } from '../components/Icons'
+import { IcPlus, IcSearch, IcEdit, IcDelete, IcEye, IcWhatsapp, IcSave, IcNote, IcRefresh, IcClose, IcCheck, IcCopy, IcAlert, IcPhone } from '../components/Icons'
 import PrintReceipt from '../components/PrintReceipt'
 import Confetti from '../components/Confetti'
 import type { PageProps } from '../types'
 
-// Re-export for backward compatibility with other files that import from Orders
+// Re-export for backward compatibility
 export { calcOrderProfit, ORDER_STATUSES }
+
+// ─── Phone normalization: always returns UAE format 971XXXXXXXX ───────────────
+function normalizePhone(raw) {
+  if (!raw) return ''
+  let p = raw.replace(/[\s\-\(\)\+]/g, '')
+  if (p.startsWith('00971')) p = p.slice(2)          // 00971 → 971...
+  else if (p.startsWith('971'))  { /* already good */ }
+  else if (p.startsWith('0'))    p = '971' + p.slice(1) // 05x → 9715x
+  else if (/^[5-9]/.test(p))    p = '971' + p          // 5x → 9715x
+  return p
+}
+
+function waLink(phone, msg) {
+  const p = normalizePhone(phone)
+  if (!p) return '#'
+  return `https://wa.me/${p}?text=${encodeURIComponent(msg)}`
+}
 
 function getStatus(id) {
   return ORDER_STATUSES.find(s => s.id === id) || { id, label: id || '—', color: 'var(--text-muted)', bg: 'rgba(107,114,128,0.1)' }
@@ -22,33 +39,43 @@ function timeAgo(isoStr) {
   if (!isoStr) return ''
   const diff = (Date.now() - new Date(isoStr).getTime()) / 1000
   if (diff < 60)    return 'الآن'
-  if (diff < 3600)  return `منذ ${Math.floor(diff / 60)} د`
-  if (diff < 86400) return `منذ ${Math.floor(diff / 3600)} س`
-  return `منذ ${Math.floor(diff / 86400)} ي`
+  if (diff < 3600)  return `${Math.floor(diff / 60)} د`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} س`
+  return `${Math.floor(diff / 86400)} ي`
 }
 
-/* ═══════════════════════════════════════════
-   THE BOARD — Orders Management
-═══════════════════════════════════════════ */
+function urgencyInfo(isoStr, status) {
+  if (!isoStr) return { color: '#6B7280', label: '—' }
+  const h = (Date.now() - new Date(isoStr).getTime()) / 3600000
+  const active = ['new','confirmed','processing'].includes(status)
+  if (!active) return { color: '#6B7280', label: timeAgo(isoStr) }
+  if (h < 6)  return { color: '#5DD8A4', label: timeAgo(isoStr), urgent: false }
+  if (h < 48) return { color: '#F59E0B', label: timeAgo(isoStr), urgent: false }
+  return { color: '#F87171', label: `${Math.floor(h/24)} ي ⚠`, urgent: true }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════════════ */
 export default function Orders({ user }: PageProps) {
   const [orders,         setOrders]         = useState([])
   const [products,       setProducts]       = useState([])
   const [loading,        setLoading]        = useState(true)
   const [search,         setSearch]         = useState('')
-  const [activeStatus,   setActiveStatus]   = useState('new')
+  const [activeStatus,   setActiveStatus]   = useState('all')
+  const [selectedOrder,  setSelectedOrder]  = useState(null)
   const [showPanel,      setShowPanel]      = useState(false)
-  const [showView,       setShowView]       = useState(false)
   const [editOrder,      setEditOrder]      = useState(null)
-  const [viewOrder,      setViewOrder]      = useState(null)
   const [deleteId,       setDeleteId]       = useState(null)
   const [deleting,       setDeleting]       = useState(false)
   const [confetti,       setConfetti]       = useState(false)
   const [replacementFor, setReplacementFor] = useState(null)
+  const [isConnected,    setIsConnected]    = useState(true)
+  const [copiedId,       setCopiedId]       = useState(null)
 
   useEffect(() => {
     loadAll()
     const unsub = subscribeOrders(() => loadOrders())
-    // Auto-open panel from mobile FAB
     if (sessionStorage.getItem('openNewOrder') === '1') {
       sessionStorage.removeItem('openNewOrder')
       setEditOrder(null); setReplacementFor(null); setShowPanel(true)
@@ -79,53 +106,37 @@ export default function Orders({ user }: PageProps) {
 
   async function triggerWhatsAppNotification(order, newStatus) {
     const STATUS_TO_TRIGGER = {
-      confirmed: 'on_confirmed',
-      shipped: 'on_shipped',
-      delivered: 'on_delivered',
-      not_delivered: 'on_not_delivered',
+      confirmed: 'on_confirmed', shipped: 'on_shipped',
+      delivered: 'on_delivered', not_delivered: 'on_not_delivered',
     }
     const triggerKey = STATUS_TO_TRIGGER[newStatus]
     if (!triggerKey) return
-
     const [autoSettings, templates, sendMode] = await Promise.all([
       Settings.get('whatsapp_auto_notifications'),
       Settings.get('whatsapp_templates'),
       Settings.get('whatsapp_send_mode'),
     ])
     if (!autoSettings?.[triggerKey]) return
-
     const TRIGGER_TO_TEMPLATE = {
-      on_confirmed: 'order_confirm',
-      on_shipped: 'order_shipped',
-      on_delivered: 'order_delivered',
-      on_not_delivered: 'payment_reminder',
+      on_confirmed: 'order_confirm', on_shipped: 'order_shipped',
+      on_delivered: 'order_delivered', on_not_delivered: 'payment_reminder',
     }
     const tplKey = TRIGGER_TO_TEMPLATE[triggerKey]
     const template = templates?.[tplKey]
     if (!template) return
-
-    // Fill template variables
-    let phone = order.customer_phone?.replace(/[\s\-\(\)]/g, '') || ''
-    if (/^0/.test(phone)) phone = '971' + phone.slice(1)
-    else if (/^5/.test(phone)) phone = '971' + phone
-    else if (/^\+971/.test(phone)) phone = phone.slice(1)
+    const phone = normalizePhone(order.customer_phone)
     if (!phone) return
-
     const msg = template
       .replace(/\{customer_name\}/g, order.customer_name || 'عزيزي العميل')
-      .replace(/\{order_number\}/g, order.order_number || '')
-      .replace(/\{total\}/g, String(order.total || ''))
+      .replace(/\{order_number\}/g,  order.order_number  || '')
+      .replace(/\{total\}/g,         String(order.total  || ''))
       .replace(/\{tracking_number\}/g, order.tracking_number || '')
-      .replace(/\{city\}/g, order.customer_city || '')
-      .replace(/\{date\}/g, new Date().toLocaleDateString('ar-AE'))
-
+      .replace(/\{city\}/g,          order.customer_city || '')
+      .replace(/\{date\}/g,          new Date().toLocaleDateString('ar-AE'))
     if (sendMode === 'wame') {
-      // Open wa.me link
-      const encoded = encodeURIComponent(msg)
-      window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank')
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
       toast('تم فتح رابط wa.me للإرسال', 'success')
     } else {
-      // Send via API
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
@@ -135,10 +146,8 @@ export default function Orders({ user }: PageProps) {
           headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ to: phone, message: msg }),
         })
-        toast('تم إرسال إشعار واتساب تلقائياً ✓', 'success')
-      } catch {
-        // Silent fail — don't block the status change
-      }
+        toast('تم إرسال إشعار واتساب ✓', 'success')
+      } catch { /* silent */ }
     }
   }
 
@@ -146,14 +155,12 @@ export default function Orders({ user }: PageProps) {
     try {
       const order = orders.find(o => o.id === id)
       let profitUpdate = {}
-
       if (order && newStatus === 'not_delivered') {
         const calc = calcOrderProfit({ items: order.items || [], hayyak_fee: order.hayyak_fee ?? 25, is_not_delivered: true })
         profitUpdate = { total: calc.total, gross_profit: calc.gross_profit, product_cost: calc.product_cost }
       } else if (order && newStatus === 'cancelled') {
         profitUpdate = { total: 0, gross_profit: 0 }
       }
-
       const payload = {
         status: newStatus,
         ...(newStatus === 'delivered' ? { delivery_date: new Date().toISOString().split('T')[0] } : {}),
@@ -165,8 +172,7 @@ export default function Orders({ user }: PageProps) {
       }
       await DB.update('orders', id, payload)
       setOrders(prev => prev.map(o => o.id === id ? { ...o, ...payload } : o))
-      if (viewOrder?.id === id) setViewOrder(prev => ({ ...prev, ...payload }))
-
+      if (selectedOrder?.id === id) setSelectedOrder(prev => ({ ...prev, ...payload }))
       if (newStatus === 'delivered') {
         setConfetti(true); setTimeout(() => setConfetti(false), 4000)
         toast('تم التسليم! 🎉')
@@ -175,11 +181,7 @@ export default function Orders({ user }: PageProps) {
       } else {
         toast(`تم النقل إلى: ${getStatus(newStatus).label}`)
       }
-
-      // ── Auto WhatsApp notification on status change ──
-      if (order?.customer_phone) {
-        triggerWhatsAppNotification(order, newStatus).catch(() => {})
-      }
+      if (order?.customer_phone) triggerWhatsAppNotification(order, newStatus).catch(() => {})
     } catch { toast('فشل تحديث الحالة', 'error') }
   }
 
@@ -189,134 +191,264 @@ export default function Orders({ user }: PageProps) {
     try {
       await DB.delete('orders', deleteId)
       setOrders(prev => prev.filter(o => o.id !== deleteId))
+      if (selectedOrder?.id === deleteId) setSelectedOrder(null)
       setDeleteId(null)
       toast('تم حذف الطلب')
     } catch { toast('فشل الحذف', 'error') }
     finally { setDeleting(false) }
   }
 
-  // Count by status
-  const statusCounts = {}
+  function copyOrderNumber(orderNumber) {
+    navigator.clipboard.writeText(orderNumber).then(() => {
+      setCopiedId(orderNumber)
+      setTimeout(() => setCopiedId(null), 2000)
+    })
+  }
+
+  // ── Smart stats ────────────────────────────────────────────
+  const totalRev    = orders.filter(o => o.status === 'delivered').reduce((s,o) => s + (o.total||0), 0)
+  const todayOrders = orders.filter(o => {
+    const d = new Date(o.created_at); const now = new Date()
+    return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  })
+  const stuckOrders = orders.filter(o => {
+    if (!['new','confirmed','processing'].includes(o.status)) return false
+    return (Date.now() - new Date(o.created_at).getTime()) / 3600000 > 48
+  })
+  const codPending = orders.filter(o => o.status === 'with_hayyak').reduce((s,o) => s + (o.total||0), 0)
+
+  // ── Status counts ───────────────────────────────────────────
+  const statusCounts = { all: orders.length }
   PIPELINE_STATUSES.forEach(s => { statusCounts[s.id] = 0 })
   orders.forEach(o => { if (statusCounts[o.status] !== undefined) statusCounts[o.status]++ })
 
-  // Filtered orders for current tab
-  const tabOrders = orders.filter(o => {
-    const matchStatus = o.status === activeStatus
-    if (!matchStatus) return false
+  // ── Filtered feed ───────────────────────────────────────────
+  const feedOrders = orders.filter(o => {
+    if (activeStatus !== 'all' && o.status !== activeStatus) return false
     if (!search) return true
     const q = search.toLowerCase()
-    return (o.customer_name || '').includes(q)
-      || (o.order_number || '').toLowerCase().includes(q)
-      || (o.customer_phone || '').includes(q)
+    return (o.customer_name  || '').toLowerCase().includes(q)
+        || (o.order_number   || '').toLowerCase().includes(q)
+        || (o.customer_phone || '').includes(q)
+        || (o.customer_city  || '').toLowerCase().includes(q)
   })
+
+  // ── Alert banners ────────────────────────────────────────────
+  const alerts = []
+  if (stuckOrders.length > 0) alerts.push({ id:'stuck', type:'warning', icon:'⚠️', text:`${stuckOrders.length} طلب${stuckOrders.length > 1 ? '' : ''} عالق منذ أكثر من يومين`, action: () => setActiveStatus('new') })
+  if (codPending > 0)         alerts.push({ id:'cod',   type:'info',    icon:'💰', text:`COD معلق: ${formatCurrency(codPending)} — مع حياك`, action: () => setActiveStatus('with_hayyak') })
 
   if (loading) return (
     <div className="page">
-      <PageHeader title="الطلبات" subtitle="جاري التحميل..." />
-      <SkeletonStats count={5} />
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12, marginTop:16 }}>
-        {[1,2,3,4].map(i => <SkeletonCard key={i} rows={3} />)}
-      </div>
+      <SkeletonStats count={4} />
+      <SkeletonCard rows={5} />
     </div>
   )
 
+  const STATS = [
+    { v: orders.length,         l: 'إجمالي',      c: '#318CE7', i: '📦' },
+    { v: todayOrders.length,    l: 'اليوم',        c: '#A78BFA', i: '🌅' },
+    { v: stuckOrders.length,    l: 'عالقة',        c: '#F87171', i: '⚠️' },
+    { v: formatCurrency(totalRev), l: 'إيراد مسلّم', c: '#5DD8A4', i: '✅', isCurrency: true },
+  ]
+
   return (
-    <div className="page" style={{ paddingBottom: 80 }}>
+    <div className="page orders-cmd" style={{ paddingBottom: 80 }}>
+      <style>{`
+        .orders-cmd { }
+        .orders-split { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
+        .detail-sticky { position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; }
+        @media (max-width: 1100px) { .orders-split { grid-template-columns: 1fr; } .detail-sticky { position: static; max-height: none; } }
+        @keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pulseRed { 0%,100%{ box-shadow: 0 0 0 0 rgba(248,113,113,0); } 50%{ box-shadow: 0 0 0 6px rgba(248,113,113,0.15); } }
+        @keyframes bannerIn { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:translateX(0); } }
+        .order-card { animation: cardIn 0.25s ease both; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; }
+        .order-card:hover { transform: translateY(-1px); }
+        .order-card.stuck { animation: pulseRed 2.5s infinite; }
+        .order-card.selected { outline: 2px solid rgba(49,140,231,0.6); outline-offset: 2px; }
+        .alert-banner { animation: bannerIn 0.3s ease both; }
+        .icon-btn { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--bg-hover); color:var(--text-muted); cursor:pointer; transition:all 0.12s; flex-shrink:0; }
+        .icon-btn:hover { background:var(--bg-active); color:var(--text); }
+        .pipeline-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:99px; border:1.5px solid var(--border); background:var(--bg-surface); color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; white-space:nowrap; flex-shrink:0; font-family:inherit; }
+        .pipeline-pill.active { border-color: var(--pill-color); background: color-mix(in srgb, var(--pill-color) 12%, transparent); color: var(--pill-color); box-shadow: 0 0 14px color-mix(in srgb, var(--pill-color) 25%, transparent); }
+        .wa-quick { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; border:1px solid rgba(37,211,102,0.25); background:rgba(37,211,102,0.07); color:#25D366; text-decoration:none; transition:all 0.12s; flex-shrink:0; }
+        .wa-quick:hover { background:rgba(37,211,102,0.15); }
+      `}</style>
+
       <Confetti active={confetti} />
 
-      <PageHeader
-        title="الطلبات"
-        subtitle={`${orders.length} طلب`}
-        actions={
-          <Btn onClick={() => { setEditOrder(null); setReplacementFor(null); setShowPanel(true) }} style={{ gap:6 }}>
-            <IcPlus size={16}/> طلب جديد
-          </Btn>
-        }
-      />
+      {/* ══ COMMAND BAR ══════════════════════════════════════════ */}
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16, flexWrap:'wrap' }}>
+        {/* Live indicator */}
+        <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:99, background:'rgba(0,228,184,0.08)', border:'1px solid rgba(0,228,184,0.2)', flexShrink:0 }}>
+          <div style={{ width:7, height:7, borderRadius:'50%', background:'#00E4B8', animation:'pulseDot 2s infinite', flexShrink:0 }}/>
+          <span style={{ fontSize:11, fontWeight:700, color:'#00E4B8', fontFamily:'Inter,sans-serif' }}>LIVE</span>
+        </div>
 
-      {/* ── Stats Mini-Row ───────────────────────── */}
-      {(() => {
-        const delivered  = orders.filter(o => o.status === 'delivered').length
-        const pending    = orders.filter(o => ['new','confirmed','processing'].includes(o.status)).length
-        const revenue    = orders.filter(o => o.status === 'delivered').reduce((s,o) => s+(o.total||0), 0)
-        const withHayyak = orders.filter(o => o.status === 'with_hayyak').length
-        return (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:16 }}>
-            {[
-              { v:orders.length, l:'إجمالي الطلبات', c:'#318CE7',     i:'📦' },
-              { v:pending,       l:'قيد التنفيذ',    c:'#F59E0B',     i:'⏳' },
-              { v:withHayyak,    l:'مع حياك',         c:'#8B5CF6',     i:'🚚' },
-              { v:delivered,     l:'مسلّم',           c:'#5DD8A4',     i:'✅' },
-            ].map(s => (
-              <div key={s.l} style={{
-                background:'var(--bg-surface)',
-                backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
-                borderRadius:'var(--r-lg)',
-                border:`1px solid ${s.c}22`,
-                borderTop:`2px solid ${s.c}`,
-                padding:'12px 14px',
-                boxShadow:`0 0 20px ${s.c}0e, var(--card-shadow)`,
-              }}>
-                <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, marginBottom:6, letterSpacing:'0.04em' }}>{s.i} {s.l}</div>
-                <div style={{ fontSize:24, fontWeight:900, fontFamily:'Inter,sans-serif', color:s.c, lineHeight:1 }}>{s.v}</div>
-              </div>
-            ))}
-          </div>
-        )
-      })()}
+        {/* Stat chips */}
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap', flex:1 }}>
+          {STATS.map(s => (
+            <div key={s.l} style={{
+              display:'flex', alignItems:'center', gap:6,
+              padding:'5px 12px', borderRadius:99,
+              background:`color-mix(in srgb, ${s.c} 8%, transparent)`,
+              border:`1px solid color-mix(in srgb, ${s.c} 22%, transparent)`,
+              fontSize:12, fontWeight:700,
+            }}>
+              <span>{s.i}</span>
+              <span style={{ color:s.c, fontFamily:'Inter,sans-serif' }}>{s.v}</span>
+              <span style={{ color:'var(--text-muted)', fontWeight:500 }}>{s.l}</span>
+            </div>
+          ))}
+        </div>
 
-      {/* ── Pipeline Status Bar ───────────────────── */}
-      <PipelineBar
-        statuses={PIPELINE_STATUSES}
-        counts={statusCounts}
-        active={activeStatus}
-        onSelect={setActiveStatus}
-      />
+        <button
+          onClick={() => { setEditOrder(null); setReplacementFor(null); setShowPanel(true) }}
+          style={{
+            display:'flex', alignItems:'center', gap:6, padding:'9px 18px', borderRadius:12,
+            background:'linear-gradient(135deg, #1B6FC9, #318CE7)', border:'none',
+            color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', fontFamily:'inherit',
+            boxShadow:'0 4px 16px rgba(49,140,231,0.35)', flexShrink:0,
+          }}
+        >
+          <IcPlus size={15}/> طلب جديد
+        </button>
+      </div>
 
-      {/* ── Search ───────────────────────────────── */}
-      <div style={{ position:'relative', marginBottom:16 }}>
-        <IcSearch size={15} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
+      {/* ══ PIPELINE TABS ════════════════════════════════════════ */}
+      <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:8, scrollbarWidth:'none', WebkitOverflowScrolling:'touch', marginBottom:14 }}>
+        <button
+          className={`pipeline-pill${activeStatus === 'all' ? ' active' : ''}`}
+          style={{ '--pill-color': '#318CE7' } as any}
+          onClick={() => setActiveStatus('all')}
+        >
+          <span>الكل</span>
+          <span style={{
+            fontSize:10, fontFamily:'Inter,sans-serif', fontWeight:900,
+            background: activeStatus === 'all' ? '#318CE7' : 'var(--bg-hover)',
+            color: activeStatus === 'all' ? '#fff' : 'var(--text-muted)',
+            borderRadius:99, padding:'1px 7px', lineHeight:'1.7',
+          }}>{statusCounts.all}</span>
+        </button>
+        {PIPELINE_STATUSES.map(s => (
+          <button
+            key={s.id}
+            className={`pipeline-pill${activeStatus === s.id ? ' active' : ''}`}
+            style={{ '--pill-color': s.color } as any}
+            onClick={() => setActiveStatus(s.id)}
+          >
+            <span>{s.label}</span>
+            <span style={{
+              fontSize:10, fontFamily:'Inter,sans-serif', fontWeight:900,
+              background: activeStatus === s.id ? s.color : 'var(--bg-hover)',
+              color: activeStatus === s.id ? '#fff' : 'var(--text-muted)',
+              borderRadius:99, padding:'1px 7px', lineHeight:'1.7',
+            }}>{statusCounts[s.id] || 0}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ══ SEARCH ═══════════════════════════════════════════════ */}
+      <div style={{ position:'relative', marginBottom:14 }}>
+        <IcSearch size={14} style={{ position:'absolute', insetInlineStart:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none' }}/>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="بحث بالاسم أو رقم الطلب..."
+          placeholder="بحث بالاسم، رقم الطلب، الهاتف، المدينة..."
           style={{
-            width:'100%', padding:'11px 12px 11px 36px',
+            width:'100%', padding:'10px 12px 10px 38px',
             background:'var(--bg-surface)', border:'1.5px solid var(--input-border)',
-            borderRadius:'var(--r-md)', color:'var(--text)', fontSize:14,
+            borderRadius:12, color:'var(--text)', fontSize:13,
             fontFamily:'inherit', outline:'none', boxSizing:'border-box',
             boxShadow:'var(--card-shadow)',
           }}
         />
       </div>
 
-      {/* ── Board Cards ──────────────────────────── */}
-      {tabOrders.length === 0 ? (
-        <Empty
-          title={search ? 'لا توجد نتائج' : `لا توجد طلبات ${getStatus(activeStatus).label}`}
-          action={!search && <Btn onClick={() => setShowPanel(true)}><IcPlus size={14}/> طلب جديد</Btn>}
-        />
-      ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {tabOrders.map(order => (
-            <OrderRow
-              key={order.id}
-              order={order}
-              onView={() => { setViewOrder(order); setShowView(true) }}
-              onEdit={() => { setEditOrder(order); setShowPanel(true) }}
-              onDelete={() => setDeleteId(order.id)}
-              onAdvance={(newStatus) => handleStatusChange(order.id, newStatus)}
-              onReplacement={() => {
-                setReplacementFor(order)
-                setEditOrder(null)
-                setShowPanel(true)
-              }}
-            />
-          ))}
+      {/* ══ ALERT BANNERS ════════════════════════════════════════ */}
+      {alerts.map((a, i) => (
+        <div key={a.id} className="alert-banner" style={{
+          display:'flex', alignItems:'center', gap:10,
+          padding:'10px 14px', borderRadius:12, marginBottom:10,
+          background: a.type === 'warning' ? 'rgba(248,113,113,0.07)' : 'rgba(49,140,231,0.07)',
+          border:`1px solid ${a.type === 'warning' ? 'rgba(248,113,113,0.25)' : 'rgba(49,140,231,0.25)'}`,
+          animationDelay: `${i * 0.08}s`,
+        }}>
+          <span style={{ fontSize:16, flexShrink:0 }}>{a.icon}</span>
+          <span style={{ fontSize:12, fontWeight:700, color: a.type === 'warning' ? '#F87171' : '#7EB8F7', flex:1 }}>{a.text}</span>
+          {a.action && (
+            <button onClick={a.action} style={{
+              padding:'4px 12px', borderRadius:99, border:'none',
+              background: a.type === 'warning' ? 'rgba(248,113,113,0.15)' : 'rgba(49,140,231,0.15)',
+              color: a.type === 'warning' ? '#F87171' : '#318CE7',
+              fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+            }}>عرض</button>
+          )}
         </div>
-      )}
+      ))}
 
-      {/* ── Order SlideOver Panel ────────────────── */}
+      {/* ══ SPLIT LAYOUT: FEED + DETAIL ══════════════════════════ */}
+      <div className={selectedOrder ? 'orders-split' : ''}>
+
+        {/* LEFT: Timeline Feed */}
+        <div>
+          {feedOrders.length === 0 ? (
+            <div style={{
+              textAlign:'center', padding:'64px 24px',
+              background:'var(--bg-surface)', borderRadius:20, border:'1px solid var(--border)',
+            }}>
+              <div style={{ fontSize:48, marginBottom:16, opacity:0.35 }}>📭</div>
+              <div style={{ fontSize:16, fontWeight:800, color:'var(--text)', marginBottom:8 }}>
+                {search ? 'لا توجد نتائج' : 'لا توجد طلبات'}
+              </div>
+              <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:20 }}>
+                {search ? 'جرب بحثاً مختلفاً' : 'ابدأ بإضافة طلبك الأول'}
+              </div>
+              {!search && (
+                <button onClick={() => setShowPanel(true)} style={{
+                  padding:'10px 24px', borderRadius:12,
+                  background:'linear-gradient(135deg, #1B6FC9, #318CE7)', border:'none',
+                  color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', fontFamily:'inherit',
+                }}>
+                  <IcPlus size={14}/> طلب جديد
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {feedOrders.map((order, idx) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  isSelected={selectedOrder?.id === order.id}
+                  copiedId={copiedId}
+                  onClick={() => setSelectedOrder(prev => prev?.id === order.id ? null : order)}
+                  onEdit={() => { setEditOrder(order); setShowPanel(true) }}
+                  onDelete={() => setDeleteId(order.id)}
+                  onAdvance={newStatus => handleStatusChange(order.id, newStatus)}
+                  onCopy={() => copyOrderNumber(order.order_number)}
+                  onReplacement={() => { setReplacementFor(order); setEditOrder(null); setShowPanel(true) }}
+                  animDelay={Math.min(idx * 0.04, 0.4)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: Detail Panel */}
+        {selectedOrder && (
+          <div className="detail-sticky">
+            <DetailPanel
+              order={selectedOrder}
+              onClose={() => setSelectedOrder(null)}
+              onEdit={() => { setEditOrder(selectedOrder); setShowPanel(true) }}
+              onStatusChange={handleStatusChange}
+              onReplacement={orig => { setReplacementFor(orig); setEditOrder(null); setShowPanel(true); setSelectedOrder(null) }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ══ PANELS & MODALS ════════════════════════════════════════ */}
       <OrderPanel
         open={showPanel}
         onClose={() => { setShowPanel(false); setEditOrder(null); setReplacementFor(null) }}
@@ -329,22 +461,12 @@ export default function Orders({ user }: PageProps) {
             ? prev.map(o => o.id === saved.id ? saved : o)
             : [saved, ...prev]
           )
+          if (selectedOrder?.id === saved.id) setSelectedOrder(saved)
           setShowPanel(false); setEditOrder(null); setReplacementFor(null)
           toast(editOrder ? 'تم تحديث الطلب ✓' : 'تم إضافة الطلب ✓')
         }}
       />
 
-      {/* ── View Modal ───────────────────────────── */}
-      <OrderViewModal
-        open={showView}
-        onClose={() => { setShowView(false); setViewOrder(null) }}
-        order={viewOrder}
-        onEdit={() => { setEditOrder(viewOrder); setShowView(false); setShowPanel(true) }}
-        onStatusChange={handleStatusChange}
-        onReplacement={orig => { setReplacementFor(orig); setEditOrder(null); setShowView(false); setShowPanel(true) }}
-      />
-
-      {/* ── Delete Confirm ───────────────────────── */}
       <ConfirmModal
         open={!!deleteId} onClose={() => setDeleteId(null)}
         onConfirm={handleDelete} loading={deleting}
@@ -354,178 +476,178 @@ export default function Orders({ user }: PageProps) {
   )
 }
 
-/* ═══════════════════════════════════════════
-   PIPELINE STATUS BAR — pill tabs
-═══════════════════════════════════════════ */
-function PipelineBar({ statuses, counts, active, onSelect }) {
-  return (
-    <div style={{
-      display:'flex', gap:10, overflowX:'auto',
-      paddingBottom:8, scrollbarWidth:'none',
-      WebkitOverflowScrolling:'touch', marginBottom:20,
-    }}>
-      {statuses.map(s => {
-        const isActive = active === s.id
-        const count = counts[s.id] || 0
-        return (
-          <button
-            key={s.id}
-            onClick={() => onSelect(s.id)}
-            style={{
-              display:'flex', alignItems:'center', gap:7,
-              padding:'9px 20px', borderRadius:99, flexShrink:0,
-              border: isActive ? `1.5px solid ${s.color}` : '1.5px solid var(--border)',
-              background: isActive ? `${s.color}1A` : 'var(--bg-surface)',
-              color: isActive ? s.color : 'var(--text-muted)',
-              fontSize:13, fontWeight: isActive ? 800 : 600,
-              cursor:'pointer', transition:'all 150ms',
-              boxShadow: isActive ? `0 0 16px ${s.color}30, var(--card-shadow)` : 'var(--card-shadow)',
-              fontFamily:'inherit',
-            }}
-          >
-            <span style={{ whiteSpace:'nowrap' }}>{s.label}</span>
-            <span style={{
-              fontSize:11, fontWeight:800, fontFamily:'Inter,sans-serif',
-              background: isActive ? s.color : 'var(--bg-hover)',
-              color: isActive ? '#fff' : 'var(--text-muted)',
-              borderRadius:99, padding:'1px 7px', lineHeight:'1.7',
-              minWidth:20, textAlign:'center',
-            }}>{count}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════
-   ORDER ROW — compact list item
-═══════════════════════════════════════════ */
-function OrderRow({ order, onView, onEdit, onDelete, onAdvance, onReplacement }) {
+/* ═══════════════════════════════════════════════════════════════
+   ORDER CARD — Command Center + Timeline style
+═══════════════════════════════════════════════════════════════ */
+function OrderCard({ order, isSelected, onClick, onEdit, onDelete, onAdvance, onCopy, onReplacement, copiedId, animDelay }) {
   const status = getStatus(order.status)
   const profit = order.gross_profit ?? 0
   const isRepl = order.is_replacement
   const next   = getNextStatus(order.status)
+  const urg    = urgencyInfo(order.created_at, order.status)
+  const isCopied = copiedId === order.order_number
+  const isStuck  = urg.urgent
+  const itemCount = order.items?.length || 0
 
-  const iconBtnStyle = {
-    padding:'6px 8px', background:'var(--bg-hover)',
-    border:'1px solid var(--border)', borderRadius:'var(--r-sm)',
-    color:'var(--text-muted)', cursor:'pointer',
-    display:'flex', alignItems:'center', transition:'all 120ms',
-  }
+  const quickWaMsg = `مرحبا ${order.customer_name||''}،\nرقم طلبك: ${order.order_number}\nالإجمالي: ${(order.total||0).toLocaleString()} درهم\n\nشكراً لتسوقك مع موج 🌊`
 
   return (
-    <div style={{
-      background:'var(--bg-surface)', borderRadius:'var(--r-lg)',
-      borderInlineStart:`3px solid ${isRepl ? 'var(--warning)' : status.color}`,
-      boxShadow:'var(--card-shadow)', overflow:'hidden',
-      transition:'box-shadow 150ms, transform 150ms',
-    }}>
-      {/* Main clickable area */}
-      <div onClick={onView} style={{ padding:'13px 16px', cursor:'pointer' }}>
-        {/* Row 1: Customer + status pill + amount */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
+    <div
+      className={`order-card mawj-card${isSelected ? ' selected' : ''}${isStuck ? ' stuck' : ''}`}
+      style={{
+        borderRadius: 16,
+        borderInlineStart: `3px solid ${isRepl ? '#F59E0B' : status.color}`,
+        overflow: 'hidden',
+        animationDelay: `${animDelay}s`,
+        boxShadow: isSelected
+          ? `0 0 0 2px rgba(49,140,231,0.5), var(--card-shadow)`
+          : `0 0 20px color-mix(in srgb, ${status.color} 6%, transparent), var(--card-shadow)`,
+        cursor: 'pointer',
+      }}
+    >
+      {/* ── Main clickable area ──────────────────────────── */}
+      <div onClick={onClick} style={{ padding:'14px 16px 10px' }}>
+
+        {/* Row 1: Order ID (header) + status pill + replacement badge */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
+          {/* ORDER ID — primary header */}
+          <button
+            onClick={e => { e.stopPropagation(); onCopy() }}
+            title="نسخ رقم الطلب"
+            style={{
+              display:'flex', alignItems:'center', gap:5,
+              background:'none', border:'none', cursor:'pointer', padding:0,
+              fontFamily:'Inter,monospace', fontSize:15, fontWeight:900,
+              color: status.color, letterSpacing:'-0.01em',
+            }}
+          >
+            {order.order_number || '#—'}
+            <span style={{
+              fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:6,
+              background: isCopied ? 'rgba(93,216,164,0.15)' : 'transparent',
+              color: isCopied ? '#5DD8A4' : 'transparent',
+              transition:'all 0.2s', border: isCopied ? '1px solid rgba(93,216,164,0.3)' : '1px solid transparent',
+            }}>{isCopied ? '✓ نُسخ' : ''}</span>
+          </button>
+
+          {/* Status pill */}
           <span style={{
-            fontSize:15, fontWeight:800, color:'var(--text)',
-            flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-          }}>
-            {order.customer_name || 'عميل'}
-          </span>
-          <span style={{
-            padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, flexShrink:0,
-            color: status.color, background:`${status.color}18`,
-            border:`1px solid ${status.color}35`,
+            padding:'3px 10px', borderRadius:99, fontSize:10, fontWeight:800, flexShrink:0,
+            color: status.color, background:`color-mix(in srgb, ${status.color} 14%, transparent)`,
+            border:`1px solid color-mix(in srgb, ${status.color} 28%, transparent)`,
           }}>{status.label}</span>
-          <span style={{
-            fontSize:16, fontWeight:900, fontFamily:'Inter,sans-serif', flexShrink:0,
-            color: profit < 0 ? 'var(--danger)' : 'var(--text)',
-          }}>
-            {formatCurrency(order.total || 0)}
-          </span>
+
+          {isRepl && (
+            <span style={{
+              fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:6,
+              background:'rgba(245,158,11,0.12)', color:'#F59E0B', border:'1px solid rgba(245,158,11,0.25)',
+            }}>استبدال</span>
+          )}
         </div>
 
-        {/* Row 2: Order number + city + items + profit + time */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-          <span style={{ fontSize:11, fontFamily:'Inter,monospace', color:'var(--action)', fontWeight:700, direction:'ltr' }}>
-            {order.order_number}
+        {/* Row 2: Customer + city + item count */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
+          <span style={{ fontSize:14, fontWeight:700, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            {order.customer_name || 'عميل'}
           </span>
-          {isRepl && (
-            <span style={{ fontSize:10, background:'rgba(var(--warning-rgb),0.15)', color:'var(--warning)', borderRadius:4, padding:'1px 6px', fontWeight:700 }}>
-              استبدال
+          {order.customer_city && (
+            <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:3, flexShrink:0 }}>
+              📍 {order.customer_city}
             </span>
           )}
-          {order.customer_city && <span style={{ fontSize:11, color:'var(--text-muted)' }}>📍 {order.customer_city}</span>}
-          {order.items?.length > 0 && (
-            <span style={{ fontSize:11, color:'var(--text-sec)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, minWidth:0 }}>
-              {order.items.slice(0,2).map(i => `${i.name}×${i.qty}`).join(' · ')}
-              {order.items.length > 2 && ` +${order.items.length-2}`}
+          {itemCount > 0 && (
+            <span style={{
+              fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:6,
+              background:'rgba(49,140,231,0.08)', color:'#7EB8F7', border:'1px solid rgba(49,140,231,0.18)', flexShrink:0,
+            }}>
+              📦 {itemCount} {itemCount === 1 ? 'منتج' : 'منتجات'}
             </span>
           )}
-          {profit !== 0 && (
-            <span style={{ fontSize:12, fontWeight:700, fontFamily:'Inter,sans-serif', flexShrink:0, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+        </div>
+
+        {/* Row 3: Amount + profit badge + urgency */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+          <span style={{ fontSize:18, fontWeight:900, fontFamily:'Inter,sans-serif', color:'var(--text)' }}>
+            {formatCurrency(order.total || 0)}
+          </span>
+
+          {/* Profit badge */}
+          {order.status !== 'new' && profit !== 0 && (
+            <span style={{
+              fontSize:11, fontWeight:800, padding:'3px 9px', borderRadius:99, fontFamily:'Inter,sans-serif',
+              background: profit >= 0 ? 'rgba(93,216,164,0.12)' : 'rgba(248,113,113,0.12)',
+              color: profit >= 0 ? '#5DD8A4' : '#F87171',
+              border:`1px solid ${profit >= 0 ? 'rgba(93,216,164,0.25)' : 'rgba(248,113,113,0.25)'}`,
+              flexShrink:0,
+            }}>
               {profit >= 0 ? '↑' : '↓'} {formatCurrency(Math.abs(profit))}
             </span>
           )}
-          <span style={{ fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>
-            {timeAgo(order.created_at)}
+
+          {/* Urgency timer */}
+          <span style={{ fontSize:11, fontWeight:700, color: urg.color, fontFamily:'Inter,sans-serif', flexShrink:0, marginInlineStart:'auto' }}>
+            {urg.label}
           </span>
         </div>
       </div>
 
-      {/* ── Actions footer ───────────────────── */}
+      {/* ── Actions bar ───────────────────────────────────── */}
       <div style={{
-        padding:'8px 16px', borderTop:'1px solid var(--border)',
-        display:'flex', gap:6, alignItems:'center', justifyContent:'space-between', flexWrap:'wrap',
+        padding:'8px 14px', borderTop:'1px solid var(--border)',
+        display:'flex', alignItems:'center', gap:6, justifyContent:'space-between', flexWrap:'wrap',
       }}>
-        {/* Utility actions */}
-        <div style={{ display:'flex', gap:4, alignItems:'center' }}>
-          <button onClick={e => { e.stopPropagation(); onView() }} title="عرض" style={iconBtnStyle}>
-            <IcEye size={13}/>
-          </button>
-          <button onClick={e => { e.stopPropagation(); onEdit() }} title="تعديل" style={iconBtnStyle}>
+        {/* Left: utility icons */}
+        <div style={{ display:'flex', gap:5, alignItems:'center' }}>
+          <button className="icon-btn" onClick={e => { e.stopPropagation(); onEdit() }} title="تعديل">
             <IcEdit size={13}/>
           </button>
           {order.customer_phone && (
             <a
-              href={`https://wa.me/${order.customer_phone.replace(/\D/g,'')}?text=${encodeURIComponent(`مرحبا ${order.customer_name||''}،\nرقم طلبك: ${order.order_number}\nالإجمالي: ${(order.total||0).toLocaleString()} درهم\n\nشكراً لتسوقك مع موج 🌊`)}`}
-              target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-              style={{ ...iconBtnStyle, color:'var(--whatsapp)', borderColor:'rgba(37,211,102,0.25)', background:'rgba(37,211,102,0.07)', textDecoration:'none' }}
+              className="wa-quick"
+              href={waLink(order.customer_phone, quickWaMsg)}
+              target="_blank" rel="noreferrer"
+              onClick={e => e.stopPropagation()}
+              title={`واتساب: ${normalizePhone(order.customer_phone)}`}
             >
               <IcWhatsapp size={13}/>
             </a>
           )}
-          <button onClick={e => { e.stopPropagation(); onDelete() }} title="حذف"
-            style={{ ...iconBtnStyle, color:'var(--danger)', borderColor:'rgba(var(--danger-rgb),0.2)', background:'rgba(var(--danger-rgb),0.04)' }}>
-            <IcDelete size={13}/>
+          <button className="icon-btn" onClick={e => { e.stopPropagation(); onCopy() }} title="نسخ رقم الطلب" style={isCopied ? { color:'#5DD8A4', borderColor:'rgba(93,216,164,0.3)', background:'rgba(93,216,164,0.08)' } : {}}>
+            <IcCopy size={12}/>
+          </button>
+          <button className="icon-btn" onClick={e => { e.stopPropagation(); onDelete() }} title="حذف" style={{ color:'var(--danger)', borderColor:'rgba(248,113,113,0.2)', background:'rgba(248,113,113,0.04)' }}>
+            <IcDelete size={12}/>
           </button>
         </div>
 
-        {/* Advance actions */}
+        {/* Right: advance actions */}
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+          {order.status === 'delivered' && !order.is_replacement && (
+            <button
+              onClick={e => { e.stopPropagation(); onReplacement() }}
+              style={{ padding:'5px 11px', borderRadius:8, background:'rgba(245,158,11,0.08)', border:'1.5px solid rgba(245,158,11,0.25)', color:'#F59E0B', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:4 }}
+            >
+              <IcRefresh size={11}/> استبدال
+            </button>
+          )}
           {order.status === 'with_hayyak' && (
             <>
-              <button
-                onClick={e => { e.stopPropagation(); onAdvance('not_delivered') }}
-                style={{ padding:'5px 12px', borderRadius:'var(--r-sm)', background:'rgba(var(--danger-rgb),0.08)', border:'1.5px solid rgba(var(--danger-rgb),0.25)', color:'var(--danger)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}
-              >✗ لم يتم</button>
-              <button
-                onClick={e => { e.stopPropagation(); onAdvance('delivered') }}
-                style={{ padding:'5px 14px', borderRadius:'var(--r-sm)', background:'linear-gradient(135deg,var(--success),var(--success-light))', border:'none', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 2px 8px rgba(var(--success-rgb),0.3)' }}
-              >✓ مسلّم</button>
+              <button onClick={e => { e.stopPropagation(); onAdvance('not_delivered') }}
+                style={{ padding:'5px 10px', borderRadius:8, background:'rgba(248,113,113,0.08)', border:'1.5px solid rgba(248,113,113,0.25)', color:'#F87171', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                ✗ لم يتم
+              </button>
+              <button onClick={e => { e.stopPropagation(); onAdvance('delivered') }}
+                style={{ padding:'5px 14px', borderRadius:8, background:'linear-gradient(135deg,#3BB579,#5DD8A4)', border:'none', color:'#fff', fontSize:12, fontWeight:800, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 2px 10px rgba(93,216,164,0.3)' }}>
+                ✓ مسلّم
+              </button>
             </>
           )}
           {next && order.status !== 'with_hayyak' && (
             <button
               onClick={e => { e.stopPropagation(); onAdvance(next.id) }}
-              style={{ padding:'5px 14px', borderRadius:'var(--r-sm)', background:next.bg, border:`1.5px solid ${next.color}40`, color:next.color, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}
-            >{next.label} ←</button>
-          )}
-          {order.status === 'delivered' && !order.is_replacement && (
-            <button
-              onClick={e => { e.stopPropagation(); onReplacement() }}
-              style={{ padding:'5px 12px', borderRadius:'var(--r-sm)', background:'rgba(var(--warning-rgb),0.08)', border:'1.5px solid rgba(var(--warning-rgb),0.25)', color:'var(--warning)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:4 }}
+              style={{ padding:'5px 12px', borderRadius:8, background:`color-mix(in srgb,${next.color} 10%, transparent)`, border:`1.5px solid color-mix(in srgb,${next.color} 30%, transparent)`, color:next.color, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:4 }}
             >
-              <IcRefresh size={12}/> استبدال
+              {next.label} ←
             </button>
           )}
         </div>
@@ -534,11 +656,198 @@ function OrderRow({ order, onView, onEdit, onDelete, onAdvance, onReplacement })
   )
 }
 
-/* ═══════════════════════════════════════════
-   ORDER SLIDE-OVER PANEL
-   RTL: slides from left (inline-end)
-   Desktop: 50% width | Mobile: 100% width
-═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   DETAIL PANEL — Right side inline panel
+═══════════════════════════════════════════════════════════════ */
+function DetailPanel({ order, onClose, onEdit, onStatusChange, onReplacement }) {
+  const status = getStatus(order.status)
+  const profit = order.gross_profit ?? 0
+  const [waOpen, setWaOpen] = useState(false)
+
+  function sendWhatsApp(templateKey) {
+    const phone = normalizePhone(order.customer_phone)
+    if (!phone) return
+    const msgs = {
+      order_confirm:   `مرحبا ${order.customer_name||'عزيزي العميل'}،\n\nتم استلام طلبك ✅\nرقم الطلب: ${order.order_number}\nالإجمالي: ${(order.total||0).toLocaleString()} درهم\n\nشكراً لتسوقك مع موج 🌊`,
+      order_delivered: `مرحبا ${order.customer_name||'عزيزي العميل'}،\n\nنأمل أن طلبك وصلك بشكل سليم 🎁\nرقم الطلب: ${order.order_number}\n\nيسعدنا خدمتك دائماً.\nموج 🌊`,
+      not_delivered:   `مرحبا ${order.customer_name||'عزيزي العميل'}،\n\nتعذر توصيل طلبك رقم ${order.order_number} 😕\n\nهل يمكنك تأكيد العنوان؟\n\nنحن هنا لخدمتك 💙`,
+    }
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msgs[templateKey] || msgs.order_confirm)}`, '_blank')
+    setWaOpen(false)
+  }
+
+  return (
+    <div style={{
+      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)', WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:20, border:'1px solid var(--border)', boxShadow:'var(--card-shadow)',
+      overflow:'hidden', animation:'cardIn 0.25s ease both',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding:'16px 18px', borderBottom:'1px solid var(--border)',
+        background:`color-mix(in srgb, ${status.color} 6%, transparent)`,
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+      }}>
+        <div>
+          <div style={{ fontSize:16, fontWeight:900, color: status.color, fontFamily:'Inter,monospace', letterSpacing:'-0.01em' }}>
+            {order.order_number}
+          </div>
+          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+            <span style={{ color: status.color, fontWeight:700 }}>{status.label}</span>
+            {order.is_replacement && <span style={{ color:'#F59E0B', marginInlineStart:8 }}>· استبدال</span>}
+          </div>
+        </div>
+        <button onClick={onClose} style={{ background:'var(--bg-hover)', border:'none', borderRadius:8, padding:7, cursor:'pointer', color:'var(--text-muted)', display:'flex' }}>
+          <IcClose size={15}/>
+        </button>
+      </div>
+
+      <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:14 }}>
+
+        {/* Customer block */}
+        <div style={{ background:'var(--bg-hover)', borderRadius:12, padding:'12px 14px' }}>
+          <div style={{ fontSize:15, fontWeight:800, color:'var(--text)', marginBottom:4 }}>{order.customer_name || 'عميل'}</div>
+          {order.customer_phone && (
+            <a
+              href={waLink(order.customer_phone, `مرحبا ${order.customer_name||''}، `)}
+              target="_blank" rel="noreferrer"
+              style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#25D366', fontFamily:'Inter,sans-serif', fontWeight:700, textDecoration:'none', marginBottom:3 }}
+            >
+              <IcWhatsapp size={13}/> +{normalizePhone(order.customer_phone)}
+            </a>
+          )}
+          {order.customer_city && (
+            <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+              📍 {order.customer_city}{order.customer_address ? ` · ${order.customer_address}` : ''}
+            </div>
+          )}
+          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>
+            {formatDate(order.created_at)}
+          </div>
+        </div>
+
+        {/* Items */}
+        <div>
+          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:8 }}>المنتجات</div>
+          {(order.items || []).map((item, i) => (
+            <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:8, background:'var(--bg-hover)', marginBottom:5, border:'1px solid var(--border)' }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{item.name}{item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:4 }}>({item.size})</span>}</div>
+                {item.engraving_notes && <div style={{ fontSize:11, color:'var(--text-sec)', marginTop:2 }}>✏ {item.engraving_notes}</div>}
+              </div>
+              <div style={{ textAlign:'start', flexShrink:0, marginInlineStart:8 }}>
+                <div style={{ fontSize:12, fontWeight:800, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>×{item.qty}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Financial summary */}
+        <div style={{
+          padding:'12px 14px', borderRadius:12,
+          background: profit < 0 ? 'rgba(248,113,113,0.06)' : 'rgba(49,140,231,0.06)',
+          border:`1px solid ${profit < 0 ? 'rgba(248,113,113,0.18)' : 'rgba(49,140,231,0.18)'}`,
+        }}>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'4px 14px', marginBottom:8, fontSize:12, color:'var(--text-sec)' }}>
+            <span>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(order.subtotal)}</b></span>
+            {order.discount > 0 && <span style={{ color:'var(--danger)' }}>خصم: −{formatCurrency(order.discount)}</span>}
+            <span>تكلفة: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.product_cost||0)}</b></span>
+            <span>حياك: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.hayyak_fee??25)}</b></span>
+          </div>
+          <div style={{ display:'flex', gap:16, fontSize:15, fontWeight:900, fontFamily:'Inter,sans-serif' }}>
+            <span style={{ color:'var(--action)' }}>{formatCurrency(order.total)}</span>
+            <span style={{ color: profit >= 0 ? '#5DD8A4' : '#F87171' }}>
+              {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
+            </span>
+          </div>
+        </div>
+
+        {/* Status change */}
+        <div>
+          <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, marginBottom:8 }}>تغيير الحالة</div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+            {ORDER_STATUSES.map(s => (
+              <button key={s.id} onClick={() => onStatusChange(order.id, s.id)} style={{
+                padding:'5px 11px', borderRadius:99, fontSize:10, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+                border:`1px solid ${order.status === s.id ? s.color : `${s.color}30`}`,
+                background: order.status === s.id ? `${s.color}20` : 'transparent',
+                color: s.color,
+              }}>{s.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes */}
+        {order.notes && (
+          <div style={{ padding:'10px 12px', background:'var(--bg-hover)', borderRadius:10, border:'1px solid var(--border)', fontSize:12, color:'var(--text-sec)' }}>
+            <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, marginBottom:4 }}>ملاحظات</div>
+            {order.notes}
+          </div>
+        )}
+
+        {/* Internal timeline */}
+        {order.internal_notes?.length > 0 && <OrderTimeline notes={order.internal_notes}/>}
+
+        {/* Action buttons */}
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          {order.customer_phone && (
+            <div style={{ position:'relative' }}>
+              <button onClick={() => setWaOpen(p=>!p)} style={{
+                display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10,
+                border:'1.5px solid rgba(37,211,102,0.3)', background:'rgba(37,211,102,0.06)',
+                color:'#25D366', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+              }}>
+                <IcWhatsapp size={13}/> واتساب ▾
+              </button>
+              {waOpen && (
+                <div style={{
+                  position:'absolute', bottom:'calc(100% + 6px)', insetInlineStart:0, zIndex:200,
+                  background:'var(--modal-bg)', border:'1px solid var(--border)',
+                  borderRadius:12, overflow:'hidden', minWidth:190, boxShadow:'var(--float-shadow)',
+                }}>
+                  {[
+                    { key:'order_confirm',   label:'✅ تأكيد الطلب' },
+                    { key:'order_delivered', label:'🎁 تم التسليم' },
+                    { key:'not_delivered',   label:'😕 لم يتم — متابعة' },
+                  ].map(t => (
+                    <button key={t.key} onClick={() => sendWhatsApp(t.key)} style={{
+                      display:'block', width:'100%', padding:'10px 14px',
+                      background:'none', border:'none', cursor:'pointer',
+                      fontSize:12, color:'var(--text)', textAlign:'right',
+                      fontFamily:'inherit', fontWeight:600,
+                    }}>{t.label}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {order.status === 'delivered' && !order.is_replacement && (
+            <button onClick={() => onReplacement?.(order)} style={{
+              display:'flex', alignItems:'center', gap:5, padding:'8px 14px', borderRadius:10,
+              border:'1.5px solid rgba(245,158,11,0.3)', background:'rgba(245,158,11,0.06)',
+              color:'#F59E0B', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+            }}>
+              <IcRefresh size={13}/> استبدال
+            </button>
+          )}
+          <button onClick={onEdit} style={{
+            display:'flex', alignItems:'center', gap:5, padding:'8px 14px', borderRadius:10,
+            border:'1.5px solid var(--border)', background:'var(--bg-hover)',
+            color:'var(--text)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', flex:1,
+          }}>
+            <IcEdit size={13}/> تعديل
+          </button>
+          <PrintReceipt order={order} statuses={ORDER_STATUSES}/>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ORDER PANEL — Create / Edit slide-over
+═══════════════════════════════════════════════════════════════ */
 function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, user }) {
   const isEdit = !!order
   const isRepl = !!replacementFor && !order
@@ -572,11 +881,10 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
         customer_phone:     replacementFor.customer_phone   || '',
         customer_city:      replacementFor.customer_city    || '',
         customer_address:   replacementFor.customer_address || '',
-        hayyak_fee:         25, discount:0, status:'with_hayyak',
-        notes:              `استبدال للطلب ${replacementFor.order_number}`,
-        order_date:         new Date().toISOString().split('T')[0],
-        is_replacement:     true,
-        replacement_for_id: replacementFor.id,
+        hayyak_fee: 25, discount: 0, status: 'with_hayyak',
+        notes: `استبدال للطلب ${replacementFor.order_number}`,
+        order_date: new Date().toISOString().split('T')[0],
+        is_replacement: true, replacement_for_id: replacementFor.id,
       })
       setItems((replacementFor.items || []).map(i => ({ ...i, engraving_notes:'' })))
     } else {
@@ -606,10 +914,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
   function removeItem(idx) { setItems(p => p.filter((_,i) => i !== idx)) }
   function updateItem(idx, field, val) { setItems(p => p.map((it, i) => i === idx ? { ...it, [field]: val } : it)) }
 
-  const calc = calcOrderProfit({
-    items, hayyak_fee: form.hayyak_fee,
-    discount: form.discount, is_replacement: form.is_replacement,
-  })
+  const calc = calcOrderProfit({ items, hayyak_fee: form.hayyak_fee, discount: form.discount, is_replacement: form.is_replacement })
 
   async function handleSave() {
     if (items.length === 0) { toast('أضف منتجاً واحداً على الأقل', 'error'); return }
@@ -647,177 +952,107 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        style={{
-          position:'fixed', inset:0, background:'rgba(0,0,0,0.45)',
-          backdropFilter:'blur(12px) saturate(1.2)',
-          WebkitBackdropFilter:'blur(12px) saturate(1.2)',
-          zIndex:1000, transition:'opacity 200ms',
-        }}
-      />
-
-      {/* Panel */}
-      <div
-        className="order-panel"
-        style={{
-          position:'fixed', top:0, bottom:0, left:0, zIndex:1001,
-          background:'var(--modal-bg)', boxShadow:'var(--modal-shadow)',
-          backdropFilter:'var(--glass-blur-lg)',
-          WebkitBackdropFilter:'var(--glass-blur-lg)',
-          display:'flex', flexDirection:'column',
-          animation:'slidePanelIn 250ms ease both',
-          overflow:'hidden',
-        }}
-      >
+      <div onClick={onClose} style={{
+        position:'fixed', inset:0, background:'rgba(0,0,0,0.45)',
+        backdropFilter:'blur(12px) saturate(1.2)', WebkitBackdropFilter:'blur(12px) saturate(1.2)',
+        zIndex:1000,
+      }}/>
+      <div className="order-panel" style={{
+        position:'fixed', top:0, bottom:0, left:0, zIndex:1001,
+        background:'var(--modal-bg)', boxShadow:'var(--modal-shadow)',
+        backdropFilter:'var(--glass-blur-lg)', WebkitBackdropFilter:'var(--glass-blur-lg)',
+        display:'flex', flexDirection:'column', animation:'slidePanelIn 250ms ease both', overflow:'hidden',
+      }}>
         {/* Header */}
         <div style={{
-          flexShrink:0,
-          padding:'16px 20px', background:'var(--modal-bg)',
+          flexShrink:0, padding:'16px 20px', background:'var(--modal-bg)',
           borderBottom:'1px solid var(--border)',
           display:'flex', justifyContent:'space-between', alignItems:'center',
         }}>
-          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'var(--text)' }}>
+          <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:'var(--text)' }}>
             {isEdit ? 'تعديل الطلب' : isRepl ? `استبدال — ${replacementFor?.order_number}` : 'طلب جديد'}
           </h2>
-          <button onClick={onClose} style={{
-            background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-sm)',
-            padding:8, cursor:'pointer', color:'var(--text-muted)',
-            display:'flex', alignItems:'center',
-          }}>
-            <IcClose size={18}/>
+          <button onClick={onClose} style={{ background:'var(--bg-hover)', border:'none', borderRadius:8, padding:8, cursor:'pointer', color:'var(--text-muted)', display:'flex' }}>
+            <IcClose size={17}/>
           </button>
         </div>
 
         {/* Body */}
         <div style={{ flex:1, padding:'20px', overflowY:'auto', minHeight:0, WebkitOverflowScrolling:'touch' }}>
-          {/* Replacement warning */}
           {isRepl && (
-            <div style={{
-              marginBottom:16, padding:'12px 14px',
-              background:'rgba(var(--warning-rgb),0.1)', border:'1.5px solid rgba(var(--warning-rgb),0.3)',
-              borderRadius:'var(--r-md)', fontSize:13, color:'var(--warning)', fontWeight:700,
-            }}>
+            <div style={{ marginBottom:16, padding:'12px 14px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.3)', borderRadius:12, fontSize:13, color:'#F59E0B', fontWeight:700 }}>
               طلب استبدال مجاني — الربح سيكون سالباً
             </div>
           )}
-
-          {/* Phone warning */}
           {phoneWarning && (
-            <div style={{
-              marginBottom:12, padding:'10px 14px',
-              background:'rgba(var(--warning-rgb),0.1)', border:'1.5px solid rgba(var(--warning-rgb),0.35)',
-              borderRadius:'var(--r-md)', fontSize:12, color:'var(--warning)',
-            }}>
+            <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.35)', borderRadius:12, fontSize:12, color:'#F59E0B' }}>
               <b>رقم الهاتف موجود في طلب مفتوح:</b> {phoneWarning.customer_name || 'عميل'} — {phoneWarning.order_number}
             </div>
           )}
 
           {/* Customer info */}
-          <div className="form-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
-            <Input label="اسم العميل"        value={form.customer_name    || ''} onChange={e => setField('customer_name',    e.target.value)} placeholder="اختياري"/>
-            <Input label="رقم الهاتف"        value={form.customer_phone   || ''} onChange={e => setField('customer_phone',   e.target.value)} placeholder="+971..." dir="ltr"/>
-            <Select label="الإمارة"           value={form.customer_city    || ''} onChange={e => setField('customer_city',    e.target.value)}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
+            <Input label="اسم العميل"       value={form.customer_name    || ''} onChange={e => setField('customer_name',    e.target.value)} placeholder="اختياري"/>
+            <Input label="رقم الهاتف"       value={form.customer_phone   || ''} onChange={e => setField('customer_phone',   e.target.value)} placeholder="+971..." dir="ltr"/>
+            <Select label="الإمارة"          value={form.customer_city    || ''} onChange={e => setField('customer_city',    e.target.value)}>
               <option value="">اختر الإمارة</option>
               {UAE_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </Select>
-            <Input label="العنوان التفصيلي"   value={form.customer_address || ''} onChange={e => setField('customer_address', e.target.value)} placeholder="الحي / الشارع..."/>
+            <Input label="العنوان التفصيلي"  value={form.customer_address || ''} onChange={e => setField('customer_address', e.target.value)} placeholder="الحي / الشارع..."/>
           </div>
 
-          {/* Products picker */}
+          {/* Products */}
           <div style={{ marginBottom:20 }}>
             <div style={{ fontWeight:700, fontSize:12, color:'var(--text-muted)', letterSpacing:'0.05em', marginBottom:10 }}>المنتجات</div>
-
             <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom: selectedProduct ? 10 : 0 }}>
               {products.map(p => {
-                const sizes = p.sizes?.length > 0 ? p.sizes : [{ id: p.id, size: p.size || '', cost: p.cost || 0, price: p.price || 0, category: p.category || 'small' }]
-                const isSingle = sizes.length === 1
+                const sizes = p.sizes?.length > 0 ? p.sizes : [{ id: p.id, size: p.size || '', cost: p.cost || 0, price: p.price || 0 }]
+                const isSingle   = sizes.length === 1
                 const isSelected = selectedProduct?.id === p.id
                 return (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      if (isSingle) addItem(p.name, sizes[0])
-                      else setSelectedProduct(isSelected ? null : { ...p, sizes })
-                    }}
-                    style={{
-                      padding:'8px 14px', borderRadius:'var(--r-sm)', cursor:'pointer',
-                      fontFamily:'inherit', fontSize:13, fontWeight:700, transition:'all 120ms',
-                      background: isSelected ? 'var(--action-soft)' : 'var(--bg-hover)',
-                      border: `1.5px solid ${isSelected ? 'var(--action)' : 'var(--border)'}`,
-                      color: isSelected ? 'var(--action)' : 'var(--text-sec)',
-                    }}
-                  >
-                    {p.name}
-                    {!isSingle && <span style={{ fontSize:10, marginInlineStart:5, opacity:0.6 }}>{isSelected ? '▲' : '▼'}</span>}
+                  <button key={p.id} onClick={() => isSingle ? addItem(p.name, sizes[0]) : setSelectedProduct(isSelected ? null : { ...p, sizes })}
+                    style={{ padding:'7px 13px', borderRadius:8, cursor:'pointer', fontFamily:'inherit', fontSize:13, fontWeight:700, transition:'all 120ms', background: isSelected ? 'var(--action-soft)' : 'var(--bg-hover)', border:`1.5px solid ${isSelected ? 'var(--action)' : 'var(--border)'}`, color: isSelected ? 'var(--action)' : 'var(--text-sec)' }}>
+                    {p.name}{!isSingle && <span style={{ fontSize:10, marginInlineStart:4, opacity:0.6 }}>{isSelected ? '▲' : '▼'}</span>}
                   </button>
                 )
               })}
             </div>
-
-            {/* Size picker */}
             {selectedProduct && (
-              <div style={{
-                padding:'12px 14px', marginBottom:8,
-                background:'var(--bg-surface)', borderRadius:'var(--r-md)',
-                border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(var(--action-rgb),0.08)',
-              }}>
-                <div style={{ fontSize:11, color:'var(--action)', fontWeight:700, marginBottom:8 }}>
-                  {selectedProduct.name} — اختر الحجم:
-                </div>
+              <div style={{ padding:'12px 14px', marginBottom:8, background:'var(--bg-surface)', borderRadius:12, border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(49,140,231,0.1)' }}>
+                <div style={{ fontSize:11, color:'var(--action)', fontWeight:700, marginBottom:8 }}>{selectedProduct.name} — اختر الحجم:</div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                   {(selectedProduct.sizes || []).map(sv => (
-                    <button
-                      key={sv.id}
-                      onClick={() => addItem(selectedProduct.name, sv)}
-                      style={{
-                        padding:'10px 18px', borderRadius:'var(--r-sm)', cursor:'pointer',
-                        fontFamily:'inherit', transition:'all 120ms', textAlign:'center',
-                        background:'var(--bg-hover)', border:'1.5px solid var(--border)',
-                        color:'var(--text)', display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-                      }}
-                    >
-                      <span style={{ fontSize:15, fontWeight:800 }}>{sv.size}</span>
+                    <button key={sv.id} onClick={() => addItem(selectedProduct.name, sv)}
+                      style={{ padding:'10px 16px', borderRadius:8, cursor:'pointer', fontFamily:'inherit', background:'var(--bg-hover)', border:'1.5px solid var(--border)', color:'var(--text)', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+                      <span style={{ fontSize:14, fontWeight:800 }}>{sv.size}</span>
                       <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>{sv.price} د.إ</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
-
-            {/* Items list */}
             {items.length > 0 && (
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {items.map((item, idx) => (
-                  <div key={idx} style={{ background:'var(--bg-hover)', borderRadius:'var(--r-md)', padding:'10px 12px', border:'1px solid var(--border)' }}>
+                  <div key={idx} style={{ background:'var(--bg-hover)', borderRadius:12, padding:'10px 12px', border:'1px solid var(--border)' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
                       <div style={{ flex:1 }}>
                         <span style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{item.name}</span>
-                        {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:5 }}>({item.size})</span>}
+                        {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:4 }}>({item.size})</span>}
                       </div>
-                      <input type="number" value={item.price}
-                        onChange={e => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
-                        style={{ width:65, padding:'4px 6px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:6, color:'var(--action)', fontSize:12, textAlign:'center', fontFamily:'Inter,sans-serif' }}
-                      />
+                      <input type="number" value={item.price} onChange={e => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
+                        style={{ width:60, padding:'4px 6px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:6, color:'var(--action)', fontSize:12, textAlign:'center', fontFamily:'Inter,sans-serif' }}/>
                       <span style={{ fontSize:11, color:'var(--text-muted)' }}>×</span>
-                      <input type="number" min="1" value={item.qty}
-                        onChange={e => updateItem(idx, 'qty', Math.max(1, parseInt(e.target.value) || 1))}
-                        style={{ width:42, padding:'4px 6px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', fontSize:13, textAlign:'center', fontFamily:'inherit' }}
-                      />
-                      <span style={{ fontWeight:700, color:'var(--action)', fontSize:13, minWidth:58, textAlign:'left', fontFamily:'Inter,sans-serif' }}>
-                        {formatCurrency(item.price * item.qty)}
-                      </span>
-                      <button onClick={() => removeItem(idx)} style={{ background:'none', border:'none', color:'var(--danger)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'0 4px' }}>×</button>
+                      <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', Math.max(1, parseInt(e.target.value) || 1))}
+                        style={{ width:40, padding:'4px 6px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', fontSize:13, textAlign:'center', fontFamily:'inherit' }}/>
+                      <span style={{ fontWeight:700, color:'var(--action)', fontSize:13, minWidth:56, textAlign:'start', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</span>
+                      <button onClick={() => removeItem(idx)} style={{ background:'none', border:'none', color:'var(--danger)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'0 2px' }}>×</button>
                     </div>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <IcNote size={12} style={{ color:'var(--text-muted)', flexShrink:0 }}/>
-                      <input
-                        value={item.engraving_notes || ''}
-                        onChange={e => updateItem(idx, 'engraving_notes', e.target.value)}
+                      <input value={item.engraving_notes || ''} onChange={e => updateItem(idx, 'engraving_notes', e.target.value)}
                         placeholder="ملاحظات النقش..."
-                        style={{ flex:1, padding:'6px 10px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', color:'var(--text)', fontSize:12, fontFamily:'inherit', outline:'none' }}
-                      />
+                        style={{ flex:1, padding:'6px 10px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text)', fontSize:12, fontFamily:'inherit', outline:'none' }}/>
                     </div>
                   </div>
                 ))}
@@ -826,31 +1061,27 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           </div>
 
           {/* Financial fields */}
-          <div className="form-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
-            <Input
-              label="رسوم حياك (يتحملها موج)" type="number" min="0"
-              value={form.hayyak_fee ?? 25}
-              onChange={e => setField('hayyak_fee', e.target.value)}
-            />
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
+            <Input label="رسوم حياك (يتحملها موج)" type="number" min="0" value={form.hayyak_fee ?? 25} onChange={e => setField('hayyak_fee', e.target.value)}/>
             <Input label="خصم (د.إ)" type="number" min="0" value={form.discount || ''} onChange={e => setField('discount', e.target.value)}/>
             {!isEdit && <Input label="تاريخ الطلب" type="date" value={form.order_date || ''} onChange={e => setField('order_date', e.target.value)}/>}
           </div>
 
           {/* Live profit summary */}
           <div style={{
-            padding:'14px 16px', borderRadius:'var(--r-md)', marginBottom:16,
-            background: calc.gross_profit < 0 ? 'rgba(var(--danger-rgb),0.06)' : 'rgba(var(--action-rgb),0.06)',
-            border:`1.5px solid ${calc.gross_profit < 0 ? 'rgba(var(--danger-rgb),0.2)' : 'rgba(var(--action-rgb),0.2)'}`,
+            padding:'14px 16px', borderRadius:12, marginBottom:16,
+            background: calc.gross_profit < 0 ? 'rgba(248,113,113,0.06)' : 'rgba(49,140,231,0.06)',
+            border:`1.5px solid ${calc.gross_profit < 0 ? 'rgba(248,113,113,0.2)' : 'rgba(49,140,231,0.2)'}`,
           }}>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 16px', fontSize:13 }}>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:'4px 14px', fontSize:12, marginBottom:6 }}>
               <span style={{ color:'var(--text-sec)' }}>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(calc.subtotal)}</b></span>
               {parseFloat(form.discount) > 0 && <span style={{ color:'var(--danger)' }}>خصم: −{formatCurrency(form.discount)}</span>}
-              <span style={{ color:'var(--text-sec)' }}>تكلفة: <b style={{ color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(calc.product_cost)}</b></span>
-              <span style={{ color:'var(--text-sec)' }}>حياك: <b style={{ color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(calc.hayyak_fee)}</b></span>
+              <span style={{ color:'var(--text-sec)' }}>تكلفة: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(calc.product_cost)}</b></span>
+              <span style={{ color:'var(--text-sec)' }}>حياك: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(calc.hayyak_fee)}</b></span>
             </div>
-            <div style={{ display:'flex', gap:16, marginTop:8, fontSize:15, fontWeight:800, fontFamily:'Inter,sans-serif' }}>
+            <div style={{ display:'flex', gap:16, fontSize:15, fontWeight:900, fontFamily:'Inter,sans-serif' }}>
               <span style={{ color:'var(--action)' }}>الإجمالي: {formatCurrency(calc.total)}</span>
-              <span style={{ color: calc.gross_profit >= 0 ? 'var(--action)' : 'var(--danger)' }}>
+              <span style={{ color: calc.gross_profit >= 0 ? '#5DD8A4' : '#F87171' }}>
                 ربح: {calc.gross_profit >= 0 ? '+' : ''}{formatCurrency(calc.gross_profit)}
               </span>
             </div>
@@ -860,249 +1091,44 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
         </div>
 
         {/* Footer */}
-        <div style={{
-          flexShrink:0,
-          padding:'14px 20px', background:'var(--modal-bg)',
-          borderTop:'1px solid var(--border)',
-          display:'flex', gap:10, justifyContent:'flex-end',
-        }}>
+        <div style={{ flexShrink:0, padding:'14px 20px', background:'var(--modal-bg)', borderTop:'1px solid var(--border)', display:'flex', gap:10, justifyContent:'flex-end' }}>
           <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
-          <Btn loading={saving} onClick={handleSave} style={isRepl ? { background:'var(--warning)', color:'#000' } : {}}>
-            <IcSave size={15}/> {isEdit ? 'حفظ التعديلات' : isRepl ? 'إرسال الاستبدال' : 'إضافة الطلب'}
+          <Btn loading={saving} onClick={handleSave} style={isRepl ? { background:'#F59E0B', color:'#000' } : {}}>
+            <IcSave size={14}/> {isEdit ? 'حفظ التعديلات' : isRepl ? 'إرسال الاستبدال' : 'إضافة الطلب'}
           </Btn>
         </div>
       </div>
 
       <style>{`
-        .order-panel {
-          width: 50%;
-          min-width: 440px;
-        }
-        @media (max-width: 768px) {
-          .order-panel {
-            width: 100% !important;
-            min-width: 0 !important;
-          }
-        }
-        @keyframes slidePanelIn {
-          from { transform: translateX(-100%); }
-          to   { transform: translateX(0); }
-        }
+        .order-panel { width: 50%; min-width: 440px; }
+        @media (max-width: 768px) { .order-panel { width: 100% !important; min-width: 0 !important; } }
+        @keyframes slidePanelIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
       `}</style>
     </>
   )
 }
 
-/* ═══════════════════════════════════════════
-   ORDER VIEW MODAL
-═══════════════════════════════════════════ */
-function OrderViewModal({ open, onClose, order, onEdit, onStatusChange, onReplacement }) {
-  if (!order || !open) return null
-  const status = getStatus(order.status)
-  const profit = order.gross_profit ?? 0
-  const [waMenuOpen, setWaMenuOpen] = useState(false)
-
-  function sendWhatsApp(templateKey) {
-    const phone = order.customer_phone?.replace(/\D/g,'')
-    if (!phone) return
-    const defaults = {
-      order_confirm:   `مرحبا ${order.customer_name||'عزيزي العميل'}،\n\nتم استلام طلبك بنجاح ✅\nرقم الطلب: ${order.order_number}\nالإجمالي: ${(order.total||0).toLocaleString()} درهم\n\nشكراً لتسوقك مع موج 🌊`,
-      order_delivered: `مرحبا ${order.customer_name||'عزيزي العميل'}،\n\nنأمل أن طلبك وصلك بشكل سليم 🎁\nرقم الطلب: ${order.order_number}\n\nيسعدنا خدمتك دائماً.\nموج 🌊`,
-      not_delivered:   `مرحبا ${order.customer_name||'عزيزي العميل'}،\n\nتعذر علينا توصيل طلبك رقم ${order.order_number} 😕\n\nهل يمكنك تأكيد العنوان؟\n\nنحن هنا لخدمتك 💙`,
-    }
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(defaults[templateKey] || defaults.order_confirm)}`, '_blank')
-    setWaMenuOpen(false)
-  }
-
-  return createPortal(
-    <div style={{
-      position:'fixed', inset:0, zIndex:99999,
-      display:'flex', alignItems:'center', justifyContent:'center',
-      background:'rgba(0,0,0,0.45)',
-      padding:20,
-    }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="order-view-modal" style={{
-        position:'relative',
-        width:'100%', maxWidth:560, maxHeight:'90vh', overflowY:'auto',
-        background:'var(--modal-bg)',
-        backdropFilter:'var(--glass-blur-lg)',
-        WebkitBackdropFilter:'var(--glass-blur-lg)',
-        borderRadius:'var(--r-xl)',
-        boxShadow:'var(--modal-shadow)',
-        border:'1px solid var(--border)',
-        borderTopColor:'var(--glass-edge)',
-        padding:'24px',
-      }}>
-        {/* Close */}
-        <button onClick={onClose} style={{
-          position:'absolute', top:16, left:16,
-          background:'var(--bg-hover)', border:'none', borderRadius:'var(--r-sm)',
-          padding:6, cursor:'pointer', color:'var(--text-muted)',
-          display:'flex', alignItems:'center',
-        }}>
-          <IcClose size={16}/>
-        </button>
-
-        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-          {/* Header */}
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:8 }}>
-            <div>
-              <div style={{ fontSize:20, fontWeight:800 }}>{order.customer_name || 'عميل'}</div>
-              {order.customer_phone && <div style={{ fontSize:13, color:'var(--text-muted)', direction:'ltr' }}>{order.customer_phone}</div>}
-              {order.customer_city  && <div style={{ fontSize:12, color:'var(--text-muted)' }}>{order.customer_city}{order.customer_address ? ` • ${order.customer_address}` : ''}</div>}
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-              <Badge color={status.color}>{status.label}</Badge>
-              {order.is_replacement && <Badge color="var(--warning)">استبدال</Badge>}
-            </div>
-          </div>
-
-          {/* Order number */}
-          {order.order_number && (
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>رقم الطلب:</span>
-              <span style={{ fontSize:13, fontWeight:700, fontFamily:'Inter,sans-serif', color:'var(--action)' }}>{order.order_number}</span>
-            </div>
-          )}
-
-          {/* Items */}
-          <div>
-            <div style={{ fontWeight:700, fontSize:11, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:8 }}>المنتجات</div>
-            {order.items?.length > 0 ? order.items.map((item, i) => (
-              <div key={i} style={{ background:'var(--bg-hover)', borderRadius:'var(--r-md)', padding:'10px 12px', marginBottom:6, border:'1px solid var(--border)' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom: item.engraving_notes ? 6 : 0 }}>
-                  <span style={{ fontWeight:700, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</span>
-                  <div>
-                    <span style={{ fontSize:13, fontWeight:700 }}>{item.name}</span>
-                    {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:5 }}>({item.size})</span>}
-                    <span style={{ fontSize:12, color:'var(--text-muted)', marginInlineStart:4 }}>× {item.qty}</span>
-                  </div>
-                </div>
-                {item.engraving_notes && (
-                  <div style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
-                    <IcNote size={12} style={{ color:'var(--text-muted)', marginTop:2, flexShrink:0 }}/>
-                    <span style={{ fontSize:12, color:'var(--text-sec)', fontStyle:'italic' }}>{item.engraving_notes}</span>
-                  </div>
-                )}
-              </div>
-            )) : (
-              <div style={{ padding:'16px', textAlign:'center', color:'var(--text-muted)', fontSize:13, background:'var(--bg-hover)', borderRadius:'var(--r-md)', border:'1px solid var(--border)' }}>
-                لا توجد منتجات مسجلة لهذا الطلب
-              </div>
-            )}
-          </div>
-
-          {/* Financial summary */}
-          <div style={{
-            padding:'12px 16px', borderRadius:'var(--r-md)',
-            background: profit < 0 ? 'rgba(var(--danger-rgb),0.06)' : 'rgba(var(--action-rgb),0.06)',
-            border:`1px solid ${profit < 0 ? 'rgba(var(--danger-rgb),0.15)' : 'rgba(var(--action-rgb),0.15)'}`,
-            display:'flex', flexWrap:'wrap', gap:'6px 18px',
-          }}>
-            <span style={{ fontSize:13, color:'var(--text-sec)' }}>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(order.subtotal)}</b></span>
-            {order.discount > 0 && <span style={{ fontSize:13, color:'var(--danger)' }}>خصم: −{formatCurrency(order.discount)}</span>}
-            <span style={{ fontSize:13, color:'var(--text-sec)' }}>تكلفة: <b style={{ color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.product_cost||0)}</b></span>
-            <span style={{ fontSize:13, color:'var(--text-sec)' }}>حياك: <b style={{ color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(order.hayyak_fee??25)}</b></span>
-            <span style={{ fontSize:14, fontWeight:800, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>الإجمالي: {formatCurrency(order.total)}</span>
-            <span style={{ fontSize:14, fontWeight:800, fontFamily:'Inter,sans-serif', color: profit >= 0 ? 'var(--action)' : 'var(--danger)' }}>
-              ربح: {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
-            </span>
-          </div>
-
-          {/* Status change */}
-          <div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8, fontWeight:600 }}>تغيير الحالة</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-              {ORDER_STATUSES.map(s => (
-                <button key={s.id} onClick={() => onStatusChange?.(order.id, s.id)} style={{
-                  padding:'6px 14px', borderRadius:99,
-                  border:`1px solid ${order.status === s.id ? s.color : s.color+'30'}`,
-                  background: order.status === s.id ? `${s.color}20` : 'transparent',
-                  color: s.color, fontSize:12, fontWeight: order.status === s.id ? 800 : 500,
-                  cursor:'pointer', fontFamily:'inherit',
-                }}>{s.label}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Notes */}
-          {order.notes && (
-            <div style={{ padding:12, background:'var(--bg-hover)', borderRadius:'var(--r-md)' }}>
-              <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>ملاحظات</div>
-              <div style={{ fontSize:13 }}>{order.notes}</div>
-            </div>
-          )}
-
-          {/* Timeline */}
-          {order.internal_notes?.length > 0 && <OrderTimeline notes={order.internal_notes}/>}
-
-          {/* Actions */}
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            {order.customer_phone && (
-              <div style={{ position:'relative' }}>
-                <Btn variant="ghost" onClick={() => setWaMenuOpen(p=>!p)} style={{ color:'var(--whatsapp)', borderColor:'rgba(37,211,102,0.3)' }}>
-                  <IcWhatsapp size={15}/> واتساب ▾
-                </Btn>
-                {waMenuOpen && (
-                  <div style={{
-                    position:'absolute', bottom:'calc(100% + 6px)', right:0, zIndex:200,
-                    background:'var(--modal-bg)', border:'1px solid var(--border)',
-                    borderRadius:'var(--r-md)', overflow:'hidden', minWidth:180,
-                    boxShadow:'var(--float-shadow)',
-                  }}>
-                    {[
-                      { key:'order_confirm',   label:'✅ تأكيد الطلب' },
-                      { key:'order_delivered', label:'🎁 تم التسليم' },
-                      { key:'not_delivered',   label:'😕 لم يتم — متابعة' },
-                    ].map(t => (
-                      <button key={t.key} onClick={() => sendWhatsApp(t.key)} style={{
-                        display:'block', width:'100%', padding:'11px 16px',
-                        background:'none', border:'none', cursor:'pointer',
-                        fontSize:13, color:'var(--text)', textAlign:'right',
-                        fontFamily:'inherit', fontWeight:600,
-                      }}>{t.label}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {order.status === 'delivered' && !order.is_replacement && (
-              <Btn variant="ghost" onClick={() => onReplacement?.(order)} style={{ color:'var(--warning)', borderColor:'rgba(var(--warning-rgb),0.3)' }}>
-                <IcRefresh size={15}/> استبدال
-              </Btn>
-            )}
-            <Btn variant="secondary" onClick={onEdit}><IcEdit size={15}/> تعديل</Btn>
-            <PrintReceipt order={order} statuses={ORDER_STATUSES}/>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
-  )
-}
-
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    ORDER TIMELINE
-═══════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════ */
 function OrderTimeline({ notes }) {
-  const sorted = [...notes].sort((a,b) => new Date(a.time) - new Date(b.time))
+  const sorted = [...notes].sort((a,b) => new Date(a.time).getTime() - new Date(b.time).getTime())
   return (
     <div>
       <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginBottom:10 }}>سجل الطلب</div>
-      <div style={{ position:'relative', paddingRight:16 }}>
-        <div style={{ position:'absolute', right:5, top:6, bottom:6, width:2, background:'linear-gradient(to bottom,var(--action),var(--info-light))', borderRadius:2, opacity:0.3 }}/>
+      <div style={{ position:'relative', paddingInlineEnd:16 }}>
+        <div style={{ position:'absolute', insetInlineEnd:5, top:6, bottom:6, width:2, background:'linear-gradient(to bottom,var(--action),var(--info-light))', borderRadius:2, opacity:0.25 }}/>
         {sorted.map((note, i) => {
           const isLast = i === sorted.length - 1
-          const d = new Date(note.time)
           return (
             <div key={i} style={{ display:'flex', gap:10, marginBottom: isLast ? 0 : 10, alignItems:'flex-start' }}>
-              <div style={{ width:10, height:10, borderRadius:'50%', flexShrink:0, marginTop:3, background: isLast ? 'var(--action)' : 'var(--info-light)', border:'2px solid var(--bg)', boxShadow: isLast ? '0 0 8px var(--action-glow)' : 'none' }}/>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:12, color: isLast ? 'var(--text)' : 'var(--text-sec)', fontWeight: isLast ? 700 : 400 }}>{note.text}</div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>
-                  {d.toLocaleDateString('ar-AE', { month:'short', day:'numeric' })} • {d.toLocaleTimeString('ar-AE', { hour:'2-digit', minute:'2-digit' })}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:12, color:'var(--text-sec)', fontWeight:600, marginBottom:1 }}>{note.text}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'Inter,sans-serif', direction:'ltr', textAlign:'end' }}>
+                  {new Date(note.time).toLocaleString('ar-AE', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}
                 </div>
               </div>
+              <div style={{ width:10, height:10, borderRadius:'50%', flexShrink:0, marginTop:3, background: isLast ? 'var(--action)' : '#6B7280', boxShadow: isLast ? '0 0 8px var(--action)' : 'none' }}/>
             </div>
           )
         })}
