@@ -3,26 +3,21 @@ import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { DB } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency } from '../data/constants'
-import { PageHeader, SkeletonStats, SkeletonCard } from '../components/ui'
-import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcArrowLeft, IcPlus, IcAlert, IcTruck } from '../components/Icons'
+import { SkeletonStats, SkeletonCard } from '../components/ui'
+import { IcOrders, IcTrendUp, IcPackage, IcExpenses, IcAlert, IcTruck } from '../components/Icons'
 import Sparkline from '../components/Sparkline'
 import type { PageProps } from '../types'
 
-/* ══════════════════════════════════════════════════
-   DASHBOARD v11 — "FROSTED DEPTH"
-   Bento grid · Greeting card · Animated hero
-   Floating dock · 3D tilt · Glowing borders
-══════════════════════════════════════════════════ */
-
 const STATUS_COLORS = {
   new:'var(--info)', ready:'var(--warning)', with_hayyak:'var(--info)',
+  confirmed:'var(--warning)', processing:'var(--action)',
   delivered:'var(--success)', not_delivered:'var(--danger)', cancelled:'var(--text-muted)',
-  returned:'var(--text-muted)',
+  shipped:'var(--action)', returned:'var(--text-muted)',
 }
 const STATUS_LABELS = {
-  new:'جديد', ready:'جاهز', with_hayyak:'مع حياك',
-  delivered:'مسلّم', not_delivered:'لم يتم', cancelled:'ملغي',
-  returned:'مرتجع',
+  new:'جديد', ready:'جاهز', with_hayyak:'مع حياك', confirmed:'مؤكد',
+  processing:'قيد المعالجة', shipped:'تم الشحن',
+  delivered:'مسلّم', not_delivered:'لم يتم', cancelled:'ملغي', returned:'مرتجع',
 }
 
 function getGreeting() {
@@ -32,11 +27,20 @@ function getGreeting() {
   return 'مساء النور'
 }
 
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr)) / 1000
+  if (diff < 60) return 'الآن'
+  if (diff < 3600) return `منذ ${Math.floor(diff/60)}د`
+  if (diff < 86400) return `منذ ${Math.floor(diff/3600)}س`
+  return `منذ ${Math.floor(diff/86400)}ي`
+}
+
 export default function Dashboard({ onNavigate }: PageProps) {
   const [data,      setData]      = useState(null)
   const [orders,    setOrders]    = useState([])
   const [loading,   setLoading]   = useState(true)
   const [sparkData, setSparkData] = useState({ revenue:[], orders:[], profit:[] })
+  const [chartData, setChartData] = useState([])
 
   useEffect(() => {
     loadData()
@@ -84,7 +88,7 @@ export default function Dashboard({ onNavigate }: PageProps) {
 
       const delivered    = monthOrders.filter(o => o.status === 'delivered').length
       const notDelivered = monthOrders.filter(o => o.status === 'not_delivered').length
-      const inProgress   = monthOrders.filter(o => ['new','ready','with_hayyak'].includes(o.status)).length
+      const inProgress   = monthOrders.filter(o => ['new','ready','with_hayyak','confirmed','processing','shipped'].includes(o.status)).length
       const deliveryRate = monthOrders.length ? Math.round((delivered / monthOrders.length) * 100) : 0
       const profitMargin = revenue > 0 ? Math.round((netProfit / revenue) * 100) : 0
       const revenueProgress = prevRevenue > 0 ? Math.min(200, Math.round((revenue / prevRevenue) * 100)) : 100
@@ -114,6 +118,22 @@ export default function Dashboard({ onNavigate }: PageProps) {
       }
       setSparkData({ revenue: revByDay, orders: ordByDay, profit: profByDay })
 
+      // 30-day chart data
+      const chartDays = []
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i)
+        const ds = d.toDateString()
+        const dayOrds = allOrders.filter(o =>
+          new Date(o.order_date||o.created_at).toDateString() === ds &&
+          o.status !== 'cancelled' && !o.is_replacement && o.status !== 'not_delivered'
+        )
+        chartDays.push({
+          label: d.toLocaleDateString('ar', { day: 'numeric', month: 'short' }),
+          value: dayOrds.reduce((s, o) => s + (o.total || 0), 0),
+        })
+      }
+      setChartData(chartDays)
+
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
@@ -129,15 +149,14 @@ export default function Dashboard({ onNavigate }: PageProps) {
 
   const inProgressOrders = useMemo(() => {
     return orders
-      .filter(o => ['new','ready','with_hayyak'].includes(o.status))
+      .filter(o => ['new','ready','with_hayyak','confirmed','processing','shipped'].includes(o.status))
       .sort((a, b) => new Date(b.order_date||b.created_at) - new Date(a.order_date||a.created_at))
-      .slice(0, 10)
+      .slice(0, 12)
   }, [orders])
 
   if (loading) return (
     <div className="page">
-      <PageHeader title="لوحة التحكم" subtitle="جاري تحميل البيانات..." />
-      <SkeletonStats count={3} />
+      <SkeletonStats count={4} />
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16, marginTop:16 }}>
         <SkeletonCard rows={4}/><SkeletonCard rows={4}/>
       </div>
@@ -147,212 +166,199 @@ export default function Dashboard({ onNavigate }: PageProps) {
   return (
     <div className="page stagger">
 
-      {/* ════════════════════════════════════════════
-         ROW 1: Hero + Greeting — Bento Grid
-      ════════════════════════════════════════════ */}
-      <div className="bento-grid" style={{ marginBottom:14 }}>
-
-        {/* ── HERO: Today's Revenue (animated gradient mesh) ── */}
-        <div
-          className="bento-8 gradient-mesh tilt-card"
-          onClick={() => onNavigate('orders')}
-          style={{
-            position:'relative', overflow:'hidden', cursor:'pointer',
-            border:'1px solid rgba(var(--action-rgb),0.18)',
-            borderRadius:'var(--r-xl)',
-            padding:'32px 28px 24px',
-            backdropFilter:'var(--glass-blur)',
-            WebkitBackdropFilter:'var(--glass-blur)',
-          }}
-        >
-          {/* Wave SVG background */}
-          <svg
-            viewBox="0 0 400 80"
-            preserveAspectRatio="none"
-            style={{
-              position:'absolute', bottom:0, left:0, right:0, height:'55%',
-              opacity:0.15, pointerEvents:'none',
-            }}
-          >
-            <path
-              d="M0 60 C50 30,100 70,150 45 C200 20,250 65,300 40 C350 15,380 55,400 35 L400 80 L0 80Z"
-              fill="url(#waveGrad)"
-            />
-            <path
-              d="M0 70 C60 45,120 75,180 55 C240 35,300 70,360 50 C380 42,400 60,400 55 L400 80 L0 80Z"
-              fill="url(#waveGrad)" opacity="0.5"
-            />
-            <defs>
-              <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="var(--action)"/>
-                <stop offset="50%" stopColor="var(--info)"/>
-                <stop offset="100%" stopColor="#8B5CF6"/>
-              </linearGradient>
-            </defs>
-          </svg>
-
-          <div style={{ position:'relative', zIndex:1 }}>
-            <div style={{ fontSize:'var(--t-label)', fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:10 }}>
-              إيرادات اليوم
-            </div>
-            <div style={{ display:'flex', alignItems:'flex-end', gap:16, flexWrap:'wrap' }}>
-              <div style={{
-                fontSize:42, fontWeight:900, color:'var(--action)',
-                fontFamily:'Inter,sans-serif', lineHeight:1, letterSpacing:'-0.03em',
-                textShadow:'0 0 40px rgba(var(--action-rgb),0.25)',
+      {/* ─── HERO: Revenue today ──────────────────────────── */}
+      <div
+        className="dash-hero"
+        onClick={() => onNavigate('orders')}
+        style={{ cursor:'pointer' }}
+      >
+        {/* Left: stats */}
+        <div className="dash-hero-left">
+          <div style={{ fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.55)', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:10 }}>
+            {getGreeting()} · {new Date().toLocaleDateString('ar-AE', { weekday:'long', day:'numeric', month:'long' })}
+          </div>
+          <div style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,0.65)', marginBottom:8 }}>
+            إيرادات اليوم
+          </div>
+          <div style={{
+            fontSize:48, fontWeight:900, color:'#fff',
+            fontFamily:'Inter,sans-serif', lineHeight:1, letterSpacing:'-0.03em',
+            marginBottom:14, textShadow:'0 0 40px rgba(255,255,255,0.20)',
+          }}>
+            {formatCurrency(data?.todayRevenue || 0)}
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+            {data?.revChange !== null && (
+              <span style={{
+                padding:'5px 14px', borderRadius:999,
+                fontSize:12, fontWeight:800,
+                background: (data?.revChange ?? 0) >= 0 ? 'rgba(93,216,164,0.25)' : 'rgba(248,113,113,0.25)',
+                color: (data?.revChange ?? 0) >= 0 ? '#5DD8A4' : '#F87171',
+                border: `1px solid ${(data?.revChange ?? 0) >= 0 ? 'rgba(93,216,164,0.35)' : 'rgba(248,113,113,0.35)'}`,
               }}>
-                {formatCurrency(data?.todayRevenue || 0)}
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:12, paddingBottom:6 }}>
-                <span style={{
-                  padding:'5px 12px', borderRadius:999,
-                  fontSize:12, fontWeight:800,
-                  background: (data?.revChange ?? 0) >= 0 ? 'rgba(var(--success-rgb),0.14)' : 'rgba(var(--danger-rgb),0.14)',
-                  color: (data?.revChange ?? 0) >= 0 ? 'var(--success)' : 'var(--danger)',
-                  backdropFilter:'blur(12px)',
-                }}>
-                  {data?.revChange !== null ? `${(data?.revChange ?? 0) >= 0 ? '↑' : '↓'} ${Math.abs(data?.revChange || 0)}%` : '—'}
-                </span>
-                <span style={{ fontSize:13, color:'var(--text-muted)', fontWeight:600 }}>
-                  {data?.todayOrders || 0} طلب
-                </span>
-              </div>
-            </div>
+                {(data?.revChange ?? 0) >= 0 ? '↑' : '↓'} {Math.abs(data?.revChange || 0)}% مقارنة بالأمس
+              </span>
+            )}
+            <span style={{ fontSize:13, color:'rgba(255,255,255,0.55)', fontWeight:600 }}>
+              {data?.todayOrders || 0} طلب اليوم
+            </span>
           </div>
+        </div>
 
+        {/* Right: sparkline chart */}
+        <div className="dash-hero-right">
+          <div style={{ fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.45)', marginBottom:8, letterSpacing:'0.06em' }}>
+            آخر 14 يوم
+          </div>
           {sparkData.revenue.length > 1 && (
-            <div style={{ position:'relative', zIndex:1, marginTop:18, opacity:0.85, width:'100%' }}>
-              <HeroSparkline data={sparkData.revenue} color="var(--action)" />
-            </div>
+            <HeroSparkline data={sparkData.revenue} color="rgba(255,255,255,0.85)" />
           )}
         </div>
-
-        {/* ── GREETING CARD ── */}
-        <GreetingCard onNavigate={onNavigate} />
       </div>
 
-      {/* ════════════════════════════════════════════
-         ROW 2: Ring Charts — 3 columns
-      ════════════════════════════════════════════ */}
-      <div className="bento-grid" style={{ marginBottom:14 }}>
-        <div className="bento-4">
-          <RingCard
-            label="إيرادات الشهر"
-            value={formatCurrency(data?.revenue || 0)}
-            pct={Math.min(100, data?.revenueProgress || 0)}
-            color="var(--action)"
-            rgbVar="var(--action-rgb)"
-            sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% مقارنة بالشهر السابق` : 'أول شهر'}
-            sparkData={sparkData.revenue}
-            sparkColor="var(--action)"
-          />
-        </div>
-        <div className="bento-4">
-          <RingCard
-            label="معدل التسليم"
-            value={`${data?.deliveryRate || 0}%`}
-            pct={data?.deliveryRate || 0}
-            color="var(--info)"
-            rgbVar="var(--info-rgb)"
-            sub={`${data?.delivered || 0} مسلّم من ${data?.totalOrders || 0}`}
-            sparkData={sparkData.orders}
-            sparkColor="var(--info)"
-          />
-        </div>
-        <div className="bento-4">
-          <RingCard
-            label="هامش الربح"
-            value={`${data?.profitMargin || 0}%`}
-            pct={Math.max(0, Math.min(100, data?.profitMargin || 0))}
-            color={data?.profitMargin >= 0 ? 'var(--success)' : 'var(--danger)'}
-            rgbVar={data?.profitMargin >= 0 ? 'var(--success-rgb)' : 'var(--danger-rgb)'}
-            sub={formatCurrency(data?.netProfit || 0) + ' صافي'}
-            sparkData={sparkData.profit}
-            sparkColor="var(--success)"
-          />
-        </div>
+      {/* ─── KPI ROW: 4 cards ─────────────────────────────── */}
+      <div className="dash-kpi-row">
+        <KpiCard
+          label="إيرادات الشهر"
+          value={formatCurrency(data?.revenue || 0)}
+          sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% مقارنة بالشهر السابق` : 'أول شهر'}
+          color="var(--action)"
+          icon={<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+          trend={data?.revenueProgress > 100 ? 'up' : data?.revenueProgress < 100 ? 'down' : null}
+        />
+        <KpiCard
+          label="طلبات الشهر"
+          value={data?.totalOrders || 0}
+          sub={`${data?.inProgress || 0} قيد المعالجة · ${data?.notDelivered || 0} لم يتم`}
+          color="var(--info)"
+          icon={<IcOrders size={20}/>}
+          trend={null}
+        />
+        <KpiCard
+          label="معدل التسليم"
+          value={`${data?.deliveryRate || 0}%`}
+          sub={`${data?.delivered || 0} مسلّم من ${data?.totalOrders || 0} طلب`}
+          color={data?.deliveryRate >= 75 ? 'var(--success)' : 'var(--warning)'}
+          icon={<IcTruck size={20}/>}
+          trend={data?.deliveryRate >= 75 ? 'up' : 'down'}
+        />
+        <KpiCard
+          label="هامش الربح"
+          value={`${data?.profitMargin || 0}%`}
+          sub={`${formatCurrency(data?.netProfit || 0)} صافي · ${formatCurrency(data?.opExpenses || 0)} مصاريف`}
+          color={data?.profitMargin >= 0 ? 'var(--success)' : 'var(--danger)'}
+          icon={<IcTrendUp size={20}/>}
+          trend={data?.profitMargin > 0 ? 'up' : 'down'}
+        />
       </div>
 
-      {/* ════════════════════════════════════════════
-         ROW 3: Stats + Activity Stream
-      ════════════════════════════════════════════ */}
-      <div className="bento-grid" style={{ marginBottom:14 }}>
+      {/* ─── 30-Day Revenue Chart ─────────────────────────── */}
+      {chartData.length > 1 && (
+        <RevenueChart data={chartData} />
+      )}
 
-        {/* ── Left: Mini Stats 2×2 + COD ── */}
-        <div className="bento-5" style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <MiniStat label="طلبات الشهر" value={data?.totalOrders || 0} color="var(--action)" icon={<IcOrders size={18}/>} />
-            <MiniStat label="قيد المعالجة" value={data?.inProgress || 0} color="var(--warning)" icon={<IcPackage size={18}/>} />
-            <MiniStat label="لم يتم" value={data?.notDelivered || 0} color="var(--danger)" icon={<IcTruck size={18}/>} />
-            <MiniStat label="المصاريف" value={formatCurrency(data?.opExpenses || 0)} color="var(--warning)" icon={<IcExpenses size={18}/>} />
+      {/* ─── COD Alert ──────────────────────────────────────── */}
+      {data?.pendingCOD > 0 && (
+        <div
+          onClick={() => onNavigate('hayyak')}
+          style={{
+            display:'flex', alignItems:'center', gap:14, padding:'16px 20px',
+            marginBottom:14, cursor:'pointer',
+            background:'rgba(251,191,36,0.08)',
+            backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
+            border:'1.5px solid rgba(251,191,36,0.25)',
+            borderRadius:'var(--r-lg)',
+            transition:'background 0.12s ease',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background='rgba(251,191,36,0.13)'}
+          onMouseLeave={e => e.currentTarget.style.background='rgba(251,191,36,0.08)'}
+        >
+          <div style={{
+            width:40, height:40, borderRadius:'var(--r-md)', flexShrink:0,
+            background:'rgba(251,191,36,0.15)', display:'flex', alignItems:'center', justifyContent:'center',
+          }}>
+            <IcAlert size={20} style={{ color:'var(--warning)' }} />
           </div>
-
-          {/* COD Alert */}
-          {data?.pendingCOD > 0 && (
-            <div
-              onClick={() => onNavigate('hayyak')}
-              className="tilt-card"
-              style={{
-                display:'flex', alignItems:'center', gap:12, padding:'14px 16px',
-                cursor:'pointer',
-                background:'rgba(var(--warning-rgb),0.08)',
-                backdropFilter:'var(--glass-blur)',
-                WebkitBackdropFilter:'var(--glass-blur)',
-                border:'1.5px solid rgba(var(--warning-rgb),0.25)',
-                borderRadius:'var(--r-lg)',
-                transition:'background 120ms',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background='rgba(var(--warning-rgb),0.12)'}
-              onMouseLeave={e => e.currentTarget.style.background='rgba(var(--warning-rgb),0.08)'}
-            >
-              <IcAlert size={20} style={{ color:'var(--warning)', flexShrink:0 }}/>
-              <div style={{ flex:1 }}>
-                <div style={{ fontWeight:800, fontSize:'var(--t-body)', color:'var(--warning)' }}>
-                  {formatCurrency(data.pendingCOD)} COD معلق
-                </div>
-                <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)', marginTop:2 }}>
-                  {data.pendingCount} طلب • صافي المتوقع: {formatCurrency(data.pendingNet)}
-                </div>
-              </div>
-              <IcArrowLeft size={16} style={{ color:'var(--warning)', flexShrink:0 }}/>
+          <div style={{ flex:1 }}>
+            <div style={{ fontWeight:800, fontSize:'var(--t-body)', color:'var(--warning)', marginBottom:2 }}>
+              {formatCurrency(data.pendingCOD)} — COD معلق
             </div>
-          )}
+            <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)' }}>
+              {data.pendingCount} طلب بانتظار التسوية · صافي المتوقع: {formatCurrency(data.pendingNet)}
+            </div>
+          </div>
+          <div style={{ color:'var(--warning)', fontSize:18, fontWeight:700 }}>←</div>
         </div>
+      )}
 
-        {/* ── Right: Unified Activity Stream ── */}
-        <div className="bento-7">
+      {/* ─── Bottom: Activity + Ring Stats ─────────────────── */}
+      <div className="dash-bottom">
+        {/* Activity Feed */}
+        <div className="dash-activity">
           <ActivityStream
             stream={stream}
             inProgressOrders={inProgressOrders}
             onNavigate={onNavigate}
           />
         </div>
-      </div>
 
-      {/* ════════════════════════════════════════════
-         FLOATING DOCK — Quick Actions
-      ════════════════════════════════════════════ */}
-      <div className="floating-dock">
-        {[
-          { icon:<IcPlus size={20}/>,     label:'طلب جديد',   color:'var(--action)',      action: () => onNavigate('orders') },
-          { icon:<IcExpenses size={20}/>,  label:'مصروف جديد', color:'var(--warning)',     action: () => onNavigate('expenses') },
-          { icon:<IcTruck size={20}/>,     label:'حياك',       color:'var(--info-light)',  action: () => onNavigate('hayyak') },
-          { icon:<IcTrendUp size={20}/>,   label:'المحاسبة',   color:'var(--success)',     action: () => onNavigate('accounting') },
-        ].map(a => (
-          <button key={a.label} onClick={a.action} className="dock-item">
-            <div style={{ color:a.color, display:'flex' }}>{a.icon}</div>
-            <span className="dock-item-label">{a.label}</span>
-          </button>
-        ))}
+        {/* Ring stats sidebar */}
+        <div className="dash-rings">
+          <RingCard
+            label="إيرادات الشهر"
+            value={formatCurrency(data?.revenue || 0)}
+            pct={Math.min(100, data?.revenueProgress || 0)}
+            color="var(--action)"
+            sub={data?.prevRevenue > 0 ? `${data?.revenueProgress || 0}% الشهر السابق` : 'أول شهر'}
+          />
+          <RingCard
+            label="معدل التسليم"
+            value={`${data?.deliveryRate || 0}%`}
+            pct={data?.deliveryRate || 0}
+            color="var(--info)"
+            sub={`${data?.delivered || 0} من ${data?.totalOrders || 0}`}
+          />
+          <RingCard
+            label="هامش الربح"
+            value={`${data?.profitMargin || 0}%`}
+            pct={Math.max(0, Math.min(100, data?.profitMargin || 0))}
+            color={data?.profitMargin >= 0 ? 'var(--success)' : 'var(--danger)'}
+            sub={formatCurrency(data?.netProfit || 0)}
+          />
+
+          {/* Quick actions */}
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:4 }}>
+            {[
+              { label:'+ طلب جديد',    color:'var(--action)',  bg:'var(--action-soft)',  border:'rgba(49,140,231,0.20)',  page:'orders'     },
+              { label:'+ مصروف جديد',  color:'var(--warning)', bg:'rgba(251,191,36,0.08)', border:'rgba(251,191,36,0.20)', page:'expenses'   },
+              { label:'التقارير',       color:'var(--success)', bg:'rgba(93,216,164,0.08)', border:'rgba(93,216,164,0.20)', page:'reports'    },
+              { label:'المحاسبة',       color:'var(--info)',    bg:'var(--info-faint)',   border:'rgba(126,184,247,0.18)', page:'accounting' },
+            ].map(a => (
+              <button
+                key={a.label}
+                onClick={() => onNavigate(a.page)}
+                style={{
+                  width:'100%', padding:'10px 14px', borderRadius:'var(--r-md)',
+                  border:`1px solid ${a.border}`, background:a.bg,
+                  color:a.color, fontSize:12, fontWeight:700,
+                  cursor:'pointer', fontFamily:'inherit',
+                  transition:'all 0.15s ease', textAlign:'start',
+                }}
+                onMouseEnter={e => e.currentTarget.style.filter='brightness(1.2)'}
+                onMouseLeave={e => e.currentTarget.style.filter='none'}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
 
-/* ═══════════════════════════════════════════════════
-   HERO SPARKLINE — Responsive width sparkline for hero card
-═══════════════════════════════════════════════════ */
+/* ─── HERO SPARKLINE ──────────────────────────────────── */
 function HeroSparkline({ data, color }) {
   const ref = useRef(null)
   const [w, setW] = useState(300)
@@ -366,139 +372,31 @@ function HeroSparkline({ data, color }) {
   }, [])
   return (
     <div ref={ref} style={{ width:'100%' }}>
-      <Sparkline data={data} color={color} width={w} height={52} />
+      <Sparkline data={data} color={color} width={w} height={64} />
     </div>
   )
 }
 
 
-/* ═══════════════════════════════════════════════════
-   GREETING CARD — Time-of-day greeting + clock + actions
-═══════════════════════════════════════════════════ */
-function GreetingCard({ onNavigate }) {
-  const [time, setTime] = useState(new Date())
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 60000)
-    return () => clearInterval(timer)
-  }, [])
-
+/* ─── KPI CARD ─────────────────────────────────────────── */
+function KpiCard({ label, value, sub, color, icon, trend }) {
   return (
-    <div
-      className="bento-4 glass-accent-card"
-      style={{
-        padding:'28px 22px 20px',
-        display:'flex', flexDirection:'column', justifyContent:'space-between',
-        '--accent-color':'var(--info)',
-      }}
-    >
-      <div>
+    <div className="dash-kpi-card">
+      <div style={{ position:'absolute', top:0, insetInlineStart:0, insetInlineEnd:0, height:3, background:`linear-gradient(90deg, transparent, ${color}, transparent)`, borderRadius:'var(--r-lg) var(--r-lg) 0 0', opacity:0.7 }} />
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase' }}>{label}</div>
+        <div style={{ color, opacity:0.85 }}>{icon}</div>
+      </div>
+      <div style={{ fontSize:22, fontWeight:900, color, fontFamily:'Inter,sans-serif', lineHeight:1.1, marginBottom:6 }}>{value}</div>
+      <div style={{ fontSize:11, color:'var(--text-muted)', lineHeight:1.4 }}>{sub}</div>
+      {trend && (
         <div style={{
-          fontSize:'var(--t-title)', fontWeight:800, color:'var(--text)',
-          marginBottom:6,
+          position:'absolute', top:14, insetInlineEnd:14,
+          fontSize:16, fontWeight:900,
+          color: trend === 'up' ? 'var(--success)' : 'var(--danger)',
+          opacity:0.6,
         }}>
-          {getGreeting()} 👋
-        </div>
-        <div style={{
-          fontSize:38, fontWeight:900, color:'var(--action)',
-          fontFamily:'Inter,sans-serif', lineHeight:1, letterSpacing:'-0.02em',
-          marginBottom:8, direction:'ltr', textAlign:'right',
-        }}>
-          {time.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false })}
-        </div>
-        <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)', fontWeight:600 }}>
-          {time.toLocaleDateString('ar-AE', { weekday:'long', day:'numeric', month:'long' })}
-        </div>
-      </div>
-
-      <div style={{ display:'flex', gap:8, marginTop:16 }}>
-        <button
-          onClick={() => onNavigate('orders')}
-          style={{
-            flex:1, padding:'10px 8px', borderRadius:'var(--r-md)',
-            background:'var(--action-soft)', border:'1px solid rgba(var(--action-rgb),0.15)',
-            color:'var(--action)', fontSize:12, fontWeight:700,
-            cursor:'pointer', fontFamily:'inherit',
-            transition:'all 0.15s ease',
-          }}
-        >
-          + طلب
-        </button>
-        <button
-          onClick={() => onNavigate('expenses')}
-          style={{
-            flex:1, padding:'10px 8px', borderRadius:'var(--r-md)',
-            background:'rgba(var(--warning-rgb),0.08)', border:'1px solid rgba(var(--warning-rgb),0.15)',
-            color:'var(--warning)', fontSize:12, fontWeight:700,
-            cursor:'pointer', fontFamily:'inherit',
-            transition:'all 0.15s ease',
-          }}
-        >
-          + مصروف
-        </button>
-      </div>
-    </div>
-  )
-}
-
-
-/* ═══════════════════════════════════════════════════
-   RING CARD — Glass arc chart + value + sparkline
-═══════════════════════════════════════════════════ */
-function RingCard({ label, value, pct, color, rgbVar, sub, sparkData, sparkColor }) {
-  const size = 68, sw = 5
-  const r = (size - sw * 2) / 2
-  const circ = 2 * Math.PI * r
-  const dash = circ * Math.min(100, pct) / 100
-
-  return (
-    <div
-      className="tilt-card glow-hover"
-      style={{
-        background:'var(--bg-surface)',
-        backdropFilter:'var(--glass-blur)',
-        WebkitBackdropFilter:'var(--glass-blur)',
-        borderRadius:'var(--r-lg)',
-        padding:'20px 18px',
-        boxShadow:'var(--card-shadow)',
-        border:'1px solid var(--border)',
-        borderTopColor:'var(--glass-edge)',
-        position:'relative', overflow:'hidden',
-        height:'100%',
-        '--glow-rgb': rgbVar || 'var(--action-rgb)',
-      }}
-    >
-      {/* Top accent */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,transparent,${color},transparent)`, opacity:0.6 }}/>
-
-      <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink:0 }}>
-          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--bg-hover)" strokeWidth={sw}/>
-          <circle
-            cx={size/2} cy={size/2} r={r}
-            fill="none" stroke={color} strokeWidth={sw}
-            strokeDasharray={`${dash} ${circ}`}
-            strokeLinecap="round"
-            transform={`rotate(-90 ${size/2} ${size/2})`}
-            style={{ filter:`drop-shadow(0 0 6px ${color})`, transition:'stroke-dasharray 0.8s ease' }}
-          />
-          <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
-            fill={color} fontSize={size*0.22} fontWeight="800" fontFamily="Inter,sans-serif"
-          >
-            {pct}%
-          </text>
-        </svg>
-
-        <div style={{ minWidth:0, flex:1 }}>
-          <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:4 }}>{label}</div>
-          <div style={{ fontSize:20, fontWeight:900, color, lineHeight:1.1, fontFamily:'Inter,sans-serif' }}>{value}</div>
-          {sub && <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)', marginTop:4, lineHeight:1.3 }}>{sub}</div>}
-        </div>
-      </div>
-
-      {sparkData?.length > 1 && (
-        <div style={{ marginTop:12, opacity:0.65, width:'100%', overflow:'hidden' }}>
-          <Sparkline data={sparkData} color={sparkColor || color} width={220} height={26}/>
+          {trend === 'up' ? '↑' : '↓'}
         </div>
       )}
     </div>
@@ -506,85 +404,210 @@ function RingCard({ label, value, pct, color, rgbVar, sub, sparkData, sparkColor
 }
 
 
-/* ═══════════════════════════════════════════════════
-   MINI STAT — Glass compact stat card with 3D tilt
-═══════════════════════════════════════════════════ */
-function MiniStat({ label, value, color, icon }) {
+/* ─── 30-DAY REVENUE CHART ────────────────────────────── */
+function RevenueChart({ data: days }) {
+  const [mounted, setMounted] = useState(false)
+  const pathRef = useRef(null)
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 100)
+    return () => clearTimeout(t)
+  }, [])
+
+  const W = 800, H = 110
+  const PL = 8, PR = 8, PT = 10, PB = 28
+  const maxVal = Math.max(...days.map(d => d.value), 1)
+
+  const pts = days.map((d, i) => ({
+    x: PL + (i / (days.length - 1)) * (W - PL - PR),
+    y: PT + (1 - d.value / maxVal) * (H - PT - PB),
+  }))
+
+  // Smooth cubic bezier path
+  const linePath = pts.reduce((acc, pt, i) => {
+    if (i === 0) return `M${pt.x},${pt.y}`
+    const prev = pts[i - 1]
+    const cx = (prev.x + pt.x) / 2
+    return `${acc} C${cx},${prev.y} ${cx},${pt.y} ${pt.x},${pt.y}`
+  }, '')
+
+  const areaPath = linePath +
+    ` L${pts[pts.length-1].x},${H - PB} L${pts[0].x},${H - PB} Z`
+
+  // Label every 7th point
+  const labelPts = days
+    .map((d, i) => ({ ...d, i, pt: pts[i] }))
+    .filter((_, i) => i === 0 || i === days.length - 1 || i % 7 === 0)
+
   return (
-    <div
-      className="tilt-card glow-hover"
-      style={{
-        background:'var(--bg-surface)',
-        backdropFilter:'var(--glass-blur)',
-        WebkitBackdropFilter:'var(--glass-blur)',
-        borderRadius:'var(--r-md)',
-        padding:'16px 16px',
-        boxShadow:'var(--card-shadow)',
-        border:'1px solid var(--border)',
-        borderTopColor:'var(--glass-edge)',
-        position:'relative', overflow:'hidden',
-      }}
-    >
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,transparent,${color},transparent)`, opacity:0.5 }}/>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-        <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>{label}</div>
-        {icon && <div style={{ color, opacity:0.8 }}>{icon}</div>}
+    <div style={{
+      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)',
+      WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:'var(--r-lg)', padding:'20px 20px 16px',
+      border:'1px solid var(--border-strong)', borderTopColor:'var(--glass-edge)',
+      boxShadow:'var(--card-shadow)',
+      marginBottom:14,
+    }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase' }}>
+          الإيراد اليومي — آخر 30 يوم
+        </div>
+        <div style={{ fontSize:13, fontWeight:800, color:'var(--action)', fontFamily:'Inter' }}>
+          {formatCurrency(days.reduce((s, d) => s + d.value, 0))}
+        </div>
       </div>
-      <div style={{ fontSize:22, fontWeight:900, color, lineHeight:1.1, fontFamily:'Inter,sans-serif' }}>{value}</div>
+
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', overflow:'visible' }}>
+        <defs>
+          <linearGradient id="areaGrad30" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--action)" stopOpacity="0.30"/>
+            <stop offset="100%" stopColor="var(--action)" stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+
+        {/* Gridlines */}
+        {[0.25, 0.5, 0.75, 1].map(f => (
+          <line key={f}
+            x1={PL} y1={PT + (1-f)*(H-PT-PB)}
+            x2={W-PR} y2={PT + (1-f)*(H-PT-PB)}
+            stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4"
+          />
+        ))}
+
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#areaGrad30)" />
+
+        {/* Line */}
+        <path
+          ref={pathRef}
+          d={linePath}
+          fill="none"
+          stroke="var(--action)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            filter:'drop-shadow(0 0 8px rgba(49,140,231,0.55))',
+            transition: mounted ? 'none' : 'stroke-dashoffset 1.5s ease',
+          }}
+        />
+
+        {/* Data points on max */}
+        {(() => {
+          const maxIdx = days.findIndex(d => d.value === maxVal)
+          const pt = pts[maxIdx]
+          return pt ? (
+            <g>
+              <circle cx={pt.x} cy={pt.y} r={5} fill="var(--action)" style={{ filter:'drop-shadow(0 0 6px rgba(49,140,231,0.8))' }} />
+              <circle cx={pt.x} cy={pt.y} r={9} fill="rgba(49,140,231,0.15)" />
+            </g>
+          ) : null
+        })()}
+
+        {/* X-axis labels */}
+        {labelPts.map(({ label, pt }) => (
+          <text key={label + pt.x}
+            x={pt.x} y={H - 4}
+            textAnchor="middle"
+            fill="var(--text-muted)"
+            fontSize={9}
+            fontFamily="Inter,sans-serif"
+          >
+            {label}
+          </text>
+        ))}
+      </svg>
     </div>
   )
 }
 
 
-/* ═══════════════════════════════════════════════════
-   ACTIVITY STREAM — Unified today + in-progress with tabs
-═══════════════════════════════════════════════════ */
-function ActivityStream({ stream, inProgressOrders, onNavigate }) {
-  const [tab, setTab] = useState('today')
-
-  const items = tab === 'today' ? stream : inProgressOrders
-  const tabColor = tab === 'today' ? 'var(--action)' : 'var(--warning)'
+/* ─── RING CARD ─────────────────────────────────────────── */
+function RingCard({ label, value, pct, color, sub }) {
+  const size = 60, sw = 4.5
+  const r = (size - sw * 2) / 2
+  const circ = 2 * Math.PI * r
+  const dash = circ * Math.min(100, pct) / 100
 
   return (
-    <div
-      className="glass-accent-card"
-      style={{
-        height:'100%',
-        display:'flex', flexDirection:'column',
-        '--accent-color': tabColor,
-      }}
-    >
-      {/* Tab header */}
+    <div style={{
+      background:'var(--bg-surface)', backdropFilter:'blur(36px)',
+      WebkitBackdropFilter:'blur(36px)',
+      borderRadius:'var(--r-md)', padding:'14px 16px',
+      boxShadow:'var(--card-shadow)', border:'1px solid var(--border)',
+      borderTopColor:'var(--glass-edge)',
+      display:'flex', alignItems:'center', gap:12,
+    }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink:0 }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--bg-hover)" strokeWidth={sw}/>
+        <circle
+          cx={size/2} cy={size/2} r={r}
+          fill="none" stroke={color} strokeWidth={sw}
+          strokeDasharray={`${dash} ${circ}`}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size/2} ${size/2})`}
+          style={{ filter:`drop-shadow(0 0 5px ${color})`, transition:'stroke-dasharray 0.8s ease' }}
+        />
+        <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
+          fill={color} fontSize={size*0.22} fontWeight="800" fontFamily="Inter,sans-serif"
+        >
+          {pct}%
+        </text>
+      </svg>
+      <div>
+        <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:2 }}>{label}</div>
+        <div style={{ fontSize:16, fontWeight:900, color, fontFamily:'Inter,sans-serif', lineHeight:1.1 }}>{value}</div>
+        {sub && <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>{sub}</div>}
+      </div>
+    </div>
+  )
+}
+
+
+/* ─── ACTIVITY STREAM ───────────────────────────────────── */
+function ActivityStream({ stream, inProgressOrders, onNavigate }) {
+  const [tab, setTab] = useState('today')
+  const items = tab === 'today' ? stream : inProgressOrders
+
+  return (
+    <div style={{
+      background:'var(--bg-surface)', backdropFilter:'blur(52px) saturate(1.9)',
+      WebkitBackdropFilter:'blur(52px) saturate(1.9)',
+      borderRadius:'var(--r-lg)', border:'1px solid var(--border-strong)',
+      borderTopColor:'var(--glass-edge)', boxShadow:'var(--card-shadow)',
+      display:'flex', flexDirection:'column', height:'100%',
+    }}>
+      {/* Header */}
       <div style={{
         display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'14px 18px', borderBottom:'1px solid var(--border)',
+        flexShrink:0,
       }}>
         <div style={{ display:'flex', gap:4, background:'var(--bg-hover)', borderRadius:999, padding:3 }}>
-          <button onClick={() => setTab('today')} style={{
-            padding:'6px 14px', borderRadius:999, border:'none',
-            background: tab==='today' ? 'var(--action)' : 'transparent',
-            color: tab==='today' ? '#fff' : 'var(--text-muted)',
-            fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-            transition:'all 0.15s ease',
-          }}>
-            طلبات اليوم ({stream.length})
-          </button>
-          <button onClick={() => setTab('progress')} style={{
-            padding:'6px 14px', borderRadius:999, border:'none',
-            background: tab==='progress' ? 'var(--warning)' : 'transparent',
-            color: tab==='progress' ? '#fff' : 'var(--text-muted)',
-            fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-            transition:'all 0.15s ease',
-          }}>
-            قيد المعالجة ({inProgressOrders.length})
-          </button>
+          {[
+            { id:'today',    label:`طلبات اليوم (${stream.length})`,     activeColor:'var(--action)'  },
+            { id:'progress', label:`قيد المعالجة (${inProgressOrders.length})`, activeColor:'var(--warning)' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                padding:'6px 14px', borderRadius:999, border:'none',
+                background: tab === t.id ? (t.id === 'today' ? 'var(--action)' : 'var(--warning)') : 'transparent',
+                color: tab === t.id ? '#fff' : 'var(--text-muted)',
+                fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+                transition:'all 0.15s ease', whiteSpace:'nowrap',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
-
         <button
           onClick={() => onNavigate('orders')}
           style={{
             background:'none', border:'none', color:'var(--action)',
             fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+            whiteSpace:'nowrap',
           }}
         >
           عرض الكل ←
@@ -592,65 +615,54 @@ function ActivityStream({ stream, inProgressOrders, onNavigate }) {
       </div>
 
       {/* Items */}
-      <div style={{ flex:1, overflowY:'auto', padding:'10px 14px', display:'flex', flexDirection:'column', gap:6, maxHeight:320 }}>
+      <div style={{ flex:1, overflowY:'auto', padding:'10px 12px', display:'flex', flexDirection:'column', gap:5, maxHeight:380 }}>
         {items.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'32px 0', color:'var(--text-muted)', fontSize:'var(--t-body)' }}>
+          <div style={{ textAlign:'center', padding:'40px 0', color:'var(--text-muted)', fontSize:'var(--t-body)' }}>
             {tab === 'today' ? 'لا يوجد طلبات اليوم بعد' : 'لا يوجد طلبات قيد المعالجة'}
           </div>
         ) : (
-          items.map(o => <StreamOrderRow key={o.id} order={o}/>)
+          items.map(o => {
+            const color = STATUS_COLORS[o.status] || 'var(--text-muted)'
+            return (
+              <div
+                key={o.id}
+                style={{
+                  display:'flex', alignItems:'center', gap:10,
+                  padding:'10px 12px',
+                  background:'var(--bg-hover)',
+                  borderRadius:'var(--r-md)',
+                  borderInlineStart:`3px solid ${color}`,
+                  transition:'background 0.12s ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background='var(--bg-active)'}
+                onMouseLeave={e => e.currentTarget.style.background='var(--bg-hover)'}
+              >
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:700, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text)' }}>
+                    {o.customer_name || 'عميل'}
+                  </div>
+                  <div style={{ fontSize:10, color:'var(--text-muted)', display:'flex', gap:6 }}>
+                    <span style={{ direction:'ltr' }}>{o.order_number}</span>
+                    {o.customer_city && <span>· {o.customer_city}</span>}
+                    <span>· {timeAgo(o.order_date || o.created_at)}</span>
+                  </div>
+                </div>
+                <span style={{
+                  padding:'3px 8px', borderRadius:999, fontSize:9, fontWeight:700,
+                  background:`${color}18`, color, flexShrink:0,
+                }}>
+                  {STATUS_LABELS[o.status] || o.status}
+                </span>
+                <div style={{
+                  fontWeight:800, color:'var(--action)', fontSize:13,
+                  fontFamily:'Inter,sans-serif', flexShrink:0, minWidth:64, textAlign:'start',
+                }}>
+                  {formatCurrency(o.total || 0)}
+                </div>
+              </div>
+            )
+          })
         )}
-      </div>
-    </div>
-  )
-}
-
-
-/* ═══════════════════════════════════════════════════
-   STREAM ORDER ROW — Single order in activity stream
-═══════════════════════════════════════════════════ */
-function StreamOrderRow({ order }) {
-  const color = STATUS_COLORS[order.status] || 'var(--text-muted)'
-
-  return (
-    <div style={{
-      display:'flex', alignItems:'center', gap:12,
-      padding:'10px 14px',
-      background:'var(--bg-hover)',
-      backdropFilter:'blur(8px)',
-      borderRadius:'var(--r-md)',
-      borderInlineStart:`3px solid ${color}`,
-      transition:'background 0.12s ease',
-    }}
-      onMouseEnter={e => e.currentTarget.style.background='var(--bg-active)'}
-      onMouseLeave={e => e.currentTarget.style.background='var(--bg-hover)'}
-    >
-      <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0, boxShadow:`0 0 8px ${color}60` }}/>
-
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontWeight:700, fontSize:'var(--t-body)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-          {order.customer_name || 'عميل'}
-        </div>
-        <div style={{ fontSize:'var(--t-label)', color:'var(--text-muted)', display:'flex', gap:6, flexWrap:'wrap' }}>
-          <span style={{ direction:'ltr' }}>{order.order_number}</span>
-          {order.customer_city && <span>• {order.customer_city}</span>}
-        </div>
-      </div>
-
-      <span style={{
-        padding:'3px 9px', borderRadius:999,
-        fontSize:10, fontWeight:700,
-        background:`${color}18`, color,
-        flexShrink:0,
-      }}>
-        {STATUS_LABELS[order.status] || order.status}
-      </span>
-
-      <div style={{
-        fontWeight:800, color:'var(--action)', fontSize:'var(--t-body)',
-        fontFamily:'Inter,sans-serif', flexShrink:0,
-      }}>
-        {formatCurrency(order.total || 0)}
       </div>
     </div>
   )

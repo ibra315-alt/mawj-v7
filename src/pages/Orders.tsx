@@ -18,6 +18,15 @@ function getStatus(id) {
   return ORDER_STATUSES.find(s => s.id === id) || { id, label: id || '—', color: 'var(--text-muted)', bg: 'rgba(107,114,128,0.1)' }
 }
 
+function timeAgo(isoStr) {
+  if (!isoStr) return ''
+  const diff = (Date.now() - new Date(isoStr).getTime()) / 1000
+  if (diff < 60)    return 'الآن'
+  if (diff < 3600)  return `منذ ${Math.floor(diff / 60)} د`
+  if (diff < 86400) return `منذ ${Math.floor(diff / 3600)} س`
+  return `منذ ${Math.floor(diff / 86400)} ي`
+}
+
 /* ═══════════════════════════════════════════
    THE BOARD — Orders Management
 ═══════════════════════════════════════════ */
@@ -39,6 +48,11 @@ export default function Orders({ user }: PageProps) {
   useEffect(() => {
     loadAll()
     const unsub = subscribeOrders(() => loadOrders())
+    // Auto-open panel from mobile FAB
+    if (sessionStorage.getItem('openNewOrder') === '1') {
+      sessionStorage.removeItem('openNewOrder')
+      setEditOrder(null); setReplacementFor(null); setShowPanel(true)
+    }
     return unsub
   }, [])
 
@@ -199,7 +213,7 @@ export default function Orders({ user }: PageProps) {
 
   if (loading) return (
     <div className="page">
-      <PageHeader title="اللوحة" subtitle="جاري التحميل..." />
+      <PageHeader title="الطلبات" subtitle="جاري التحميل..." />
       <SkeletonStats count={5} />
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:12, marginTop:16 }}>
         {[1,2,3,4].map(i => <SkeletonCard key={i} rows={3} />)}
@@ -212,7 +226,7 @@ export default function Orders({ user }: PageProps) {
       <Confetti active={confetti} />
 
       <PageHeader
-        title="اللوحة"
+        title="الطلبات"
         subtitle={`${orders.length} طلب`}
         actions={
           <Btn onClick={() => { setEditOrder(null); setReplacementFor(null); setShowPanel(true) }} style={{ gap:6 }}>
@@ -252,9 +266,9 @@ export default function Orders({ user }: PageProps) {
           action={!search && <Btn onClick={() => setShowPanel(true)}><IcPlus size={14}/> طلب جديد</Btn>}
         />
       ) : (
-        <div className="board-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:12 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {tabOrders.map(order => (
-            <BoardCard
+            <OrderRow
               key={order.id}
               order={order}
               onView={() => { setViewOrder(order); setShowView(true) }}
@@ -310,257 +324,175 @@ export default function Orders({ user }: PageProps) {
 }
 
 /* ═══════════════════════════════════════════
-   PIPELINE STATUS BAR
-   Horizontal scrollable status tabs with counts
+   PIPELINE STATUS BAR — pill tabs
 ═══════════════════════════════════════════ */
 function PipelineBar({ statuses, counts, active, onSelect }) {
-  const scrollRef = useRef(null)
-
   return (
-    <div style={{ marginBottom:16 }}>
-      <div
-        ref={scrollRef}
-        className="pipeline-bar"
-        style={{
-          display:'flex', gap:6, overflowX:'auto',
-          paddingBottom:6, scrollbarWidth:'none',
-          WebkitOverflowScrolling:'touch',
-        }}
-      >
-        {statuses.map((s, i) => {
-          const isActive = active === s.id
-          const count = counts[s.id] || 0
-          const isLast = i === statuses.length - 1
-          return (
-            <React.Fragment key={s.id}>
-              <button
-                onClick={() => onSelect(s.id)}
-                style={{
-                  display:'flex', flexDirection:'column', alignItems:'center',
-                  gap:4, padding:'10px 16px', borderRadius:'var(--r-md)',
-                  border: isActive ? `2px solid ${s.color}` : '2px solid transparent',
-                  background: isActive ? s.bg : 'var(--bg-surface)',
-                  cursor:'pointer', flexShrink:0, minWidth:72,
-                  boxShadow: isActive ? `0 0 12px ${s.color}20` : 'var(--card-shadow)',
-                  transition:'all 150ms ease',
-                }}
-              >
-                <span style={{
-                  fontSize:22, fontWeight:900, fontFamily:'Inter,sans-serif',
-                  color: isActive ? s.color : 'var(--text-muted)',
-                  lineHeight:1,
-                }}>
-                  {count}
-                </span>
-                <span style={{
-                  fontSize:12, fontWeight: isActive ? 800 : 600,
-                  color: isActive ? s.color : 'var(--text-muted)',
-                  whiteSpace:'nowrap',
-                }}>
-                  {s.label}
-                </span>
-              </button>
-              {!isLast && i < 3 && (
-                <div style={{
-                  display:'flex', alignItems:'center', flexShrink:0,
-                  color:'var(--text-muted)', fontSize:14, opacity:0.4,
-                }}>
-                  ←
-                </div>
-              )}
-            </React.Fragment>
-          )
-        })}
-      </div>
+    <div style={{
+      display:'flex', gap:6, overflowX:'auto',
+      paddingBottom:6, scrollbarWidth:'none',
+      WebkitOverflowScrolling:'touch', marginBottom:16,
+    }}>
+      {statuses.map(s => {
+        const isActive = active === s.id
+        const count = counts[s.id] || 0
+        return (
+          <button
+            key={s.id}
+            onClick={() => onSelect(s.id)}
+            style={{
+              display:'flex', alignItems:'center', gap:7,
+              padding:'8px 18px', borderRadius:99, flexShrink:0,
+              border: isActive ? `1.5px solid ${s.color}` : '1.5px solid var(--border)',
+              background: isActive ? `${s.color}1A` : 'var(--bg-surface)',
+              color: isActive ? s.color : 'var(--text-muted)',
+              fontSize:13, fontWeight: isActive ? 800 : 600,
+              cursor:'pointer', transition:'all 150ms',
+              boxShadow: isActive ? `0 0 16px ${s.color}30, var(--card-shadow)` : 'var(--card-shadow)',
+              fontFamily:'inherit',
+            }}
+          >
+            <span style={{ whiteSpace:'nowrap' }}>{s.label}</span>
+            <span style={{
+              fontSize:11, fontWeight:800, fontFamily:'Inter,sans-serif',
+              background: isActive ? s.color : 'var(--bg-hover)',
+              color: isActive ? '#fff' : 'var(--text-muted)',
+              borderRadius:99, padding:'1px 7px', lineHeight:'1.7',
+              minWidth:20, textAlign:'center',
+            }}>{count}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
 
 /* ═══════════════════════════════════════════
-   BOARD CARD
-   Order card with contextual action buttons
+   ORDER ROW — compact list item
 ═══════════════════════════════════════════ */
-function BoardCard({ order, onView, onEdit, onDelete, onAdvance, onReplacement }) {
-  const status  = getStatus(order.status)
-  const profit  = order.gross_profit ?? 0
-  const isRepl  = order.is_replacement
-  const next    = getNextStatus(order.status)
+function OrderRow({ order, onView, onEdit, onDelete, onAdvance, onReplacement }) {
+  const status = getStatus(order.status)
+  const profit = order.gross_profit ?? 0
+  const isRepl = order.is_replacement
+  const next   = getNextStatus(order.status)
+
+  const iconBtnStyle = {
+    padding:'6px 8px', background:'var(--bg-hover)',
+    border:'1px solid var(--border)', borderRadius:'var(--r-sm)',
+    color:'var(--text-muted)', cursor:'pointer',
+    display:'flex', alignItems:'center', transition:'all 120ms',
+  }
 
   return (
-    <div
-      style={{
-        background:'var(--bg-surface)', borderRadius:'var(--r-lg)',
-        borderInlineStart:`3px solid ${isRepl ? 'var(--warning)' : status.color}`,
-        boxShadow:'var(--card-shadow)', overflow:'hidden',
-        transition:'box-shadow 150ms, transform 150ms',
-        display:'flex', flexDirection:'column',
-      }}
-    >
-      {/* Card body — clickable to view */}
-      <div
-        onClick={onView}
-        style={{ padding:'14px 16px', cursor:'pointer', flex:1 }}
-      >
-        {/* Row 1: Customer name + Total */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+    <div style={{
+      background:'var(--bg-surface)', borderRadius:'var(--r-lg)',
+      borderInlineStart:`3px solid ${isRepl ? 'var(--warning)' : status.color}`,
+      boxShadow:'var(--card-shadow)', overflow:'hidden',
+      transition:'box-shadow 150ms, transform 150ms',
+    }}>
+      {/* Main clickable area */}
+      <div onClick={onView} style={{ padding:'13px 16px', cursor:'pointer' }}>
+        {/* Row 1: Customer + status pill + amount */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
           <span style={{
-            fontSize:15, fontWeight:700, color:'var(--text)',
-            maxWidth:'60%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+            fontSize:15, fontWeight:800, color:'var(--text)',
+            flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
           }}>
             {order.customer_name || 'عميل'}
           </span>
           <span style={{
-            fontSize:17, fontWeight:900, fontFamily:'Inter,sans-serif',
-            color: profit < 0 ? 'var(--danger)' : 'var(--action)',
+            padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700, flexShrink:0,
+            color: status.color, background:`${status.color}18`,
+            border:`1px solid ${status.color}35`,
+          }}>{status.label}</span>
+          <span style={{
+            fontSize:16, fontWeight:900, fontFamily:'Inter,sans-serif', flexShrink:0,
+            color: profit < 0 ? 'var(--danger)' : 'var(--text)',
           }}>
             {formatCurrency(order.total || 0)}
           </span>
         </div>
 
-        {/* Row 2: Order number + meta */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            <span style={{
-              fontSize:11, color:'var(--text-muted)', fontFamily:'Inter,monospace',
-              fontWeight:600, direction:'ltr',
-            }}>
-              {order.order_number}
+        {/* Row 2: Order number + city + items + profit + time */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+          <span style={{ fontSize:11, fontFamily:'Inter,monospace', color:'var(--action)', fontWeight:700, direction:'ltr' }}>
+            {order.order_number}
+          </span>
+          {isRepl && (
+            <span style={{ fontSize:10, background:'rgba(var(--warning-rgb),0.15)', color:'var(--warning)', borderRadius:4, padding:'1px 6px', fontWeight:700 }}>
+              استبدال
             </span>
-            {isRepl && (
-              <span style={{
-                fontSize:10, background:'rgba(var(--warning-rgb),0.15)',
-                color:'var(--warning)', borderRadius:4, padding:'1px 6px', fontWeight:700,
-              }}>
-                استبدال
-              </span>
-            )}
-          </div>
-          <div style={{ display:'flex', gap:8, fontSize:11, color:'var(--text-muted)' }}>
-            {order.customer_city && <span>{order.customer_city}</span>}
-          </div>
+          )}
+          {order.customer_city && <span style={{ fontSize:11, color:'var(--text-muted)' }}>📍 {order.customer_city}</span>}
+          {order.items?.length > 0 && (
+            <span style={{ fontSize:11, color:'var(--text-sec)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, minWidth:0 }}>
+              {order.items.slice(0,2).map(i => `${i.name}×${i.qty}`).join(' · ')}
+              {order.items.length > 2 && ` +${order.items.length-2}`}
+            </span>
+          )}
+          {profit !== 0 && (
+            <span style={{ fontSize:12, fontWeight:700, fontFamily:'Inter,sans-serif', flexShrink:0, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+              {profit >= 0 ? '↑' : '↓'} {formatCurrency(Math.abs(profit))}
+            </span>
+          )}
+          <span style={{ fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>
+            {timeAgo(order.created_at)}
+          </span>
         </div>
-
-        {/* Row 3: Items preview */}
-        {order.items?.length > 0 && (
-          <div style={{
-            fontSize:12, color:'var(--text-sec)',
-            overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-            marginBottom:6,
-          }}>
-            {order.items.slice(0,3).map(i => `${i.name}${i.size ? ` (${i.size})` : ''} ×${i.qty}`).join(' · ')}
-            {order.items.length > 3 && ` +${order.items.length-3}`}
-          </div>
-        )}
-
-        {/* Row 4: Profit */}
-        {profit !== 0 && (
-          <div style={{
-            fontSize:13, fontWeight:700, fontFamily:'Inter,sans-serif',
-            color: profit >= 0 ? 'var(--success)' : 'var(--danger)',
-          }}>
-            ربح: {profit > 0 ? '+' : ''}{formatCurrency(profit)}
-          </div>
-        )}
       </div>
 
       {/* ── Actions footer ───────────────────── */}
       <div style={{
-        padding:'10px 16px', borderTop:'1px solid var(--border)',
-        display:'flex', gap:6, alignItems:'center', justifyContent:'space-between',
-        flexWrap:'wrap',
+        padding:'8px 16px', borderTop:'1px solid var(--border)',
+        display:'flex', gap:6, alignItems:'center', justifyContent:'space-between', flexWrap:'wrap',
       }}>
-        {/* Left: utility actions */}
+        {/* Utility actions */}
         <div style={{ display:'flex', gap:4, alignItems:'center' }}>
-          <button onClick={onEdit} title="تعديل" style={{
-            padding:'6px 8px', background:'none', border:'1px solid var(--border)',
-            borderRadius:'var(--r-sm)', color:'var(--text-muted)', cursor:'pointer',
-            display:'flex', alignItems:'center', fontSize:12,
-          }}>
-            <IcEdit size={13}/>
+          <button onClick={e => { e.stopPropagation(); onView() }} title="عرض" style={iconBtnStyle}>
+            <IcEye size={13}/>
           </button>
-          <button onClick={onDelete} title="حذف" style={{
-            padding:'6px 8px', background:'none', border:'1px solid rgba(var(--danger-rgb),0.2)',
-            borderRadius:'var(--r-sm)', color:'var(--danger)', cursor:'pointer',
-            display:'flex', alignItems:'center', fontSize:12, opacity:0.7,
-          }}>
-            <IcDelete size={13}/>
+          <button onClick={e => { e.stopPropagation(); onEdit() }} title="تعديل" style={iconBtnStyle}>
+            <IcEdit size={13}/>
           </button>
           {order.customer_phone && (
             <a
               href={`https://wa.me/${order.customer_phone.replace(/\D/g,'')}?text=${encodeURIComponent(`مرحبا ${order.customer_name||''}،\nرقم طلبك: ${order.order_number}\nالإجمالي: ${(order.total||0).toLocaleString()} درهم\n\nشكراً لتسوقك مع موج 🌊`)}`}
-              target="_blank" rel="noreferrer"
-              style={{
-                padding:'6px 8px', background:'rgba(37,211,102,0.08)',
-                border:'1px solid rgba(37,211,102,0.25)', borderRadius:'var(--r-sm)',
-                color:'var(--whatsapp)', display:'flex', alignItems:'center',
-                textDecoration:'none', fontSize:12,
-              }}
+              target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+              style={{ ...iconBtnStyle, color:'var(--whatsapp)', borderColor:'rgba(37,211,102,0.25)', background:'rgba(37,211,102,0.07)', textDecoration:'none' }}
             >
               <IcWhatsapp size={13}/>
             </a>
           )}
+          <button onClick={e => { e.stopPropagation(); onDelete() }} title="حذف"
+            style={{ ...iconBtnStyle, color:'var(--danger)', borderColor:'rgba(var(--danger-rgb),0.2)', background:'rgba(var(--danger-rgb),0.04)' }}>
+            <IcDelete size={13}/>
+          </button>
         </div>
 
-        {/* Right: advance actions */}
+        {/* Advance actions */}
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-          {/* For with_hayyak: show both delivered and not_delivered */}
           {order.status === 'with_hayyak' && (
             <>
               <button
-                onClick={() => onAdvance('not_delivered')}
-                style={{
-                  padding:'7px 12px', borderRadius:'var(--r-sm)',
-                  background:'rgba(var(--danger-rgb),0.08)', border:'1.5px solid rgba(var(--danger-rgb),0.25)',
-                  color:'var(--danger)', fontSize:12, fontWeight:700,
-                  cursor:'pointer', fontFamily:'inherit',
-                  display:'flex', alignItems:'center', gap:4,
-                }}
-              >
-                ✗ لم يتم
-              </button>
+                onClick={e => { e.stopPropagation(); onAdvance('not_delivered') }}
+                style={{ padding:'5px 12px', borderRadius:'var(--r-sm)', background:'rgba(var(--danger-rgb),0.08)', border:'1.5px solid rgba(var(--danger-rgb),0.25)', color:'var(--danger)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}
+              >✗ لم يتم</button>
               <button
-                onClick={() => onAdvance('delivered')}
-                style={{
-                  padding:'7px 14px', borderRadius:'var(--r-sm)',
-                  background:'linear-gradient(135deg,var(--success),var(--success-light))',
-                  border:'none', color:'#fff', fontSize:13, fontWeight:800,
-                  cursor:'pointer', fontFamily:'inherit',
-                  display:'flex', alignItems:'center', gap:4,
-                  boxShadow:'0 2px 8px rgba(var(--success-rgb),0.3)',
-                }}
-              >
-                ✓ مسلّم
-              </button>
+                onClick={e => { e.stopPropagation(); onAdvance('delivered') }}
+                style={{ padding:'5px 14px', borderRadius:'var(--r-sm)', background:'linear-gradient(135deg,var(--success),var(--success-light))', border:'none', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 2px 8px rgba(var(--success-rgb),0.3)' }}
+              >✓ مسلّم</button>
             </>
           )}
-
-          {/* For other statuses with a next step */}
           {next && order.status !== 'with_hayyak' && (
             <button
-              onClick={() => onAdvance(next.id)}
-              style={{
-                padding:'7px 14px', borderRadius:'var(--r-sm)',
-                background: next.bg, border:`1.5px solid ${next.color}40`,
-                color: next.color, fontSize:13, fontWeight:700,
-                cursor:'pointer', fontFamily:'inherit',
-                display:'flex', alignItems:'center', gap:5,
-              }}
-            >
-              {next.label} ←
-            </button>
+              onClick={e => { e.stopPropagation(); onAdvance(next.id) }}
+              style={{ padding:'5px 14px', borderRadius:'var(--r-sm)', background:next.bg, border:`1.5px solid ${next.color}40`, color:next.color, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}
+            >{next.label} ←</button>
           )}
-
-          {/* For delivered: replacement button */}
           {order.status === 'delivered' && !order.is_replacement && (
             <button
-              onClick={onReplacement}
-              style={{
-                padding:'7px 12px', borderRadius:'var(--r-sm)',
-                background:'rgba(var(--warning-rgb),0.08)', border:'1.5px solid rgba(var(--warning-rgb),0.25)',
-                color:'var(--warning)', fontSize:12, fontWeight:700,
-                cursor:'pointer', fontFamily:'inherit',
-                display:'flex', alignItems:'center', gap:4,
-              }}
+              onClick={e => { e.stopPropagation(); onReplacement() }}
+              style={{ padding:'5px 12px', borderRadius:'var(--r-sm)', background:'rgba(var(--warning-rgb),0.08)', border:'1.5px solid rgba(var(--warning-rgb),0.25)', color:'var(--warning)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:4 }}
             >
               <IcRefresh size={12}/> استبدال
             </button>

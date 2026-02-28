@@ -8,7 +8,7 @@ import {
   IcWhatsapp, IcMenu,
 } from './Icons'
 import MawjLogo from './Logo'
-import { applyAppearance, loadAndApplyAppearance, DEFAULT_PREFS } from '../data/appearance'
+import { applyAppearance, DEFAULT_PREFS } from '../data/appearance'
 import type { User } from '../types'
 
 // ─── Local icon components ────────────────────────────────────────────────────
@@ -43,6 +43,22 @@ const IcSun = ({ size = 18 }: SvgIconProps) => (
     <line x1="21" y1="12" x2="23" y2="12"/>
     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+)
+
+const IcPlus = ({ size = 20 }: SvgIconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+)
+
+const IcReceiptPlus = ({ size = 20 }: SvgIconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 2v20l3-2 2 2 3-2 3 2 2-2 3 2V2"/>
+    <line x1="9" y1="9" x2="15" y2="9"/>
+    <line x1="12" y1="7" x2="12" y2="11"/>
+    <line x1="9" y1="14" x2="15" y2="14"/>
   </svg>
 )
 
@@ -88,12 +104,6 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
-// All items flat (for mobile drawer)
-const ALL_ITEMS: NavItem[] = [
-  ...ALWAYS_VISIBLE,
-  ...NAV_GROUPS.flatMap(g => g.items),
-]
-
 const DRAWER_SECTIONS = [
   { label: 'الرئيسية',  items: ALWAYS_VISIBLE },
   ...NAV_GROUPS.map(g => ({ label: g.label, items: g.items })),
@@ -113,7 +123,7 @@ interface LayoutProps {
   children: React.ReactNode
 }
 
-// ─── Top Nav Dropdown ────────────────────────────────────────────────────────
+// ─── Top Nav Dropdown (click-based) ──────────────────────────────────────────
 interface DropdownProps {
   group: NavGroup
   page: string
@@ -121,34 +131,67 @@ interface DropdownProps {
 }
 
 function NavDropdown({ group, page, onNavigate }: DropdownProps) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
   const isGroupActive = group.items.some(i => i.id === page)
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open])
+
   return (
-    <div className="top-nav-group" style={{ position: 'relative' }}>
+    <div ref={ref} className="top-nav-group" style={{ position: 'relative' }}>
       <button
         className={`top-nav-tab ${isGroupActive ? 'top-nav-tab-active' : ''}`}
         style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
         <span>{group.label}</span>
-        <span className="top-nav-chevron">
+        <span
+          className="top-nav-chevron"
+          style={{ transition: 'transform 0.2s var(--ease-io)', transform: open ? 'rotate(180deg)' : 'none', display: 'flex' }}
+        >
           <IcChevronDown size={12} strokeWidth={2.5} />
         </span>
       </button>
-      <div className="top-nav-dropdown">
-        {group.items.map(item => {
-          const Icon = item.icon
-          const active = page === item.id
-          return (
-            <button
-              key={item.id}
-              className={`top-nav-dropdown-item ${active ? 'top-nav-dropdown-item-active' : ''}`}
-              onClick={() => onNavigate(item.id)}
-            >
-              <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
-              <span>{item.label}</span>
-            </button>
-          )
-        })}
-      </div>
+      {open && (
+        <div className="top-nav-dropdown top-nav-dropdown-open">
+          {group.items.map(item => {
+            const Icon = item.icon
+            const active = page === item.id
+            return (
+              <button
+                key={item.id}
+                className={`top-nav-dropdown-item ${active ? 'top-nav-dropdown-item-active' : ''}`}
+                onClick={() => { onNavigate(item.id); setOpen(false) }}
+                role="option"
+                aria-selected={active}
+              >
+                <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -187,7 +230,6 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
     setIsDark(!isDark)
     const stored = (window as any).__mawjPrefs || DEFAULT_PREFS
     applyAppearance({ ...stored, theme: next })
-    // Persist - we import Settings dynamically to avoid circular deps
     try {
       const { Settings } = await import('../data/db')
       const userId = user?.id
@@ -281,9 +323,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
 
           {/* User avatar + role */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-            }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
                 {user?.name || 'المستخدم'}
               </span>
@@ -321,22 +361,19 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         </div>
       </nav>
 
-      {/* ══════════ MOBILE HEADER ══════════ */}
+      {/* ══════════ MOBILE HEADER (RTL: hamburger RIGHT, logo CENTER, theme LEFT) ══════════ */}
       <header className="mobile-header" aria-label="رأس الصفحة">
-        {/* Notification / theme on start side */}
+        {/* Hamburger — DOM first → visually RIGHT in RTL */}
         <button
-          onClick={toggleTheme}
-          style={{
-            width: 40, height: 40, borderRadius: 'var(--r-sm)',
-            border: '1px solid var(--border)', background: 'var(--bg-hover)',
-            color: 'var(--text-sec)', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', cursor: 'pointer',
-          }}
+          className="mobile-hamburger"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="فتح القائمة"
+          aria-expanded={drawerOpen}
         >
-          {isDark ? <IcSun size={16} /> : <IcMoon size={16} />}
+          <IcMenu size={20} />
         </button>
 
-        {/* Logo center */}
+        {/* Logo — center */}
         <button
           onClick={() => navigate('dashboard')}
           style={{
@@ -352,14 +389,18 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
           }}>مَوج</span>
         </button>
 
-        {/* Hamburger on end side */}
+        {/* Theme toggle — DOM last → visually LEFT in RTL */}
         <button
-          className="mobile-hamburger"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="فتح القائمة"
-          aria-expanded={drawerOpen}
+          onClick={toggleTheme}
+          title={isDark ? 'الوضع المضيء' : 'الوضع الداكن'}
+          style={{
+            width: 40, height: 40, borderRadius: 'var(--r-sm)',
+            border: '1px solid var(--border)', background: 'var(--bg-hover)',
+            color: 'var(--text-sec)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', cursor: 'pointer',
+          }}
         >
-          <IcMenu size={20} />
+          {isDark ? <IcSun size={16} /> : <IcMoon size={16} />}
         </button>
       </header>
 
@@ -450,6 +491,26 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
           </div>
         </>
       )}
+
+      {/* ══════════ MOBILE FLOATING ACTION BUTTONS ══════════ */}
+      <div className="mobile-fabs" aria-label="إجراءات سريعة">
+        <button
+          className="mobile-fab mobile-fab-secondary"
+          onClick={() => { sessionStorage.setItem('openNewExpense', '1'); navigate('expenses') }}
+          title="مصروف جديد"
+          aria-label="إضافة مصروف جديد"
+        >
+          <IcReceiptPlus size={20} />
+        </button>
+        <button
+          className="mobile-fab mobile-fab-primary"
+          onClick={() => { sessionStorage.setItem('openNewOrder', '1'); navigate('orders') }}
+          title="طلب جديد"
+          aria-label="إضافة طلب جديد"
+        >
+          <IcPlus size={22} />
+        </button>
+      </div>
 
       {/* ══════════ MAIN CONTENT ══════════ */}
       <main
