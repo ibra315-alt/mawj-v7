@@ -232,9 +232,9 @@ export default function Dashboard({ onNavigate }: PageProps) {
         .hero-m { animation: heroIn .4s ease both; transition: transform .2s, box-shadow .2s; }
         .hero-m:nth-child(1){animation-delay:.03s} .hero-m:nth-child(2){animation-delay:.08s} .hero-m:nth-child(3){animation-delay:.13s}
         .hero-m:hover { transform:translateY(-4px) !important; }
-        .db-grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12; margin-bottom:14px; }
-        .db-grid2r { display:grid; grid-template-columns:1fr 320px; gap:12; margin-bottom:14px; }
-        .db-grid2l { display:grid; grid-template-columns:300px 1fr; gap:12; }
+        .db-grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:16px; }
+        .db-grid2r { display:grid; grid-template-columns:1fr 320px; gap:16px; margin-bottom:16px; }
+        .db-grid2l { display:grid; grid-template-columns:300px 1fr; gap:16px; margin-bottom:16px; }
         @media(max-width:900px) {
           .db-grid3  { grid-template-columns:1fr 1fr !important; }
           .db-grid2r { grid-template-columns:1fr !important; }
@@ -246,7 +246,7 @@ export default function Dashboard({ onNavigate }: PageProps) {
       `}</style>
 
       {/* ══ GREETING BAR ════════════════════════════════════ */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:10 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <div style={{ width:10, height:10, borderRadius:'50%', background:'#00E4B8', animation:'pulseDot 2.2s infinite', flexShrink:0 }} />
           <div>
