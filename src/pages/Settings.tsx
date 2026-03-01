@@ -471,34 +471,25 @@ function BusinessTab({ data, products, partners, updateData }) {
   const [form, setForm]   = useState(data.business||{})
   const [pForm, setPForm] = useState({ name:'', price:'', cost:'', sku:'' })
   const [partnerName, setPartnerName] = useState('')
-  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoUploading, setLogoUploading]         = useState(false)
+  const [logoDarkUploading, setLogoDarkUploading] = useState(false)
 
   function field(k,v) { setForm(p=>({...p,[k]:v})) }
 
-  async function handleLogoUpload(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      toast('يرجى اختيار ملف صورة', 'error')
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast('حجم الملف يجب أن يكون أقل من 2 ميجابايت', 'error')
-      return
-    }
-    setLogoUploading(true)
+  async function uploadLogoFile(file, fieldKey, eventName, setUploading) {
+    if (!file.type.startsWith('image/')) { toast('يرجى اختيار ملف صورة', 'error'); return }
+    if (file.size > 2 * 1024 * 1024) { toast('حجم الملف يجب أن يكون أقل من 2 ميجابايت', 'error'); return }
+    setUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'png'
       const path = `branding/logo-${Date.now()}.${ext}`
       const url = await Storage.upload('assets', path, file)
-      const updated = { ...form, logo_url: url }
+      const updated = { ...form, [fieldKey]: url }
       setForm(updated)
       updateData('business', updated)
-      window.dispatchEvent(new CustomEvent('mawj-logo-changed', { detail: { url } }))
+      window.dispatchEvent(new CustomEvent(eventName, { detail: { url } }))
       toast('تم رفع الشعار بنجاح')
-    } catch (err) {
-      console.error('Logo upload failed:', err)
-      // Fallback: convert to base64 and store in settings
+    } catch {
       try {
         const reader = new FileReader()
         const base64 = await new Promise((resolve, reject) => {
@@ -506,17 +497,29 @@ function BusinessTab({ data, products, partners, updateData }) {
           reader.onerror = reject
           reader.readAsDataURL(file)
         })
-        const updated = { ...form, logo_url: base64 }
+        const updated = { ...form, [fieldKey]: base64 }
         setForm(updated)
         updateData('business', updated)
-        window.dispatchEvent(new CustomEvent('mawj-logo-changed', { detail: { url: base64 } }))
+        window.dispatchEvent(new CustomEvent(eventName, { detail: { url: base64 } }))
         toast('تم حفظ الشعار')
       } catch {
         toast('فشل رفع الشعار', 'error')
       }
     } finally {
-      setLogoUploading(false)
+      setUploading(false)
     }
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await uploadLogoFile(file, 'logo_url', 'mawj-logo-changed', setLogoUploading)
+  }
+
+  async function handleLogoDarkUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await uploadLogoFile(file, 'logo_dark_url', 'mawj-logo-dark-changed', setLogoDarkUploading)
   }
 
   function removeLogo() {
@@ -525,6 +528,14 @@ function BusinessTab({ data, products, partners, updateData }) {
     updateData('business', updated)
     window.dispatchEvent(new CustomEvent('mawj-logo-changed', { detail: { url: null } }))
     toast('تم حذف الشعار')
+  }
+
+  function removeLogoDark() {
+    const updated = { ...form, logo_dark_url: null }
+    setForm(updated)
+    updateData('business', updated)
+    window.dispatchEvent(new CustomEvent('mawj-logo-dark-changed', { detail: { url: null } }))
+    toast('تم حذف الشعار الداكن')
   }
 
   function addProduct() {
@@ -564,52 +575,100 @@ function BusinessTab({ data, products, partners, updateData }) {
 
       <Card>
         <SectionTitle>شعار المتجر</SectionTitle>
-        <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:14}}>
-          <div style={{
-            width:80,height:80,borderRadius:12,
-            background:'var(--bg-hover)',border:'2px dashed var(--border)',
-            display:'flex',alignItems:'center',justifyContent:'center',
-            overflow:'hidden',flexShrink:0,
-          }}>
-            {form.logo_url ? (
-              <img src={form.logo_url} alt="شعار" style={{width:'100%',height:'100%',objectFit:'contain',padding:4}} />
-            ) : (
-              <span style={{fontSize:28,opacity:0.3}}>🖼️</span>
-            )}
-          </div>
-          <div style={{flex:1,display:'flex',flexDirection:'column',gap:8}}>
-            <div style={{fontSize:12,color:'var(--text-sec)'}}>
-              {form.logo_url ? 'الشعار الحالي — يظهر في الفاتورة' : 'لم يتم رفع شعار بعد — سيظهر النص الافتراضي في الفاتورة'}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:4}}>
+
+          {/* Light mode logo */}
+          <div style={{display:'flex',flexDirection:'column',gap:10,padding:14,borderRadius:10,background:'var(--bg-hover)',border:'1px solid var(--border)'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontSize:14}}>☀️</span> شعار الوضع المضيء
             </div>
-            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-              <label style={{
-                display:'inline-flex',alignItems:'center',gap:6,
-                padding:'7px 16px',borderRadius:8,cursor:logoUploading?'wait':'pointer',
-                background:'var(--action)',color:'#fff',
-                fontSize:12,fontWeight:700,fontFamily:'inherit',
-                opacity:logoUploading?0.6:1,transition:'opacity 0.2s',
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{
+                width:64,height:64,borderRadius:10,
+                background:'#f0f4ff',border:'2px dashed var(--border)',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                overflow:'hidden',flexShrink:0,
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                {logoUploading ? 'جاري الرفع...' : 'رفع شعار'}
-                <input type="file" accept="image/*" onChange={handleLogoUpload} style={{display:'none'}} disabled={logoUploading} />
-              </label>
-              {form.logo_url && (
-                <button onClick={removeLogo} style={{
-                  display:'inline-flex',alignItems:'center',gap:4,
-                  padding:'7px 14px',borderRadius:8,cursor:'pointer',
-                  background:'rgba(var(--red-rgb,220,38,38),0.1)',color:'var(--red)',
-                  border:'1px solid rgba(var(--red-rgb,220,38,38),0.2)',
-                  fontSize:12,fontWeight:600,fontFamily:'inherit',
-                }}>حذف</button>
-              )}
+                {form.logo_url
+                  ? <img src={form.logo_url} alt="شعار فاتح" style={{width:'100%',height:'100%',objectFit:'contain',padding:4}} />
+                  : <span style={{fontSize:22,opacity:0.3}}>🖼️</span>}
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                <label style={{
+                  display:'inline-flex',alignItems:'center',gap:5,
+                  padding:'6px 12px',borderRadius:7,cursor:logoUploading?'wait':'pointer',
+                  background:'var(--action)',color:'#fff',
+                  fontSize:11,fontWeight:700,fontFamily:'inherit',
+                  opacity:logoUploading?0.6:1,transition:'opacity 0.2s',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  {logoUploading ? 'جاري الرفع...' : 'رفع'}
+                  <input type="file" accept="image/*" onChange={handleLogoUpload} style={{display:'none'}} disabled={logoUploading} />
+                </label>
+                {form.logo_url && (
+                  <button onClick={removeLogo} style={{
+                    padding:'5px 10px',borderRadius:7,cursor:'pointer',
+                    background:'rgba(220,38,38,0.08)',color:'var(--danger)',
+                    border:'1px solid rgba(220,38,38,0.18)',
+                    fontSize:11,fontWeight:600,fontFamily:'inherit',
+                  }}>حذف</button>
+                )}
+              </div>
             </div>
-            <div style={{fontSize:10,color:'var(--text-muted)'}}>PNG أو JPG — أقصى حجم 2 ميجابايت</div>
+            <div style={{fontSize:10,color:'var(--text-muted)'}}>يُستخدم في الوضع المضيء والفاتورة</div>
           </div>
+
+          {/* Dark mode logo */}
+          <div style={{display:'flex',flexDirection:'column',gap:10,padding:14,borderRadius:10,background:'var(--bg-hover)',border:'1px solid var(--border)'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'var(--text-sec)',display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontSize:14}}>🌙</span> شعار الوضع الداكن
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <div style={{
+                width:64,height:64,borderRadius:10,
+                background:'#0d1b2a',border:'2px dashed var(--border)',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                overflow:'hidden',flexShrink:0,
+              }}>
+                {form.logo_dark_url
+                  ? <img src={form.logo_dark_url} alt="شعار داكن" style={{width:'100%',height:'100%',objectFit:'contain',padding:4}} />
+                  : <span style={{fontSize:22,opacity:0.2}}>🖼️</span>}
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                <label style={{
+                  display:'inline-flex',alignItems:'center',gap:5,
+                  padding:'6px 12px',borderRadius:7,cursor:logoDarkUploading?'wait':'pointer',
+                  background:'var(--action)',color:'#fff',
+                  fontSize:11,fontWeight:700,fontFamily:'inherit',
+                  opacity:logoDarkUploading?0.6:1,transition:'opacity 0.2s',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  {logoDarkUploading ? 'جاري الرفع...' : 'رفع'}
+                  <input type="file" accept="image/*" onChange={handleLogoDarkUpload} style={{display:'none'}} disabled={logoDarkUploading} />
+                </label>
+                {form.logo_dark_url && (
+                  <button onClick={removeLogoDark} style={{
+                    padding:'5px 10px',borderRadius:7,cursor:'pointer',
+                    background:'rgba(220,38,38,0.08)',color:'var(--danger)',
+                    border:'1px solid rgba(220,38,38,0.18)',
+                    fontSize:11,fontWeight:600,fontFamily:'inherit',
+                  }}>حذف</button>
+                )}
+              </div>
+            </div>
+            <div style={{fontSize:10,color:'var(--text-muted)'}}>يُستخدم في الوضع الداكن (شعار أبيض)</div>
+          </div>
+
         </div>
+        <div style={{fontSize:10,color:'var(--text-muted)',marginTop:6}}>PNG أو JPG — أقصى حجم 2 ميجابايت لكل شعار</div>
       </Card>
 
       <Card>

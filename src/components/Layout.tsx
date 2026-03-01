@@ -404,6 +404,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
   const [presence, setPresence]       = useState<'online'|'idle'>('online')
   const [indicator, setIndicator]     = useState({ inlineStart: 4, width: 80, ready: false })
   const [logoUrl, setLogoUrl]         = useState<string>('/logo.png')
+  const [logoDarkUrl, setLogoDarkUrl] = useState<string>('')
   const [pwaPrompt, setPwaPrompt]     = useState<any>(null)
 
   // Load logo from business settings (uploaded via Settings page)
@@ -411,6 +412,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
     import('../data/db').then(({ Settings }) => {
       Settings.get('business').then((biz: any) => {
         if (biz?.logo_url) setLogoUrl(biz.logo_url)
+        if (biz?.logo_dark_url) setLogoDarkUrl(biz.logo_dark_url)
       }).catch(() => {})
     }).catch(() => {})
 
@@ -419,7 +421,12 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
       const url = (e as CustomEvent).detail?.url
       setLogoUrl(url || '/logo.png')
     }
+    const logoDarkHandler = (e: Event) => {
+      const url = (e as CustomEvent).detail?.url
+      setLogoDarkUrl(url || '')
+    }
     window.addEventListener('mawj-logo-changed', logoHandler)
+    window.addEventListener('mawj-logo-dark-changed', logoDarkHandler)
 
     // PWA install prompt — show subtle button in header instead of banner
     const pwaHandler = (e: Event) => setPwaPrompt((e as CustomEvent).detail?.prompt)
@@ -427,6 +434,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
 
     return () => {
       window.removeEventListener('mawj-logo-changed', logoHandler)
+      window.removeEventListener('mawj-logo-dark-changed', logoDarkHandler)
       window.removeEventListener('mawj-pwa-ready', pwaHandler)
     }
   }, [])
@@ -885,7 +893,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
 
         {/* Logo — RTL start (visually right) */}
         <button className="nav-logo-btn" onClick={() => navigate('dashboard')} aria-label="الصفحة الرئيسية" style={{ justifySelf: 'start' }}>
-          <img src={logoUrl} alt="مَوج" className="logo-bare" />
+          <img src={isDark ? (logoDarkUrl || logoUrl) : logoUrl} alt="مَوج" className="logo-bare" />
         </button>
 
         {/* ── Floating Pill Nav — center ── */}
@@ -1032,7 +1040,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
           onClick={() => navigate('dashboard')}
           style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', WebkitTapHighlightColor:'transparent' }}
         >
-          <img src={logoUrl} alt="مَوج" style={{ width:44, height:44, objectFit:'contain', display:'block', filter:'drop-shadow(0 2px 8px rgba(49,140,231,0.30)) drop-shadow(0 1px 2px rgba(0,0,0,0.18))' }} />
+          <img src={isDark ? (logoDarkUrl || logoUrl) : logoUrl} alt="مَوج" style={{ width:44, height:44, objectFit:'contain', display:'block', filter:'drop-shadow(0 2px 8px rgba(49,140,231,0.30)) drop-shadow(0 1px 2px rgba(0,0,0,0.18))' }} />
         </button>
 
         {/* Theme toggle — DOM last = visually LEFT in RTL */}
