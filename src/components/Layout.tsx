@@ -517,32 +517,20 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
       <style>{`
         /* ═══ Logo ═══════════════════════════════════════════════ */
         .nav-logo-btn {
-          display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-          background: none; border: none; cursor: pointer; padding: 4px 8px;
-          border-radius: var(--r-md); transition: background 0.15s;
-          text-decoration: none;
+          display: flex; align-items: center; flex-shrink: 0;
+          background: none; border: none; cursor: pointer; padding: 4px;
+          border-radius: var(--r-md); transition: opacity 0.15s;
+          -webkit-tap-highlight-color: transparent;
         }
-        .nav-logo-btn:hover { background: var(--bg-hover); }
-        .logo-ring {
-          width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
-          background: var(--header-bg);
-          box-shadow: 0 0 0 2px var(--action), 0 0 16px var(--action-glow);
-          animation: logoRingPulse 3s ease-in-out infinite;
+        .nav-logo-btn:hover { opacity: 0.82; }
+        .logo-bare {
+          width: 52px; height: 52px; object-fit: contain; display: block; flex-shrink: 0;
+          filter: drop-shadow(0 2px 8px rgba(49,140,231,0.30)) drop-shadow(0 1px 2px rgba(0,0,0,0.18));
+          transition: filter 0.2s, transform 0.2s;
         }
-        .logo-ring img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; display: block; }
-        @keyframes logoRingPulse {
-          0%,100% { box-shadow: 0 0 0 2px var(--action), 0 0 16px var(--action-glow); }
-          50%      { box-shadow: 0 0 0 3px var(--action-light), 0 0 28px var(--action-glow); transform: scale(1.03); }
-        }
-        .logo-text { display: flex; flex-direction: column; line-height: 1; }
-        .logo-name {
-          font-size: 17px; font-weight: 900;
-          background: linear-gradient(135deg, var(--action-light), var(--info));
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .logo-bc {
-          font-size: 9.5px; font-weight: 600; color: var(--text-muted); margin-top: 1px;
-          transition: opacity 0.2s;
+        .nav-logo-btn:hover .logo-bare {
+          filter: drop-shadow(0 4px 18px rgba(49,140,231,0.55)) drop-shadow(0 1px 3px rgba(0,0,0,0.18));
+          transform: scale(1.06);
         }
 
         /* ═══ Floating Pill Nav — full liquid glass ═════════════ */
@@ -868,7 +856,6 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
           .npt-label { display: none !important; }
           .nav-pill-tab { padding: 8px 10px !important; }
           .nav-search-hint { display: none !important; }
-          .logo-bc { display: none; }
           .nav-pill { max-width: 420px; }
         }
       `}</style>
@@ -898,9 +885,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
 
         {/* Logo — RTL start (visually right) */}
         <button className="nav-logo-btn" onClick={() => navigate('dashboard')} aria-label="الصفحة الرئيسية" style={{ justifySelf: 'start' }}>
-          <div className="logo-ring">
-            <img src={logoUrl} alt="مَوج" />
-          </div>
+          <img src={logoUrl} alt="مَوج" className="logo-bare" />
         </button>
 
         {/* ── Floating Pill Nav — center ── */}
@@ -1045,11 +1030,9 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         {/* Logo — center */}
         <button
           onClick={() => navigate('dashboard')}
-          style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}
+          style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', WebkitTapHighlightColor:'transparent' }}
         >
-          <div style={{ width:42, height:42, borderRadius:'50%', overflow:'hidden', boxShadow:'0 0 0 2px var(--action), 0 0 12px var(--action-glow)', flexShrink:0, background:'var(--header-bg)' }}>
-            <img src={logoUrl} alt="مَوج" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
-          </div>
+          <img src={logoUrl} alt="مَوج" style={{ width:44, height:44, objectFit:'contain', display:'block', filter:'drop-shadow(0 2px 8px rgba(49,140,231,0.30)) drop-shadow(0 1px 2px rgba(0,0,0,0.18))' }} />
         </button>
 
         {/* Theme toggle — DOM last = visually LEFT in RTL */}

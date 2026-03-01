@@ -11,8 +11,8 @@ interface IconProps {
   [key: string]: any
 }
 
-const Ic = ({ size = 20, color = 'currentColor', strokeWidth = 1.8, children }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+const Ic = ({ size = 20, color = 'currentColor', strokeWidth = 1.8, children, style, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style} className={className}>
     {children}
   </svg>
 )
