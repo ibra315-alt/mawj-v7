@@ -534,8 +534,8 @@ function OrderCard({ order, isSelected, onClick, onEdit, onDelete, onAdvance, on
 
         {/* Row 2: Customer + city + item count */}
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-          <span style={{ fontSize:14, fontWeight:700, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {order.customer_name || 'عميل'}
+          <span style={{ fontSize:14, fontWeight:700, color:'var(--text)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:'Inter,sans-serif', direction:'ltr', textAlign:'start' }}>
+            {order.customer_phone ? normalizePhone(order.customer_phone) : (order.customer_name || 'عميل')}
           </span>
           {order.customer_city && (
             <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:3, flexShrink:0 }}>
@@ -625,7 +625,7 @@ function OrderCard({ order, isSelected, onClick, onEdit, onDelete, onAdvance, on
               </button>
               <button onClick={e => { e.stopPropagation(); onAdvance('delivered') }}
                 style={{ padding:'5px 14px', borderRadius:8, background:'linear-gradient(135deg,#3BB579,#5DD8A4)', border:'none', color:'#fff', fontSize:12, fontWeight:800, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 2px 10px rgba(93,216,164,0.3)' }}>
-                ✓ مسلّم
+                ✓ تم التسليم
               </button>
             </>
           )}

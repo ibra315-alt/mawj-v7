@@ -240,7 +240,7 @@ export const ORDER_STATUSES = [
   { id: 'new',           label: 'جديد',    color: 'var(--action)', bg: 'rgba(var(--action-rgb),0.1)', next: 'ready' },
   { id: 'ready',         label: 'جاهز',    color: 'var(--warning)', bg: 'rgba(var(--warning-rgb),0.1)', next: 'with_hayyak' },
   { id: 'with_hayyak',   label: 'مع حياك', color: 'var(--info)', bg: 'rgba(var(--info-rgb),0.1)', next: 'delivered' },
-  { id: 'delivered',     label: 'مسلّم',   color: 'var(--success)', bg: 'rgba(var(--success-rgb),0.1)', next: null },
+  { id: 'delivered',     label: 'تم التسليم',   color: 'var(--success)', bg: 'rgba(var(--success-rgb),0.1)', next: null },
   { id: 'not_delivered', label: 'لم يتم',  color: 'var(--danger)', bg: 'rgba(var(--danger-rgb),0.1)',  next: null },
   { id: 'cancelled',     label: 'ملغي',    color: 'var(--text-muted)', bg: 'rgba(107,114,128,0.1)', next: null },
 ]
