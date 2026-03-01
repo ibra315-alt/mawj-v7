@@ -490,11 +490,12 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         }
         .nav-logo-btn:hover { background: var(--bg-hover); }
         .logo-ring {
-          width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+          width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+          background: var(--header-bg);
           box-shadow: 0 0 0 2px var(--action), 0 0 16px var(--action-glow);
           animation: logoRingPulse 3s ease-in-out infinite;
         }
-        .logo-ring img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+        .logo-ring img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; display: block; }
         @keyframes logoRingPulse {
           0%,100% { box-shadow: 0 0 0 2px var(--action), 0 0 16px var(--action-glow); }
           50%      { box-shadow: 0 0 0 3px var(--action-light), 0 0 28px var(--action-glow); transform: scale(1.03); }
@@ -513,8 +514,8 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         /* ═══ Floating Pill Nav — full liquid glass ═════════════ */
         .nav-pill {
           position: relative; display: flex; align-items: center; gap: 2px;
-          padding: 4px; flex: 1; justify-content: center;
-          max-width: 640px; border-radius: 100px;
+          padding: 4px; justify-content: center;
+          max-width: 680px; border-radius: 100px;
 
           /* Liquid glass background: edge ring + specular dome + shimmer + tint */
           background:
@@ -565,9 +566,9 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         .nav-pill-tab {
           position: relative; z-index: 1;
           display: flex; align-items: center; gap: 6px;
-          padding: 7px 13px; border: none; background: transparent;
+          padding: 8px 16px; border: none; background: transparent;
           color: var(--text-sec); font-family: var(--font-arabic);
-          font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 100px;
+          font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 100px;
           white-space: nowrap; transition: color 0.18s ease;
           -webkit-tap-highlight-color: transparent;
         }
@@ -608,7 +609,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         /* ═══ Nav Actions (right side in RTL = start) ════════════ */
         .nav-actions {
           display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-          margin-inline-start: auto;
+          justify-self: end;
         }
         .nav-action-btn {
           display: flex; align-items: center; gap: 6px;
@@ -859,16 +860,12 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
       <BgCanvas />
 
       {/* ══════════ DESKTOP TOP NAV ══════════ */}
-      <nav className="top-nav" aria-label="التنقل الرئيسي" style={{ gap: 12 }}>
+      <nav className="top-nav" aria-label="التنقل الرئيسي" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'center' }}>
 
         {/* Logo — RTL start (visually right) */}
-        <button className="nav-logo-btn" onClick={() => navigate('dashboard')} aria-label="الصفحة الرئيسية">
+        <button className="nav-logo-btn" onClick={() => navigate('dashboard')} aria-label="الصفحة الرئيسية" style={{ justifySelf: 'start' }}>
           <div className="logo-ring">
             <img src="/logo.png" alt="مَوج" />
-          </div>
-          <div className="logo-text">
-            <span className="logo-name">مَوج</span>
-            <span className="logo-bc">{breadcrumb}</span>
           </div>
         </button>
 
@@ -999,14 +996,11 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         {/* Logo — center */}
         <button
           onClick={() => navigate('dashboard')}
-          style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', padding:0 }}
+          style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}
         >
-          <div style={{ width:32, height:32, borderRadius:'50%', overflow:'hidden', boxShadow:'0 0 0 2px var(--action), 0 0 12px var(--action-glow)', flexShrink:0 }}>
-            <img src="/logo.png" alt="مَوج" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+          <div style={{ width:42, height:42, borderRadius:'50%', overflow:'hidden', boxShadow:'0 0 0 2px var(--action), 0 0 12px var(--action-glow)', flexShrink:0, background:'var(--header-bg)' }}>
+            <img src="/logo.png" alt="مَوج" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
           </div>
-          <span style={{ fontSize:18, fontWeight:900, background:'linear-gradient(135deg,var(--action-light),var(--info))', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-            مَوج
-          </span>
         </button>
 
         {/* Theme toggle — DOM last = visually LEFT in RTL */}
