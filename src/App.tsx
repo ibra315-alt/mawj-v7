@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react'
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, Auth } from './data/db'
 import { loadAndApplyAppearance, DEFAULT_PREFS } from './data/appearance'
@@ -237,48 +237,11 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PWA install — compact square ── */}
-      {installPrompt && (
-        <div style={{
-          position: 'fixed', bottom: 140, insetInlineEnd: 16, zIndex: 9999,
-          width: 174,
-          background: 'var(--bg-surface)',
-          boxShadow: 'var(--float-shadow)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--r-lg)',
-          padding: '12px',
-          display: 'flex', flexDirection: 'column', gap: 10,
-          animation: 'slideUp 0.3s var(--ease-out) both',
-          direction: 'rtl',
-        }}>
-          <button onClick={() => setInstallPrompt(null)} style={{
-            position: 'absolute', top: 6, insetInlineEnd: 6,
-            background: 'none', border: 'none', color: 'var(--text-muted)',
-            cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 3,
-            borderRadius: 'var(--r-sm)', WebkitTapHighlightColor: 'transparent',
-          }}>×</button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 'var(--r-sm)', flexShrink: 0,
-              background: 'var(--action-soft)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <MawjLogo size={20} color="var(--action)" />
-            </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 12, lineHeight: 1.2 }}>تثبيت موج</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>أسرع · يعمل بدون نت</div>
-            </div>
-          </div>
-          <button onClick={handleInstall} style={{
-            background: 'var(--action)', border: 'none',
-            borderRadius: 'var(--r-md)', color: '#fff',
-            padding: '8px 0', fontSize: 12, fontWeight: 800,
-            cursor: 'pointer', fontFamily: 'inherit', width: '100%',
-            WebkitTapHighlightColor: 'transparent',
-          }}>تثبيت الآن</button>
-        </div>
-      )}
+      {/* ── PWA install — native bottom sheet ── */}
+      {installPrompt && <PWABottomSheet onInstall={handleInstall} onDismiss={() => setInstallPrompt(null)} />}
+
+      {/* ── SW update — smart auto-dismiss toast ── */}
+      {swWaiting && <SWUpdateToast onUpdate={handleSwUpdate} onDismiss={() => setSwWaiting(null)} isOnline={isOnline} />}
 
       {/* ── Main layout ── */}
       <Layout
@@ -292,29 +255,8 @@ export default function App() {
         </Suspense>
       </Layout>
 
-      {/* ── Floating AI button ── */}
-      <button
-        onClick={() => setShowAI(p => !p)}
-        title="موج AI"
-        className="ai-float-btn"
-        style={{
-          position: 'fixed', bottom: 80, insetInlineEnd: 16, zIndex: 700,
-          width: 44, height: 44, borderRadius: '50%',
-          background: showAI ? 'rgba(var(--danger-rgb),0.9)' : 'var(--action)',
-          border: 'none', cursor: 'pointer',
-          boxShadow: showAI ? '0 4px 20px rgba(var(--danger-rgb),0.5)' : '0 4px 20px var(--action-glow)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 0.2s ease',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
-          {showAI
-            ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-            : <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></>
-          }
-        </svg>
-      </button>
+      {/* ── Floating AI Orb ── */}
+      <FloatingAI showAI={showAI} setShowAI={setShowAI} />
 
       {/* ── Globals ── */}
       <ToastContainer />
@@ -323,10 +265,345 @@ export default function App() {
           <AIAssistant onClose={() => setShowAI(false)} />
         </Suspense>
       )}
+    </>
+  )
+}
+
+/* ══════════════════════════════════════════════════
+   FLOATING AI ORB — breathing gradient + prompt chips
+══════════════════════════════════════════════════ */
+const QUICK_PROMPTS = [
+  { label: '📊 Sales analysis',     ar: 'حلل أداء المبيعات الأخيرة وأبرز أهم الملاحظات' },
+  { label: '⚠️ Low stock alert',   ar: 'هل هناك منتجات مخزونها منخفض تحتاج إعادة طلب؟' },
+  { label: '📋 Daily summary',      ar: 'أعطني ملخصاً سريعاً عن أداء النظام اليوم' },
+]
+
+function FloatingAI({ showAI, setShowAI }: { showAI: boolean; setShowAI: (v: any) => void }) {
+  const [chipsVisible, setChipsVisible] = useState(false)
+  const [dismissed, setDismissed]       = useState(false)
+
+  // Reveal chips 2.5 s after mount, once
+  useEffect(() => {
+    if (dismissed || showAI) return
+    const t = setTimeout(() => setChipsVisible(true), 2500)
+    return () => clearTimeout(t)
+  }, [dismissed, showAI])
+
+  // Hide chips when AI panel opens
+  useEffect(() => {
+    if (showAI) setChipsVisible(false)
+  }, [showAI])
+
+  function handleQuickPrompt(prompt: string) {
+    sessionStorage.setItem('ai-quick-prompt', prompt)
+    setChipsVisible(false)
+    setDismissed(true)
+    setShowAI(true)
+  }
+
+  function handleDismissChips() {
+    setChipsVisible(false)
+    setDismissed(true)
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, insetInlineEnd: 18, zIndex: 700,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
+    }}>
+      {/* Quick prompt chips — appear above orb */}
+      {chipsVisible && !showAI && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, alignItems: 'flex-end' }}>
+          {/* dismiss X */}
+          <button onClick={handleDismissChips} style={{
+            alignSelf: 'flex-end', background: 'none', border: 'none',
+            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, padding: '2px 4px',
+            lineHeight: 1,
+          }}>✕</button>
+          {QUICK_PROMPTS.map((p, i) => (
+            <button
+              key={i}
+              onClick={() => handleQuickPrompt(p.ar)}
+              style={{
+                padding: '8px 14px',
+                background: 'var(--bg-surface)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid var(--border-strong)',
+                borderRadius: 999,
+                fontSize: 12, fontWeight: 700,
+                color: 'var(--text)',
+                cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                whiteSpace: 'nowrap',
+                animation: `chipSlide 0.35s cubic-bezier(0.34,1.4,0.64,1) ${i * 0.07}s both`,
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >{p.label}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Main AI orb */}
+      <button
+        onClick={() => setShowAI((p: boolean) => !p)}
+        title="موج AI"
+        aria-label={showAI ? 'إغلاق موج AI' : 'فتح موج AI'}
+        style={{
+          width: 54, height: 54, borderRadius: '50%',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'background 0.35s ease, box-shadow 0.35s ease, transform 0.2s ease',
+          WebkitTapHighlightColor: 'transparent',
+          background: showAI
+            ? 'linear-gradient(135deg, rgba(239,68,68,0.92), rgba(220,38,38,0.92))'
+            : 'linear-gradient(135deg, #1a6ec4, #318CE7, #38BDF8)',
+          boxShadow: showAI
+            ? '0 0 0 0 rgba(239,68,68,0), 0 6px 24px rgba(239,68,68,0.45)'
+            : '0 0 0 0 rgba(49,140,231,0.5), 0 6px 28px rgba(49,140,231,0.4)',
+          animation: showAI ? 'none' : 'orbPulse 2.8s ease-in-out infinite',
+          position: 'relative',
+        }}
+      >
+        {/* Ripple ring — only when closed */}
+        {!showAI && (
+          <span style={{
+            position: 'absolute', inset: -2, borderRadius: '50%',
+            border: '2px solid rgba(49,140,231,0.35)',
+            animation: 'ringPulse 2.8s ease-in-out infinite',
+            pointerEvents: 'none',
+          }} />
+        )}
+        <svg
+          width="22" height="22" viewBox="0 0 24 24"
+          fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"
+          style={{ transition: 'transform 0.3s ease', transform: showAI ? 'rotate(45deg)' : 'none' }}
+        >
+          {showAI
+            ? <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>
+            : <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></>
+          }
+        </svg>
+      </button>
 
       <style>{`
-        @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes orbPulse {
+          0%,100% { box-shadow: 0 0 0 0 rgba(49,140,231,0.45), 0 6px 28px rgba(49,140,231,0.38); transform: scale(1); }
+          50%      { box-shadow: 0 0 0 14px rgba(49,140,231,0), 0 6px 28px rgba(49,140,231,0.55); transform: scale(1.07); }
+        }
+        @keyframes ringPulse {
+          0%,100% { transform: scale(1);    opacity: 0.6; }
+          50%      { transform: scale(1.35); opacity: 0; }
+        }
+        @keyframes chipSlide {
+          from { opacity: 0; transform: translateX(18px); }
+          to   { opacity: 1; transform: none; }
+        }
       `}</style>
-    </>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════
+   PWA BOTTOM SHEET — native iOS/Android style
+══════════════════════════════════════════════════ */
+function PWABottomSheet({ onInstall, onDismiss }: { onInstall: () => void; onDismiss: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+    }}>
+      {/* Backdrop */}
+      <div
+        onClick={onDismiss}
+        style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          animation: 'fadeIn 0.25s ease both',
+        }}
+      />
+
+      {/* Sheet */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        background: 'var(--bg-surface)',
+        borderRadius: '24px 24px 0 0',
+        padding: '16px 24px 40px',
+        boxShadow: '0 -8px 48px rgba(0,0,0,0.3)',
+        direction: 'rtl',
+        animation: 'sheetUp 0.4s cubic-bezier(0.34,1.4,0.64,1) both',
+      }}>
+        {/* Drag handle */}
+        <div style={{
+          width: 44, height: 4, borderRadius: 999,
+          background: 'var(--border-strong)',
+          margin: '0 auto 20px',
+        }} />
+
+        {/* App identity */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+          <div style={{
+            width: 60, height: 60, borderRadius: 14, flexShrink: 0,
+            background: 'linear-gradient(135deg, var(--action-soft), rgba(56,189,248,0.15))',
+            border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 20px var(--action-glow)',
+          }}>
+            <MawjLogo size={36} color="var(--action)" />
+          </div>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 20, color: 'var(--text)' }}>موج ERP</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>نظام إدارة المبيعات</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+              {'★★★★★'.split('').map((s, i) => (
+                <span key={i} style={{ fontSize: 12, color: '#F59E0B' }}>{s}</span>
+              ))}
+              <span style={{ fontSize: 10, color: 'var(--text-muted)', marginRight: 2 }}>4.9</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Benefits pills */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+          {[
+            ['⚡', 'Faster 3×'],
+            ['📶', 'Works offline'],
+            ['🔔', 'Push notifications'],
+            ['💾', 'Saves storage'],
+          ].map(([icon, label]) => (
+            <div key={label} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 13px',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: 999,
+              fontSize: 12, fontWeight: 700, color: 'var(--text)',
+            }}>{icon} {label}</div>
+          ))}
+        </div>
+
+        {/* Install button */}
+        <button onClick={onInstall} style={{
+          width: '100%', padding: '15px',
+          background: 'linear-gradient(135deg, var(--action-deep, #1a6ec4), var(--action))',
+          color: '#fff', border: 'none',
+          borderRadius: 14, fontWeight: 900, fontSize: 16,
+          cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 4px 20px rgba(49,140,231,0.4)',
+          marginBottom: 10,
+          WebkitTapHighlightColor: 'transparent',
+        }}>
+          تثبيت الآن — Install
+        </button>
+
+        {/* Dismiss */}
+        <button onClick={onDismiss} style={{
+          width: '100%', padding: '12px',
+          background: 'none', color: 'var(--text-muted)',
+          border: 'none', borderRadius: 14,
+          fontWeight: 600, fontSize: 14,
+          cursor: 'pointer', fontFamily: 'inherit',
+          WebkitTapHighlightColor: 'transparent',
+        }}>
+          Maybe later
+        </button>
+      </div>
+
+      <style>{`
+        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      `}</style>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════
+   SW UPDATE TOAST — glass card, auto-dismiss 10s
+══════════════════════════════════════════════════ */
+function SWUpdateToast({ onUpdate, onDismiss, isOnline }: {
+  onUpdate: () => void; onDismiss: () => void; isOnline: boolean
+}) {
+  // Auto-update after 10 seconds
+  useEffect(() => {
+    const t = setTimeout(onUpdate, 10_000)
+    return () => clearTimeout(t)
+  }, [onUpdate])
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: isOnline ? 74 : 114,
+      insetInlineEnd: 16,
+      zIndex: 99998,
+      width: 300,
+      background: 'var(--bg-surface)',
+      backdropFilter: 'blur(24px)',
+      WebkitBackdropFilter: 'blur(24px)',
+      border: '1px solid var(--border-strong)',
+      borderRadius: 'var(--r-lg)',
+      boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
+      overflow: 'hidden',
+      direction: 'rtl',
+      animation: 'toastSlide 0.38s cubic-bezier(0.34,1.3,0.64,1) both',
+    }}>
+      {/* Auto-dismiss progress bar */}
+      <div style={{
+        height: 3,
+        background: 'linear-gradient(90deg, var(--action), #38BDF8)',
+        transformOrigin: 'right',
+        animation: 'drainProgress 10s linear both',
+      }} />
+
+      <div style={{ padding: '14px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>🔄</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--text)', marginBottom: 3 }}>
+              New update available
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              Auto-refreshes in 10 s
+            </div>
+          </div>
+          <button onClick={onDismiss} style={{
+            background: 'none', border: 'none', color: 'var(--text-muted)',
+            cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2, flexShrink: 0,
+          }}>✕</button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button onClick={onUpdate} style={{
+            flex: 1, padding: '8px', borderRadius: 'var(--r-md)',
+            background: 'var(--action)', color: '#fff', border: 'none',
+            fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+            WebkitTapHighlightColor: 'transparent',
+          }}>
+            Update now
+          </button>
+          <button onClick={onDismiss} style={{
+            padding: '8px 12px', borderRadius: 'var(--r-md)',
+            background: 'var(--bg-hover)', color: 'var(--text-muted)',
+            border: '1px solid var(--border)', fontSize: 12,
+            cursor: 'pointer', fontFamily: 'inherit',
+            WebkitTapHighlightColor: 'transparent',
+          }}>
+            Skip
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes toastSlide {
+          from { opacity: 0; transform: translateX(320px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes drainProgress {
+          from { transform: scaleX(1); }
+          to   { transform: scaleX(0); }
+        }
+      `}</style>
+    </div>
   )
 }

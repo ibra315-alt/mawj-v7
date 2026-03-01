@@ -509,26 +509,6 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         </>
       )}
 
-      {/* ══════════ MOBILE FLOATING ACTION BUTTONS ══════════ */}
-      <div className="mobile-fabs" aria-label="إجراءات سريعة">
-        <button
-          className="mobile-fab mobile-fab-secondary"
-          onClick={() => { sessionStorage.setItem('openNewExpense', '1'); navigate('expenses') }}
-          title="مصروف جديد"
-          aria-label="إضافة مصروف جديد"
-        >
-          <IcReceiptPlus size={20} />
-        </button>
-        <button
-          className="mobile-fab mobile-fab-primary"
-          onClick={() => { sessionStorage.setItem('openNewOrder', '1'); navigate('orders') }}
-          title="طلب جديد"
-          aria-label="إضافة طلب جديد"
-        >
-          <IcPlus size={22} />
-        </button>
-      </div>
-
       {/* ══════════ MAIN CONTENT ══════════ */}
       <main
         key={page}

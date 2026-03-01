@@ -243,6 +243,59 @@ export default function Dashboard({ onNavigate }: PageProps) {
         @media(max-width:600px) {
           .db-grid3 { grid-template-columns:1fr !important; }
         }
+
+        /* ── Quick Actions ── */
+        .db-quick-actions {
+          display: flex; gap: 10px; margin-bottom: 18px;
+          overflow-x: auto; padding-bottom: 2px;
+          scrollbar-width: none;
+        }
+        .db-quick-actions::-webkit-scrollbar { display: none; }
+        .db-qa-btn {
+          flex-shrink: 0;
+          display: flex; align-items: center; gap: 10px;
+          padding: 13px 18px; border-radius: 14px;
+          border: none; cursor: pointer; font-family: inherit;
+          transition: transform 0.18s ease, box-shadow 0.18s ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .db-qa-btn:active { transform: scale(0.95) !important; }
+        .db-qa-icon { font-size: 22px; line-height: 1; }
+        .db-qa-text { display: flex; flex-direction: column; text-align: right; }
+        .db-qa-label { font-size: 14px; font-weight: 800; line-height: 1.2; }
+        .db-qa-sub   { font-size: 10px; font-weight: 500; margin-top: 2px; opacity: 0.7; letter-spacing: 0.03em; }
+
+        .db-qa-primary {
+          background: linear-gradient(135deg, var(--action-deep, #1a6ec4), var(--action));
+          color: #fff;
+          box-shadow: 0 4px 20px rgba(49,140,231,0.38);
+          min-width: 148px;
+        }
+        .db-qa-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(49,140,231,0.5); }
+
+        .db-qa-secondary {
+          background: var(--bg-surface);
+          color: var(--text);
+          border: 1.5px solid var(--border-strong);
+          box-shadow: var(--card-shadow);
+          min-width: 148px;
+        }
+        .db-qa-secondary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+
+        .db-qa-ghost {
+          background: var(--bg-surface);
+          color: var(--text-secondary);
+          border: 1px solid var(--border);
+          box-shadow: var(--card-shadow);
+          opacity: 0.85;
+        }
+        .db-qa-ghost:hover { opacity: 1; transform: translateY(-2px); color: var(--action); }
+
+        @media(max-width:600px) {
+          .db-qa-primary, .db-qa-secondary { min-width: 130px; }
+          .db-qa-ghost .db-qa-text { display: none; }
+          .db-qa-ghost { padding: 13px 14px; }
+        }
       `}</style>
 
       {/* ══ GREETING BAR ════════════════════════════════════ */}
@@ -260,6 +313,56 @@ export default function Dashboard({ onNavigate }: PageProps) {
             <span style={{ color:'var(--text-muted)' }}>({metrics.remainDays} يوم متبقٍ)</span>
           </div>
         )}
+      </div>
+
+      {/* ══ QUICK ACTIONS ════════════════════════════════════ */}
+      <div className="db-quick-actions">
+        {/* Primary: New Order */}
+        <button
+          className="db-qa-btn db-qa-primary"
+          onClick={() => { sessionStorage.setItem('openNewOrder','1'); onNavigate('orders') }}
+        >
+          <span className="db-qa-icon">➕</span>
+          <div className="db-qa-text">
+            <span className="db-qa-label">طلب جديد</span>
+            <span className="db-qa-sub">New Order</span>
+          </div>
+        </button>
+
+        {/* Secondary: New Expense */}
+        <button
+          className="db-qa-btn db-qa-secondary"
+          onClick={() => { sessionStorage.setItem('openNewExpense','1'); onNavigate('expenses') }}
+        >
+          <span className="db-qa-icon">💸</span>
+          <div className="db-qa-text">
+            <span className="db-qa-label">مصروف جديد</span>
+            <span className="db-qa-sub">New Expense</span>
+          </div>
+        </button>
+
+        {/* Ghost shortcuts */}
+        <button className="db-qa-btn db-qa-ghost" onClick={() => onNavigate('customers')}>
+          <span className="db-qa-icon">👥</span>
+          <div className="db-qa-text">
+            <span className="db-qa-label">العملاء</span>
+            <span className="db-qa-sub">Customers</span>
+          </div>
+        </button>
+        <button className="db-qa-btn db-qa-ghost" onClick={() => onNavigate('inventory')}>
+          <span className="db-qa-icon">📦</span>
+          <div className="db-qa-text">
+            <span className="db-qa-label">المخزون</span>
+            <span className="db-qa-sub">Inventory</span>
+          </div>
+        </button>
+        <button className="db-qa-btn db-qa-ghost" onClick={() => onNavigate('reports')}>
+          <span className="db-qa-icon">📊</span>
+          <div className="db-qa-text">
+            <span className="db-qa-label">التقارير</span>
+            <span className="db-qa-sub">Reports</span>
+          </div>
+        </button>
       </div>
 
       {/* ══ HERO METRICS — 3 BIG CARDS ══════════════════════ */}
