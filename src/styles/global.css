@@ -665,21 +665,21 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .mobile-drawer {
   position: fixed;
   top: 0;
-  inset-inline-end: 0;
+  inset-inline-start: 0;          /* RTL = right side of screen */
   width: min(320px, 85vw);
   height: 100dvh;
   z-index: 301;
   background: var(--modal-bg);
   backdrop-filter: var(--glass-blur-lg);
   -webkit-backdrop-filter: var(--glass-blur-lg);
-  border-inline-start: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border); /* facing-content border */
   box-shadow: var(--modal-shadow);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   padding: var(--sp-4);
   padding-top: calc(var(--sp-4) + env(safe-area-inset-top, 0px));
-  animation: drawerIn 220ms var(--ease-spring) both;
+  animation: drawerInRTL 220ms var(--ease-spring) both; /* slides from right */
 }
 
 .mobile-drawer-section-label {
@@ -779,9 +779,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   from { opacity: 0; transform: translateX(-20px); }
   to   { opacity: 1; transform: none; }
 }
-[dir="rtl"] .mobile-drawer { animation-name: drawerInRTL; }
+/* Drawer slides in from the RIGHT (RTL start side) */
 @keyframes drawerInRTL {
-  from { opacity: 0; transform: translateX(20px); }
+  from { opacity: 0; transform: translateX(28px); }
   to   { opacity: 1; transform: none; }
 }
 
