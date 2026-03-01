@@ -136,6 +136,16 @@
   /* ── Density multiplier (overridden by applyAppearance) ── */
   --density: 1;
 
+  /* ── Liquid Glass tokens ── */
+  --lg-blur:        60px;
+  --lg-sat:         2.6;
+  --lg-brt:         1.07;
+  --lg-specular-hi: rgba(255,255,255,0.72);
+  --lg-specular-lo: rgba(255,255,255,0.20);
+  --lg-rim:         rgba(255,255,255,0.24);
+  --lg-tint:        rgba(20,40,90,0.22);
+  --lg-noise:       0.032;
+
   /* ── Legacy aliases (backward compat) ── */
   --teal: var(--action); --teal-500: var(--action); --teal-400: var(--action-light);
   --teal-deep: var(--action-deep); --teal-glow: var(--action-glow);
@@ -197,6 +207,12 @@
   --card-shadow-hover: 0 4px 12px rgba(30,80,180,0.10), 0 16px 44px rgba(30,80,180,0.14), inset 0 1px 0 rgba(255,255,255,0.80);
   --float-shadow:      0 8px 40px rgba(30,80,180,0.12), 0 2px 8px rgba(30,80,180,0.08);
   --modal-shadow:      0 24px 80px rgba(30,80,180,0.16), 0 8px 24px rgba(30,80,180,0.10);
+
+  --lg-specular-hi: rgba(255,255,255,0.95);
+  --lg-specular-lo: rgba(255,255,255,0.60);
+  --lg-rim:         rgba(255,255,255,0.85);
+  --lg-tint:        rgba(220,235,255,0.45);
+  --lg-noise:       0.018;
 
   --action-glow:  rgba(49,140,231,0.20);
   --action-soft:  rgba(49,140,231,0.12);
@@ -309,21 +325,88 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
 
 /* ══════════════════════════════════════════════════════════════
-   ELEVATION SYSTEM — Sky Glass
+   LIQUID GLASS SYSTEM — iOS 26 inspired
+   Layers (inside → out):
+   1. backdrop-filter  — heavy blur + saturation boost
+   2. background       — multi-gradient: edge refraction + specular dome + shimmer + tint
+   3. ::before         — conic-gradient prismatic border ring (1px, masked)
+   4. box-shadow       — inset specular edges (6 layers) + outer depth
+   5. ::after          — micro-noise grain (existing, unchanged)
 ══════════════════════════════════════════════════════════════ */
 .mawj-card, .card-l1 {
-  background: var(--bg-surface);
-  backdrop-filter: blur(52px) saturate(1.9);
-  -webkit-backdrop-filter: blur(52px) saturate(1.9);
-  box-shadow: var(--card-shadow), inset 0 1px 0 var(--glass-edge);
+  /* ── 1. Backdrop processing ── */
+  backdrop-filter:          blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-brt));
+  -webkit-backdrop-filter:  blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-brt));
+
+  /* ── 2. Multi-layer background ── */
+  background:
+    /* Edge refraction ring — brightened halo where light bends at glass rim */
+    radial-gradient(ellipse 96% 94% at 50% 50%,
+      transparent 72%,
+      rgba(255,255,255,0.11) 84%,
+      rgba(255,255,255,0.04) 100%),
+    /* Specular dome — the "bubble highlight" on top of glass */
+    radial-gradient(ellipse 90% 48% at 50% -4%,
+      var(--lg-specular-lo) 0%,
+      rgba(255,255,255,0.06) 45%,
+      transparent 65%),
+    /* Diagonal shimmer — makes glass feel angled in 3D space */
+    linear-gradient(152deg,
+      rgba(255,255,255,0.09) 0%,
+      rgba(255,255,255,0.02) 42%,
+      rgba(255,255,255,0.06) 100%),
+    /* Base glass tint */
+    var(--lg-tint);
+
+  /* ── 4. Shadow stack ── */
+  box-shadow:
+    /* Outer depth */
+    0 1px 2px rgba(0,8,24,0.08),
+    0 6px 20px rgba(0,8,24,0.12),
+    0 20px 50px rgba(0,8,24,0.10),
+    /* Inner specular: top edge = brightest (direct light catch) */
+    inset 0  1.5px 0 var(--lg-specular-hi),
+    /* Inner specular: bottom = subtle bounce light */
+    inset 0 -1px   0 rgba(255,255,255,0.09),
+    /* Inner specular: side edges */
+    inset  1.5px 0 0 rgba(255,255,255,0.20),
+    inset -1.5px 0 0 rgba(255,255,255,0.13);
+
   border-radius: var(--r-lg);
-  border: 1px solid var(--border-strong);
-  border-top-color: var(--glass-edge);
+  /* Outer border: lighter on top (light source above) */
+  border: 1px solid var(--lg-rim);
+  border-bottom-color: rgba(255,255,255,0.08);
+
   transition: box-shadow var(--dur-base) var(--ease-io), transform var(--dur-base) var(--ease-io);
-  /* Noise grain overlay for tactile depth */
   position: relative;
   isolation: isolate;
 }
+
+/* ── 3. Prismatic rim — conic gradient border (1px ring via padding+mask) ── */
+.mawj-card::before, .card-l1::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  /* Conic gradient rotates around the card like light on a glass rim */
+  background: conic-gradient(
+    from 120deg at 62% 18%,
+    rgba(255,255,255,0.80) 0deg,
+    rgba(255,255,255,0.14) 52deg,
+    rgba(255,255,255,0.42) 108deg,
+    rgba(255,255,255,0.06) 195deg,
+    rgba(255,255,255,0.52) 278deg,
+    rgba(255,255,255,0.80) 360deg
+  );
+  /* Mask: only show the 1px padding ring, not the content area */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── 5. Micro-noise grain (tactile frost texture) ── */
 .mawj-card::after, .card-l1::after {
   content: '';
   position: absolute;
@@ -331,30 +414,52 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   border-radius: inherit;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: var(--noise-opacity, 0.025);
+  opacity: var(--lg-noise);
   mix-blend-mode: overlay;
+  z-index: 1;
 }
+
 .mawj-card-hover:hover, .card-l1-hover:hover {
-  box-shadow: var(--card-shadow-hover);
+  box-shadow:
+    0 2px 6px rgba(0,8,24,0.10),
+    0 12px 36px rgba(0,8,24,0.16),
+    0 32px 72px rgba(0,8,24,0.12),
+    inset 0  1.5px 0 var(--lg-specular-hi),
+    inset 0 -1px   0 rgba(255,255,255,0.09),
+    inset  1.5px 0 0 rgba(255,255,255,0.22),
+    inset -1.5px 0 0 rgba(255,255,255,0.15),
+    0 0 0 1px rgba(255,255,255,0.10);
   transform: translateY(-3px);
 }
+
+/* ── Floating card (dialogs, dropdowns) ── */
 .card-l2 {
-  background: var(--bg-elevated);
-  backdrop-filter: var(--glass-blur-md);
-  -webkit-backdrop-filter: var(--glass-blur-md);
-  box-shadow: var(--float-shadow);
+  background:
+    radial-gradient(ellipse 90% 46% at 50% -4%, var(--lg-specular-lo) 0%, transparent 60%),
+    linear-gradient(152deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.06) 100%),
+    var(--bg-elevated);
+  backdrop-filter: blur(52px) saturate(2.4) brightness(1.06);
+  -webkit-backdrop-filter: blur(52px) saturate(2.4) brightness(1.06);
+  box-shadow: var(--float-shadow), inset 0 1.5px 0 var(--lg-specular-hi), inset 0 -1px 0 rgba(255,255,255,0.08);
   border-radius: var(--r-lg);
-  border: 1px solid var(--border);
-  border-top-color: var(--glass-edge);
+  border: 1px solid var(--lg-rim);
+  border-bottom-color: rgba(255,255,255,0.08);
+  position: relative; isolation: isolate;
 }
+
+/* ── Modal card (heaviest glass) ── */
 .card-l3 {
-  background: var(--modal-bg);
-  backdrop-filter: var(--glass-blur-lg);
-  -webkit-backdrop-filter: var(--glass-blur-lg);
-  box-shadow: var(--modal-shadow);
+  background:
+    radial-gradient(ellipse 90% 46% at 50% -4%, var(--lg-specular-lo) 0%, transparent 55%),
+    linear-gradient(152deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.07) 100%),
+    var(--modal-bg);
+  backdrop-filter: blur(64px) saturate(2.6) brightness(1.05);
+  -webkit-backdrop-filter: blur(64px) saturate(2.6) brightness(1.05);
+  box-shadow: var(--modal-shadow), inset 0 1.5px 0 var(--lg-specular-hi), inset 0 -1px 0 rgba(255,255,255,0.08);
   border-radius: var(--r-xl);
-  border: 1px solid var(--border);
-  border-top-color: var(--glass-edge);
+  border: 1px solid var(--lg-rim);
+  border-bottom-color: rgba(255,255,255,0.08);
+  position: relative; isolation: isolate;
 }
 
 
@@ -486,11 +591,22 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   align-items: center;
   gap: var(--sp-4);
   padding: 0 var(--sp-6);
-  background: var(--header-bg);
-  backdrop-filter: var(--glass-blur-md);
-  -webkit-backdrop-filter: var(--glass-blur-md);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 var(--glass-edge) inset, 0 4px 24px rgba(0,10,30,0.20);
+
+  /* Liquid glass header */
+  background:
+    radial-gradient(ellipse 60% 100% at 50% -20%, rgba(255,255,255,0.14) 0%, transparent 65%),
+    linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%),
+    var(--header-bg);
+  backdrop-filter: blur(52px) saturate(2.4) brightness(1.05);
+  -webkit-backdrop-filter: blur(52px) saturate(2.4) brightness(1.05);
+
+  /* Bottom border: subtle, bottom specular inset stronger than plain border */
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 var(--lg-specular-hi),   /* top inner catch */
+    inset 0 -1px 0 rgba(255,255,255,0.05), /* bottom inner */
+    0 4px 24px rgba(0,10,30,0.22),
+    0 1px 3px rgba(0,10,30,0.15);
 }
 
 .top-nav-logo {
@@ -629,11 +745,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--sp-4);
-  background: var(--header-bg);
-  backdrop-filter: var(--glass-blur-md);
-  -webkit-backdrop-filter: var(--glass-blur-md);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 24px rgba(0,10,30,0.20);
+  background:
+    radial-gradient(ellipse 60% 100% at 50% -20%, rgba(255,255,255,0.14) 0%, transparent 65%),
+    var(--header-bg);
+  backdrop-filter: blur(52px) saturate(2.4) brightness(1.05);
+  -webkit-backdrop-filter: blur(52px) saturate(2.4) brightness(1.05);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 var(--lg-specular-hi),
+    0 4px 24px rgba(0,10,30,0.22);
 }
 
 .mobile-hamburger {
@@ -1427,3 +1547,98 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   -webkit-overflow-scrolling: touch;
 }
 .pipeline-bar::-webkit-scrollbar { display: none; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   LIQUID GLASS — standalone utility class
+   Use on any element that sits over the animated background.
+   The element must NOT clip its children (no overflow:hidden)
+   unless you also set isolation:isolate.
+══════════════════════════════════════════════════════════════ */
+.liquid-glass {
+  backdrop-filter:         blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-brt));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-brt));
+  background:
+    radial-gradient(ellipse 96% 94% at 50% 50%, transparent 72%, rgba(255,255,255,0.10) 85%, transparent 100%),
+    radial-gradient(ellipse 90% 48% at 50% -4%, var(--lg-specular-lo) 0%, rgba(255,255,255,0.04) 48%, transparent 66%),
+    linear-gradient(152deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.06) 100%),
+    var(--lg-tint);
+  box-shadow:
+    0 1px 2px rgba(0,8,24,0.07),
+    0 6px 20px rgba(0,8,24,0.11),
+    0 20px 48px rgba(0,8,24,0.09),
+    inset 0  1.5px 0 var(--lg-specular-hi),
+    inset 0 -1px   0 rgba(255,255,255,0.08),
+    inset  1.5px 0 0 rgba(255,255,255,0.18),
+    inset -1.5px 0 0 rgba(255,255,255,0.12);
+  border: 1px solid var(--lg-rim);
+  border-bottom-color: rgba(255,255,255,0.08);
+  position: relative;
+  isolation: isolate;
+}
+/* Prismatic border ring */
+.liquid-glass::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 120deg at 62% 18%,
+    rgba(255,255,255,0.80) 0deg,
+    rgba(255,255,255,0.12) 52deg,
+    rgba(255,255,255,0.44) 108deg,
+    rgba(255,255,255,0.06) 196deg,
+    rgba(255,255,255,0.54) 278deg,
+    rgba(255,255,255,0.80) 360deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+/* Edge refraction ring — brightened rim only (no overlap with center) */
+.liquid-glass::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  backdrop-filter: brightness(1.50) saturate(2.0);
+  -webkit-backdrop-filter: brightness(1.50) saturate(2.0);
+  -webkit-mask-image: radial-gradient(ellipse 84% 82% at 50% 50%, transparent 76%, rgba(0,0,0,0.85) 87%, transparent 100%);
+  mask-image:         radial-gradient(ellipse 84% 82% at 50% 50%, transparent 76%, rgba(0,0,0,0.85) 87%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Shimmer animation — sweep of light (attach to ::before if desired) ── */
+@keyframes lgShimmer {
+  0%   { background-position: 200% center; opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { background-position: -200% center; opacity: 0.6; }
+}
+
+/* ── Stat cards get an action-colored bottom glow ── */
+.stat-card.liquid-glass,
+.mawj-card.stat-card {
+  box-shadow:
+    0 0 0 1px rgba(49,140,231,0.10),
+    0 4px 16px rgba(49,140,231,0.08),
+    0 20px 50px rgba(0,8,24,0.12),
+    inset 0  1.5px 0 var(--lg-specular-hi),
+    inset 0 -1px   0 rgba(255,255,255,0.08),
+    inset  1.5px 0 0 rgba(255,255,255,0.18),
+    inset -1.5px 0 0 rgba(255,255,255,0.12);
+}
+
+/* ── List rows get subtle liquid glass ── */
+.list-row {
+  backdrop-filter: blur(32px) saturate(2.0) brightness(1.04);
+  -webkit-backdrop-filter: blur(32px) saturate(2.0) brightness(1.04);
+  box-shadow: 0 1px 4px rgba(0,8,24,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
+  border-top-color: rgba(255,255,255,0.16) !important;
+}
+
+/* ── Input fields get glass treatment ── */
+.mawj-input, input.mawj-input, textarea.mawj-input {
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.06);
+}

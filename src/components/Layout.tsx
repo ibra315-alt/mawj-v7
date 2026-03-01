@@ -510,16 +510,48 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
           transition: opacity 0.2s;
         }
 
-        /* ═══ Floating Pill Nav ══════════════════════════════════ */
+        /* ═══ Floating Pill Nav — full liquid glass ═════════════ */
         .nav-pill {
           position: relative; display: flex; align-items: center; gap: 2px;
           padding: 4px; flex: 1; justify-content: center;
-          background: var(--bg-elevated);
-          backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8);
-          border: 1px solid var(--border);
-          border-top-color: var(--glass-edge);
-          border-radius: 100px; max-width: 640px;
-          box-shadow: 0 2px 16px rgba(0,10,30,0.15), inset 0 1px 0 var(--glass-edge);
+          max-width: 640px; border-radius: 100px;
+
+          /* Liquid glass background: edge ring + specular dome + shimmer + tint */
+          background:
+            radial-gradient(ellipse 96% 92% at 50% 50%, transparent 70%, rgba(255,255,255,0.12) 84%, transparent 100%),
+            radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255,255,255,0.22) 0%, transparent 60%),
+            linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.07) 100%),
+            var(--lg-tint);
+
+          backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-brt));
+          -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-brt));
+
+          /* Deep specular inset shadows */
+          box-shadow:
+            0 2px 8px rgba(0,8,24,0.10),
+            0 8px 28px rgba(0,8,24,0.12),
+            inset 0  1.5px 0 var(--lg-specular-hi),
+            inset 0 -1px   0 rgba(255,255,255,0.08),
+            inset  1.5px 0 0 rgba(255,255,255,0.18),
+            inset -1.5px 0 0 rgba(255,255,255,0.12);
+
+          border: 1px solid var(--lg-rim);
+          border-bottom-color: rgba(255,255,255,0.08);
+          isolation: isolate;
+        }
+        /* Prismatic border ring on the pill */
+        .nav-pill::before {
+          content: '';
+          position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+          background: conic-gradient(
+            from 120deg at 62% 18%,
+            rgba(255,255,255,0.80) 0deg, rgba(255,255,255,0.12) 52deg,
+            rgba(255,255,255,0.44) 108deg, rgba(255,255,255,0.06) 196deg,
+            rgba(255,255,255,0.54) 278deg, rgba(255,255,255,0.80) 360deg
+          );
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor; mask-composite: exclude;
+          pointer-events: none; z-index: 0;
         }
         .nav-pill-indicator {
           position: absolute; top: 4px; bottom: 4px;
@@ -546,13 +578,20 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         .np-group { position: relative; }
         .np-trigger { gap: 5px; }
 
-        /* Dropdown from nav pill */
+        /* Dropdown from nav pill — liquid glass */
         .np-dropdown {
-          min-width: 172px; z-index: 400;
-          background: var(--bg-elevated); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-          border: 1px solid var(--border); border-top-color: var(--glass-edge);
-          border-radius: var(--r-lg); box-shadow: var(--float-shadow);
-          padding: 6px; animation: menuSlideIn 0.16s ease both;
+          min-width: 172px; z-index: 400; padding: 6px;
+          border-radius: var(--r-lg);
+          animation: menuSlideIn 0.16s ease both;
+          background:
+            radial-gradient(ellipse 90% 46% at 50% -4%, rgba(255,255,255,0.18) 0%, transparent 60%),
+            linear-gradient(152deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.06) 100%),
+            var(--lg-tint);
+          backdrop-filter: blur(52px) saturate(2.4) brightness(1.06);
+          -webkit-backdrop-filter: blur(52px) saturate(2.4) brightness(1.06);
+          box-shadow: var(--float-shadow),
+            inset 0 1.5px 0 var(--lg-specular-hi), inset 0 -1px 0 rgba(255,255,255,0.07);
+          border: 1px solid var(--lg-rim); border-bottom-color: rgba(255,255,255,0.08);
         }
         @keyframes menuSlideIn { from { opacity:0; transform: translateY(-6px) scale(0.97); } to { opacity:1; transform: none; } }
         .np-dd-item {
@@ -620,14 +659,20 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         .pd-online { background: #22c55e; }
         .pd-idle   { background: #f59e0b; }
 
-        /* ═══ User Menu Popup ════════════════════════════════════ */
+        /* ═══ User Menu Popup — liquid glass ════════════════════ */
         .user-menu-popup {
           position: absolute; top: calc(100% + 10px); inset-inline-end: 0;
-          min-width: 224px; z-index: 500;
-          background: var(--modal-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-          border: 1px solid var(--border); border-radius: var(--r-lg);
-          box-shadow: var(--float-shadow); padding: 8px;
-          animation: menuSlideIn 0.18s ease both;
+          min-width: 224px; z-index: 500; padding: 8px;
+          border-radius: var(--r-lg); animation: menuSlideIn 0.18s ease both;
+          background:
+            radial-gradient(ellipse 90% 46% at 50% -4%, rgba(255,255,255,0.20) 0%, transparent 60%),
+            linear-gradient(152deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.07) 100%),
+            var(--modal-bg);
+          backdrop-filter: blur(56px) saturate(2.6) brightness(1.06);
+          -webkit-backdrop-filter: blur(56px) saturate(2.6) brightness(1.06);
+          box-shadow: var(--float-shadow),
+            inset 0 1.5px 0 var(--lg-specular-hi), inset 0 -1px 0 rgba(255,255,255,0.07);
+          border: 1px solid var(--lg-rim); border-bottom-color: rgba(255,255,255,0.08);
         }
         .ump-card { display: flex; align-items: center; gap: 10px; padding: 10px; }
         .ump-avatar {
@@ -663,14 +708,20 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         .ump-item-danger { color: var(--danger); }
         .ump-item-danger:hover { background: var(--danger-faint); color: var(--danger); }
 
-        /* ═══ Quick Add Menu ═════════════════════════════════════ */
+        /* ═══ Quick Add Menu — liquid glass ═════════════════════ */
         .qa-menu {
           position: absolute; top: calc(100% + 10px); inset-inline-end: 0;
-          min-width: 200px; z-index: 500;
-          background: var(--modal-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-          border: 1px solid var(--border); border-radius: var(--r-lg);
-          box-shadow: var(--float-shadow); padding: 6px;
-          animation: menuSlideIn 0.16s ease both;
+          min-width: 200px; z-index: 500; padding: 6px;
+          border-radius: var(--r-lg); animation: menuSlideIn 0.16s ease both;
+          background:
+            radial-gradient(ellipse 90% 46% at 50% -4%, rgba(255,255,255,0.20) 0%, transparent 60%),
+            linear-gradient(152deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.06) 100%),
+            var(--modal-bg);
+          backdrop-filter: blur(52px) saturate(2.4) brightness(1.06);
+          -webkit-backdrop-filter: blur(52px) saturate(2.4) brightness(1.06);
+          box-shadow: var(--float-shadow),
+            inset 0 1.5px 0 var(--lg-specular-hi), inset 0 -1px 0 rgba(255,255,255,0.07);
+          border: 1px solid var(--lg-rim); border-bottom-color: rgba(255,255,255,0.08);
         }
         .qa-item {
           display: flex; align-items: center; gap: 10px; width: 100%;
@@ -696,10 +747,20 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         }
         .cmd-box {
           width: min(580px, calc(100vw - 32px));
-          background: var(--modal-bg); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
-          border: 1px solid var(--border); border-top-color: var(--glass-edge);
-          border-radius: var(--r-xl); box-shadow: var(--modal-shadow);
-          overflow: hidden; animation: cmdIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+          border-radius: var(--r-xl); overflow: hidden;
+          animation: cmdIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+          /* Heaviest liquid glass — the spotlight panel */
+          background:
+            radial-gradient(ellipse 96% 94% at 50% 50%, transparent 72%, rgba(255,255,255,0.09) 85%, transparent 100%),
+            radial-gradient(ellipse 80% 40% at 50% -4%, rgba(255,255,255,0.22) 0%, transparent 58%),
+            linear-gradient(152deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 48%, rgba(255,255,255,0.07) 100%),
+            var(--modal-bg);
+          backdrop-filter: blur(72px) saturate(2.8) brightness(1.08);
+          -webkit-backdrop-filter: blur(72px) saturate(2.8) brightness(1.08);
+          box-shadow: var(--modal-shadow),
+            inset 0 1.5px 0 var(--lg-specular-hi),
+            inset 0 -1px 0 rgba(255,255,255,0.07);
+          border: 1px solid var(--lg-rim); border-bottom-color: rgba(255,255,255,0.08);
         }
         @keyframes cmdIn { from { opacity:0; transform: scale(0.94) translateY(-12px); } to { opacity:1; transform: none; } }
         .cmd-input-row {
@@ -776,6 +837,23 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
           .nav-pill { max-width: 420px; }
         }
       `}</style>
+
+      {/* SVG filters for liquid glass effects */}
+      <svg aria-hidden="true" style={{ position:'fixed', width:0, height:0, overflow:'hidden' }}>
+        <defs>
+          {/* Fine frost grain — applied to glass surfaces via filter: url(#lg-frost) */}
+          <filter id="lg-frost" x="-5%" y="-5%" width="110%" height="110%" colorInterpolationFilters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.72 0.72" numOctaves="2" stitchTiles="stitch" result="noise"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.035 0" in="noise" result="tinted"/>
+            <feComposite in="SourceGraphic" in2="tinted" operator="over"/>
+          </filter>
+          {/* Edge warp — creates subtle liquid distortion at glass rims */}
+          <filter id="lg-warp" x="-8%" y="-8%" width="116%" height="116%">
+            <feTurbulence type="turbulence" baseFrequency="0.025 0.015" numOctaves="2" seed="3" result="warp"/>
+            <feDisplacementMap in="SourceGraphic" in2="warp" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
+        </defs>
+      </svg>
 
       {/* Animated background */}
       <BgCanvas />
