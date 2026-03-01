@@ -66,9 +66,13 @@ export default function App() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
   }, [])
 
-  // ── PWA install prompt ──
+  // ── PWA install prompt — notify header via custom event ──
   useEffect(() => {
-    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e) }
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+      window.dispatchEvent(new CustomEvent('mawj-pwa-ready', { detail: { prompt: e } }))
+    }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
@@ -237,8 +241,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PWA install — native bottom sheet ── */}
-      {installPrompt && <PWABottomSheet onInstall={handleInstall} onDismiss={() => setInstallPrompt(null)} />}
+      {/* PWA install handled via header button — see Layout.tsx */}
 
       {/* ── SW update — smart auto-dismiss toast ── */}
       {swWaiting && <SWUpdateToast onUpdate={handleSwUpdate} onDismiss={() => setSwWaiting(null)} isOnline={isOnline} />}
@@ -272,78 +275,12 @@ export default function App() {
 /* ══════════════════════════════════════════════════
    FLOATING AI ORB — breathing gradient + prompt chips
 ══════════════════════════════════════════════════ */
-const QUICK_PROMPTS = [
-  { label: '📊 Sales analysis',     ar: 'حلل أداء المبيعات الأخيرة وأبرز أهم الملاحظات' },
-  { label: '⚠️ Low stock alert',   ar: 'هل هناك منتجات مخزونها منخفض تحتاج إعادة طلب؟' },
-  { label: '📋 Daily summary',      ar: 'أعطني ملخصاً سريعاً عن أداء النظام اليوم' },
-]
-
 function FloatingAI({ showAI, setShowAI }: { showAI: boolean; setShowAI: (v: any) => void }) {
-  const [chipsVisible, setChipsVisible] = useState(false)
-  const [dismissed, setDismissed]       = useState(false)
-
-  // Reveal chips 2.5 s after mount, once
-  useEffect(() => {
-    if (dismissed || showAI) return
-    const t = setTimeout(() => setChipsVisible(true), 2500)
-    return () => clearTimeout(t)
-  }, [dismissed, showAI])
-
-  // Hide chips when AI panel opens
-  useEffect(() => {
-    if (showAI) setChipsVisible(false)
-  }, [showAI])
-
-  function handleQuickPrompt(prompt: string) {
-    sessionStorage.setItem('ai-quick-prompt', prompt)
-    setChipsVisible(false)
-    setDismissed(true)
-    setShowAI(true)
-  }
-
-  function handleDismissChips() {
-    setChipsVisible(false)
-    setDismissed(true)
-  }
-
   return (
     <div style={{
       position: 'fixed', bottom: 24, insetInlineEnd: 18, zIndex: 700,
       display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
     }}>
-      {/* Quick prompt chips — appear above orb */}
-      {chipsVisible && !showAI && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, alignItems: 'flex-end' }}>
-          {/* dismiss X */}
-          <button onClick={handleDismissChips} style={{
-            alignSelf: 'flex-end', background: 'none', border: 'none',
-            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, padding: '2px 4px',
-            lineHeight: 1,
-          }}>✕</button>
-          {QUICK_PROMPTS.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => handleQuickPrompt(p.ar)}
-              style={{
-                padding: '8px 14px',
-                background: 'var(--bg-surface)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: 999,
-                fontSize: 12, fontWeight: 700,
-                color: 'var(--text)',
-                cursor: 'pointer', fontFamily: 'inherit',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                whiteSpace: 'nowrap',
-                animation: `chipSlide 0.35s cubic-bezier(0.34,1.4,0.64,1) ${i * 0.07}s both`,
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >{p.label}</button>
-          ))}
-        </div>
-      )}
-
       {/* Main AI orb */}
       <button
         onClick={() => setShowAI((p: boolean) => !p)}
@@ -394,10 +331,6 @@ function FloatingAI({ showAI, setShowAI }: { showAI: boolean; setShowAI: (v: any
         @keyframes ringPulse {
           0%,100% { transform: scale(1);    opacity: 0.6; }
           50%      { transform: scale(1.35); opacity: 0; }
-        }
-        @keyframes chipSlide {
-          from { opacity: 0; transform: translateX(18px); }
-          to   { opacity: 1; transform: none; }
         }
       `}</style>
     </div>

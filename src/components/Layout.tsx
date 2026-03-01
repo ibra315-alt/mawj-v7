@@ -404,6 +404,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
   const [presence, setPresence]       = useState<'online'|'idle'>('online')
   const [indicator, setIndicator]     = useState({ inlineStart: 4, width: 80, ready: false })
   const [logoUrl, setLogoUrl]         = useState<string>('/logo.png')
+  const [pwaPrompt, setPwaPrompt]     = useState<any>(null)
 
   // Load logo from business settings (uploaded via Settings page)
   useEffect(() => {
@@ -414,12 +415,20 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
     }).catch(() => {})
 
     // Live-update when user changes logo in Settings during same session
-    const handler = (e: Event) => {
+    const logoHandler = (e: Event) => {
       const url = (e as CustomEvent).detail?.url
       setLogoUrl(url || '/logo.png')
     }
-    window.addEventListener('mawj-logo-changed', handler)
-    return () => window.removeEventListener('mawj-logo-changed', handler)
+    window.addEventListener('mawj-logo-changed', logoHandler)
+
+    // PWA install prompt — show subtle button in header instead of banner
+    const pwaHandler = (e: Event) => setPwaPrompt((e as CustomEvent).detail?.prompt)
+    window.addEventListener('mawj-pwa-ready', pwaHandler)
+
+    return () => {
+      window.removeEventListener('mawj-logo-changed', logoHandler)
+      window.removeEventListener('mawj-pwa-ready', pwaHandler)
+    }
   }, [])
 
   const navPillRef = useRef<HTMLDivElement>(null)
@@ -490,6 +499,13 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
       await Settings.set(key, { ...stored, theme: next })
     } catch {}
   }, [isDark, user])
+
+  const handlePwaInstall = async () => {
+    if (!pwaPrompt) return
+    pwaPrompt.prompt()
+    const { outcome } = await pwaPrompt.userChoice
+    if (outcome === 'accepted') setPwaPrompt(null)
+  }
 
   const userInitial = user?.name?.[0] || user?.email?.[0]?.toUpperCase() || 'م'
   const breadcrumb  = (BREADCRUMBS[page] || ['الرئيسية']).join(' › ')
@@ -933,6 +949,21 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
 
         {/* ── Right actions (RTL end = visually left) ── */}
         <div className="nav-actions">
+
+          {/* PWA install — only shown when browser offers install */}
+          {pwaPrompt && (
+            <button
+              className="nav-action-btn"
+              onClick={handlePwaInstall}
+              title="تثبيت التطبيق"
+              style={{ gap: 6 }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span style={{ fontSize: 11 }}>تثبيت</span>
+            </button>
+          )}
 
           {/* Search / Command palette */}
           <button
