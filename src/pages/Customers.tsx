@@ -565,7 +565,6 @@ function CustomerRow({ customer: c, onClick, animDelay }) {
         display:'flex', alignItems:'center', justifyContent:'center',
         fontSize:18, fontWeight:800, color: cfg.color || 'var(--action)',
         boxShadow:`0 0 14px ${cfg.color || '#318CE7'}20`,
-        flexShrink:0,
       }}>
         {initial}
       </div>
