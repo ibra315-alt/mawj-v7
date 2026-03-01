@@ -103,20 +103,6 @@ export default function Login() {
         {/* brand content */}
         <div style={{ position:'relative', zIndex:1, maxWidth:400 }}>
 
-          {/* logo badge */}
-          <div style={{ display:'inline-flex', alignItems:'center', gap:14, marginBottom:32, padding:'14px 22px', background:'rgba(49,140,231,0.08)', border:'1px solid rgba(49,140,231,0.22)', borderRadius:20, backdropFilter:'blur(20px)' }}>
-            {logoUrl ? (
-              <img src={logoUrl} alt="مَوج" style={{ width:44, height:44, objectFit:'contain', filter:'drop-shadow(0 2px 12px rgba(49,140,231,0.4))' }} />
-            ) : (
-              <svg width="38" height="38" viewBox="0 0 32 32" fill="none">
-                <defs><linearGradient id="lg1" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stopColor="#318CE7"/><stop offset="1" stopColor="#00E4B8"/></linearGradient></defs>
-                <path d="M3 20c3.5-6 7-6 10 0s6.5 6 10 0c2-3.5 4.5-4.5 6-2" stroke="url(#lg1)" strokeWidth="2.8" strokeLinecap="round"/>
-                <path d="M3 13c3.5-6 7-6 10 0s6.5 6 10 0c2-3.5 4.5-4.5 6-2" stroke="url(#lg1)" strokeWidth="2.8" strokeLinecap="round" opacity="0.35"/>
-              </svg>
-            )}
-            <span style={{ fontSize:30, fontWeight:900, background:'linear-gradient(135deg,#7eb8f7 0%,#00E4B8 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>مَوج</span>
-          </div>
-
           <h1 style={{ fontSize:38, fontWeight:900, lineHeight:1.25, color:'#ddeeff', marginBottom:14 }}>
             نظام إدارة<br/>
             <span style={{ background:'linear-gradient(135deg,#318CE7 0%,#00E4B8 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>المبيعات الذكي</span>
@@ -161,20 +147,20 @@ export default function Login() {
 
         <div style={{ width:'100%', maxWidth:380, position:'relative' }}>
 
-          {/* mini logo */}
+          {/* logo */}
           <div style={{ textAlign:'center', marginBottom:36 }}>
-            <div style={{ display:'inline-flex', alignItems:'center', gap:10, padding:'10px 20px', background:'rgba(49,140,231,0.08)', border:'1px solid rgba(49,140,231,0.2)', borderRadius:14, marginBottom:14 }}>
-              {logoUrl ? (
-                <img src={logoUrl} alt="مَوج" style={{ width:32, height:32, objectFit:'contain', filter:'drop-shadow(0 1px 6px rgba(49,140,231,0.35))' }} />
-              ) : (
+            {logoUrl ? (
+              <img src={logoUrl} alt="مَوج" style={{ width:88, height:88, objectFit:'contain', filter:'drop-shadow(0 4px 24px rgba(49,140,231,0.45)) drop-shadow(0 1px 4px rgba(0,0,0,0.3))', marginBottom:14, display:'block', margin:'0 auto 14px' }} />
+            ) : (
+              <div style={{ display:'inline-flex', alignItems:'center', gap:10, padding:'10px 20px', background:'rgba(49,140,231,0.08)', border:'1px solid rgba(49,140,231,0.2)', borderRadius:14, marginBottom:14 }}>
                 <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
                   <defs><linearGradient id="flg2" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stopColor="#318CE7"/><stop offset="1" stopColor="#00E4B8"/></linearGradient></defs>
                   <path d="M3 20c3.5-6 7-6 10 0s6.5 6 10 0c2-3.5 4.5-4.5 6-2" stroke="url(#flg2)" strokeWidth="2.5" strokeLinecap="round"/>
                   <path d="M3 13c3.5-6 7-6 10 0s6.5 6 10 0c2-3.5 4.5-4.5 6-2" stroke="url(#flg2)" strokeWidth="2.5" strokeLinecap="round" opacity="0.35"/>
                 </svg>
-              )}
-              <span style={{ fontSize:22, fontWeight:900, background:'linear-gradient(135deg,#7eb8f7,#00E4B8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>مَوج</span>
-            </div>
+                <span style={{ fontSize:22, fontWeight:900, background:'linear-gradient(135deg,#7eb8f7,#00E4B8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>مَوج</span>
+              </div>
+            )}
             <div style={{ fontSize:12, color:'rgba(150,180,220,0.4)' }}>نظام إدارة المبيعات</div>
           </div>
 
