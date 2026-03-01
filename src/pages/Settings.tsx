@@ -15,34 +15,71 @@ import type { PageProps } from '../types'
 ══════════════════════════════════════════════════ */
 
 const SECTIONS = [
-  { id:'business',      label:'المتجر',           desc:'معلومات المتجر والمنتجات', icon:'🏪', color:'#318CE7' },
-  { id:'financial',     label:'المالية',           desc:'الإيرادات والضرائب',       icon:'💰', color:'#38BDF8' },
-  { id:'partners',      label:'الشركاء',          desc:'إبراهيم وإحسان والحصص',   icon:'🤝', color:'#F59E0B', adminOnly:true },
-  { id:'statuses',      label:'الحالات',          desc:'حالات الطلبات وألوانها',  icon:'🔖', color:'#8B5CF6' },
-  { id:'team',          label:'الفريق',           desc:'أعضاء وصلاحيات',          icon:'👥', color:'#EC4899' },
-  { id:'whatsapp',      label:'واتساب',           desc:'قوالب الرسائل',           icon:'💬', color:'#25D366' },
-  { id:'ai',            label:'الذكاء الاصطناعي', desc:'المساعد والإجراءات',      icon:'🤖', color:'#A78BFA' },
-  { id:'appearance',    label:'المظهر',           desc:'الوضع الداكن والفاتح',    icon:'🎨', color:'#F472B6' },
-  { id:'delivery',      label:'التوصيل',          desc:'مناطق وتكاليف',           icon:'🚚', color:'#FB923C' },
-  { id:'notifications', label:'الإشعارات',        desc:'تنبيهات وتذكيرات',        icon:'🔔', color:'#FCD34D' },
-  { id:'security',      label:'الأمان',           desc:'كلمة المرور والجلسة',     icon:'🔐', color:'#F87171' },
-  { id:'backup',        label:'النسخ الاحتياطي',  desc:'تصدير واستيراد',          icon:'💾', color:'#6EE7B7' },
+  { id:'business',       label:'معلومات المتجر',     desc:'الاسم والشعار والمنتجات',       icon:'🏪', color:'#318CE7', category:'store',      keywords:['اسم','شعار','منتج','جوال'] },
+  { id:'statuses',       label:'حالات الطلب',        desc:'تسلسل الحالات وألوانها',        icon:'🔖', color:'#8B5CF6', category:'store',      keywords:['حالة','ترتيب','لون'] },
+  { id:'receipt',        label:'قوالب الفاتورة',     desc:'تصميم الإيصالات والفواتير',     icon:'🧾', color:'#10B981', category:'store',      keywords:['فاتورة','طباعة','pdf','ايصال'] },
+  { id:'payment_methods',label:'طرق الدفع',          desc:'النقد والتحويل والبطاقات',      icon:'💳', color:'#F59E0B', category:'store',      keywords:['دفع','نقد','تحويل','بطاقة','iban'] },
+  { id:'financial',      label:'الإعدادات المالية',  desc:'الضريبة والسنة المالية',         icon:'💰', color:'#38BDF8', category:'financial',  keywords:['vat','ضريبة','مالية','إيراد','trn'] },
+  { id:'partners',       label:'الشركاء',            desc:'الحصص والتوزيع',                icon:'🤝', color:'#F59E0B', category:'financial',  adminOnly:true, keywords:['شريك','نسبة','ارباح'] },
+  { id:'discounts',      label:'أكواد الخصم',        desc:'إنشاء وإدارة كودات الخصم',     icon:'🏷️', color:'#EC4899', category:'financial',  keywords:['خصم','كود','قيمة','نسبة'] },
+  { id:'delivery',       label:'التوصيل',            desc:'مناطق التوصيل والتكاليف',       icon:'🚚', color:'#FB923C', category:'operations', keywords:['توصيل','مدينة','رسوم','منطقة'] },
+  { id:'notifications',  label:'الإشعارات',          desc:'التنبيهات والتذكيرات',          icon:'🔔', color:'#FCD34D', category:'operations', keywords:['اشعار','تنبيه','تذكير'] },
+  { id:'region',         label:'اللغة والمنطقة',     desc:'التوقيت والعملة وتنسيق التاريخ',icon:'🌍', color:'#84CC16', category:'operations', keywords:['لغة','منطقة','وقت','عملة','تاريخ'] },
+  { id:'team',           label:'الفريق',             desc:'المستخدمون والصلاحيات',         icon:'👥', color:'#EC4899', category:'system',     keywords:['مستخدم','دور','صلاحية','فريق'] },
+  { id:'whatsapp',       label:'واتساب',             desc:'قوالب رسائل واتساب',            icon:'💬', color:'#25D366', category:'system',     keywords:['واتساب','رسالة','قالب'] },
+  { id:'ai',             label:'الذكاء الاصطناعي',  desc:'النماذج والمساعد والإجراءات',   icon:'🤖', color:'#A78BFA', category:'system',     keywords:['ai','ذكاء','نموذج','claude','gemini'] },
+  { id:'appearance',     label:'المظهر',             desc:'الثيم والألوان والخطوط',        icon:'🎨', color:'#F472B6', category:'system',     keywords:['مظهر','لون','خط','ثيم','داكن','فاتح'] },
+  { id:'security',       label:'الأمان',             desc:'كلمة المرور والجلسة',           icon:'🔐', color:'#F87171', category:'system',     keywords:['امان','جلسة','كلمة مرور'] },
+  { id:'backup',         label:'النسخ الاحتياطي',   desc:'تصدير البيانات واستيرادها',     icon:'💾', color:'#6EE7B7', category:'system',     keywords:['نسخ','تصدير','استيراد','بيانات'] },
 ]
 
-export default function Settings({ user }: PageProps) {
+const CATEGORIES = [
+  { id: 'store',      label: 'المتجر',   icon: '🏪', color: '#318CE7' },
+  { id: 'financial',  label: 'المالية',  icon: '💰', color: '#10B981' },
+  { id: 'operations', label: 'التشغيل', icon: '⚙️',  color: '#F59E0B' },
+  { id: 'system',     label: 'النظام',   icon: '🔧', color: '#A78BFA' },
+]
+
+export default function Settings({ user, onNavigate }: PageProps) {
   const isAdmin = user?.role === 'admin'
   const allSections = SECTIONS.filter(s => !s.adminOnly || isAdmin)
   const [section, setSection] = useState('business')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [searchQ, setSearchQ] = useState('')
-  const [data, setData] = useState({ business:{}, statuses:[], products:[], templates:{}, partners:[], ai_settings:{}, financial:{} })
+  const [revealed, setRevealed] = useState(false)
+  const [data, setData] = useState({
+    business:{}, statuses:[], products:[], templates:{},
+    partners:[], ai_settings:{}, financial:{},
+    payment_methods:{}, region:{},
+  })
 
   const visibleSections = searchQ
-    ? allSections.filter(s => s.label.includes(searchQ) || s.desc.includes(searchQ))
+    ? allSections.filter(s =>
+        s.label.includes(searchQ) || s.desc.includes(searchQ) ||
+        s.keywords?.some(k => k.includes(searchQ))
+      )
     : allSections
 
-  useEffect(() => { loadAll() }, [])
+  // ── Completion check per section ──
+  function isComplete(id) {
+    switch(id) {
+      case 'business':  return !!(data.business?.store_name)
+      case 'partners':  return (data.partners||[]).length > 0
+      case 'statuses':  return (data.statuses||[]).length > 0
+      case 'whatsapp':  return !!(data.templates && Object.keys(data.templates).length > 0)
+      case 'ai':        return !!(data.ai_settings?.model)
+      case 'financial': case 'team': case 'appearance': case 'delivery':
+      case 'notifications': case 'security': return true
+      default: return false
+    }
+  }
+
+  const completedCount = allSections.filter(s => isComplete(s.id)).length
+  const progressPct    = Math.round((completedCount / Math.max(allSections.length, 1)) * 100)
+  const R = 20, C = 2 * Math.PI * R
+
+  useEffect(() => { loadAll(); setTimeout(() => setRevealed(true), 80) }, [])
 
   async function loadAll() {
     try {
@@ -104,32 +141,37 @@ export default function Settings({ user }: PageProps) {
   const active = visibleSections.find(s=>s.id===section) || visibleSections[0]
 
   const contentProps = {
-    data, updateData, user,
-    statuses:    data.statuses,
-    products:    data.products,
-    templates:   data.templates,
-    business:    data.business,
-    partners:    data.partners || [],
-    ai_settings: data.ai_settings || {},
-    financial:   data.financial || {},
+    data, updateData, user, onNavigate,
+    statuses:        data.statuses,
+    products:        data.products,
+    templates:       data.templates,
+    business:        data.business,
+    partners:        data.partners || [],
+    ai_settings:     data.ai_settings || {},
+    financial:       data.financial || {},
+    payment_methods: data.payment_methods || {},
+    region:          data.region || {},
   }
 
   function renderSection() {
     switch(section) {
-      case 'business':      return <BusinessTab      {...contentProps} />
-      case 'financial':     return <FinancialTab     {...contentProps} />
-      case 'partners':      return <PartnersTab      {...contentProps} />
-      case 'statuses':      return <StatusesTab      {...contentProps} />
-      case 'team':          return <TeamTab />
-      case 'ai':            return <AITab            {...contentProps} />
-      case 'whatsapp':      return <WhatsAppTab      {...contentProps} />
-      case 'appearance':    return <AppearanceTab    {...contentProps} />
-      case 'delivery':      return <DeliveryTab      {...contentProps} />
-      case 'discounts':     return <DiscountsTab />
-      case 'notifications': return <NotificationsTab />
-      case 'security':      return <SecurityTab />
-      case 'backup':        return <BackupTab />
-      default:              return null
+      case 'business':       return <BusinessTab        {...contentProps} />
+      case 'financial':      return <FinancialTab       {...contentProps} />
+      case 'partners':       return <PartnersTab        {...contentProps} />
+      case 'statuses':       return <StatusesTab        {...contentProps} />
+      case 'team':           return <TeamTab />
+      case 'ai':             return <AITab              {...contentProps} />
+      case 'whatsapp':       return <WhatsAppTab        {...contentProps} />
+      case 'appearance':     return <AppearanceTab      {...contentProps} />
+      case 'delivery':       return <DeliveryTab        {...contentProps} />
+      case 'discounts':      return <DiscountsTab />
+      case 'notifications':  return <NotificationsTab />
+      case 'security':       return <SecurityTab />
+      case 'backup':         return <BackupTab />
+      case 'receipt':        return <ReceiptSettingsTab {...contentProps} />
+      case 'payment_methods':return <PaymentMethodsTab  {...contentProps} />
+      case 'region':         return <RegionTab />
+      default:               return null
     }
   }
 
@@ -164,73 +206,120 @@ export default function Settings({ user }: PageProps) {
   ) : null
 
   return (
-    <div className="page">
-      {/* Header */}
-      <div style={{marginBottom:20}}>
-        <h1 style={{fontSize:22,fontWeight:900,marginBottom:4,color:'var(--text)'}}>الإعدادات</h1>
-        <p style={{color:'var(--text-muted)',fontSize:13}}>تخصيص النظام وإدارة البيانات</p>
+    <div className="page" style={{
+      opacity: revealed ? 1 : 0,
+      transform: revealed ? 'none' : 'translateY(8px)',
+      transition: 'opacity 0.3s ease, transform 0.3s ease',
+    }}>
+
+      {/* ── Header with progress ring ── */}
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}}>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:900,marginBottom:4,color:'var(--text)'}}>⚙️ الإعدادات</h1>
+          <p style={{color:'var(--text-muted)',fontSize:13}}>
+            {completedCount} من {allSections.length} قسم مكتمل
+          </p>
+        </div>
+        {/* Progress ring */}
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+          <svg width={60} height={60} viewBox="0 0 54 54" style={{transform:'rotate(-90deg)'}}>
+            <circle cx={27} cy={27} r={R} fill="none" stroke="var(--border-strong)" strokeWidth={4}/>
+            <circle
+              cx={27} cy={27} r={R} fill="none"
+              stroke={progressPct>=80?'#22c55e':progressPct>=50?'var(--action)':'#F59E0B'}
+              strokeWidth={4}
+              strokeDasharray={`${C * progressPct / 100} ${C * (1 - progressPct / 100)}`}
+              strokeLinecap="round"
+              style={{transition:'stroke-dasharray 1s ease, stroke 0.5s ease'}}
+            />
+          </svg>
+          <div style={{
+            position:'relative', marginTop:-46, width:60, height:40,
+            display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+          }}>
+            <span style={{fontSize:13,fontWeight:900,color:'var(--text)',lineHeight:1}}>{progressPct}%</span>
+          </div>
+          <span style={{fontSize:10,color:'var(--text-muted)',marginTop:6}}>مكتمل</span>
+        </div>
       </div>
       <div className="page-wave-accent" style={{marginBottom:20}} />
 
       {/* ── Desktop layout: sidebar + panel ── */}
       <div style={{display:'flex',gap:20,alignItems:'flex-start'}} className="settings-layout">
 
-        {/* Sidebar — Glass */}
+        {/* Sidebar */}
         <div style={{
-          width:230, flexShrink:0,
+          width:248, flexShrink:0,
           background:'var(--bg-surface)',
           backdropFilter:'var(--glass-blur)',
           WebkitBackdropFilter:'var(--glass-blur)',
           border:'1px solid var(--border)',
           borderTopColor:'var(--glass-edge)',
-          borderRadius:'var(--radius-lg)',
+          borderRadius:'var(--r-lg)',
           padding:10,
           position:'sticky', top:16,
           boxShadow:'var(--card-shadow)',
+          maxHeight:'calc(100vh - 120px)',
+          overflowY:'auto',
         }} className="settings-sidebar">
           {/* Search */}
-          <div style={{marginBottom:10,position:'relative'}}>
+          <div style={{marginBottom:10}}>
             <input
               value={searchQ}
               onChange={e=>setSearchQ(e.target.value)}
-              placeholder="بحث في الإعدادات..."
+              placeholder="⌘ ابحث في الإعدادات..."
               style={{
-                width:'100%',padding:'9px 12px 9px 32px',
+                width:'100%',padding:'9px 12px',boxSizing:'border-box',
                 background:'var(--bg-hover)',border:'1px solid var(--border)',
                 borderRadius:'var(--r-md)',color:'var(--text)',fontSize:12,
                 fontFamily:'inherit',outline:'none',
               }}
             />
-            <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',fontSize:14,color:'var(--text-muted)',pointerEvents:'none'}}>🔍</span>
           </div>
-          {visibleSections.map(s => {
-            const isActive = section === s.id
-            const c = s.color || 'var(--action)'
+
+          {/* Category groups */}
+          {CATEGORIES.map(cat => {
+            const catSections = visibleSections.filter(s => s.category === cat.id)
+            if (catSections.length === 0) return null
             return (
-              <button key={s.id} onClick={() => setSection(s.id)} style={{
-                width:'100%', display:'flex', alignItems:'center', gap:10,
-                padding:'9px 10px', borderRadius:'var(--r-md)',
-                border:'none',
-                background: isActive ? `${c}14` : 'transparent',
-                cursor:'pointer', fontFamily:'inherit',
-                transition:'all 0.15s ease', textAlign:'right',
-                borderInlineStart: isActive ? `2.5px solid ${c}` : '2.5px solid transparent',
-                boxShadow: isActive ? `inset 0 0 0 1px ${c}18` : 'none',
-              }}>
+              <div key={cat.id} style={{marginBottom:8}}>
                 <div style={{
-                  width:34, height:34, borderRadius:'var(--r-sm)', flexShrink:0,
-                  background: isActive ? `${c}28` : `${c}12`,
-                  border: isActive ? `1px solid ${c}40` : `1px solid ${c}18`,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:17, transition:'all 0.15s ease',
-                  boxShadow: isActive ? `0 0 14px ${c}35` : 'none',
-                }}>{s.icon}</div>
-                <div style={{minWidth:0,flex:1}}>
-                  <div style={{fontSize:13,fontWeight:isActive?800:600,color:isActive?c:'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.label}</div>
-                  <div style={{fontSize:10,color:'var(--text-muted)',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.desc}</div>
+                  fontSize:9, fontWeight:800, color:'var(--text-muted)',
+                  padding:'5px 8px 2px', letterSpacing:'0.08em',
+                  display:'flex', alignItems:'center', gap:5,
+                }}>
+                  {cat.icon} {cat.label.toUpperCase()}
                 </div>
-                {isActive && <div style={{width:6,height:6,borderRadius:'50%',background:c,flexShrink:0,boxShadow:`0 0 8px ${c}`}} />}
-              </button>
+                {catSections.map(s => {
+                  const isActive = section === s.id
+                  const c = s.color || 'var(--action)'
+                  const done = isComplete(s.id)
+                  return (
+                    <button key={s.id} onClick={()=>setSection(s.id)} style={{
+                      width:'100%', display:'flex', alignItems:'center', gap:8,
+                      padding:'7px 8px', borderRadius:'var(--r-sm)',
+                      border:'none',
+                      background: isActive ? `${c}14` : 'transparent',
+                      cursor:'pointer', fontFamily:'inherit',
+                      transition:'all 0.15s ease', textAlign:'right',
+                      borderInlineStart: isActive ? `2.5px solid ${c}` : '2.5px solid transparent',
+                    }}>
+                      <div style={{
+                        width:28, height:28, borderRadius:'var(--r-sm)', flexShrink:0,
+                        background: isActive ? `${c}28` : `${c}12`,
+                        border:`1px solid ${c}${isActive?'40':'18'}`,
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:14, transition:'all 0.15s ease',
+                        boxShadow: isActive ? `0 0 10px ${c}30` : 'none',
+                      }}>{s.icon}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:isActive?800:600,color:isActive?c:'var(--text)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.label}</div>
+                      </div>
+                      {done && <span style={{fontSize:11,color:'#22c55e',flexShrink:0}}>✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
             )
           })}
         </div>
@@ -238,8 +327,9 @@ export default function Settings({ user }: PageProps) {
         {/* Content panel */}
         <div style={{flex:1,minWidth:0}} className="settings-content">
           {/* Section header */}
-          {(() => {
-            const ac = active?.color || 'var(--action)'
+          {active && (() => {
+            const ac = active.color || 'var(--action)'
+            const done = isComplete(active.id)
             return (
               <div style={{
                 display:'flex', alignItems:'center', gap:14, marginBottom:20,
@@ -258,11 +348,18 @@ export default function Settings({ user }: PageProps) {
                   border:`1px solid ${ac}35`,
                   display:'flex', alignItems:'center', justifyContent:'center', fontSize:26,
                   boxShadow:`0 0 24px ${ac}25`,
-                }}>{active?.icon}</div>
-                <div>
-                  <div style={{fontWeight:900,fontSize:18,color:'var(--text)'}}>{active?.label}</div>
-                  <div style={{fontSize:12,color:'var(--text-muted)',marginTop:2}}>{active?.desc}</div>
+                }}>{active.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:900,fontSize:18,color:'var(--text)'}}>{active.label}</div>
+                  <div style={{fontSize:12,color:'var(--text-muted)',marginTop:2}}>{active.desc}</div>
                 </div>
+                {done && (
+                  <div style={{
+                    background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)',
+                    borderRadius:999, padding:'4px 12px', fontSize:11, fontWeight:700, color:'#22c55e',
+                    display:'flex', alignItems:'center', gap:5, flexShrink:0,
+                  }}>✓ مكتمل</div>
+                )}
               </div>
             )
           })()}
@@ -270,36 +367,78 @@ export default function Settings({ user }: PageProps) {
         </div>
       </div>
 
-      {/* ── Mobile: section list ── */}
+      {/* ── Mobile: 2-column grid grouped by category ── */}
       <div className="settings-mobile-list">
-        {visibleSections.map(s => {
-          const c = s.color || 'var(--action)'
+        {/* Mobile search */}
+        <div style={{marginBottom:14}}>
+          <input
+            value={searchQ}
+            onChange={e=>setSearchQ(e.target.value)}
+            placeholder="🔍 ابحث في الإعدادات..."
+            style={{
+              width:'100%', padding:'11px 14px', boxSizing:'border-box',
+              background:'var(--bg-surface)', border:'1px solid var(--border)',
+              borderRadius:'var(--r-lg)', color:'var(--text)', fontSize:14,
+              fontFamily:'inherit', outline:'none', boxShadow:'var(--card-shadow)',
+            }}
+          />
+        </div>
+
+        {/* Category groups → 2-col grid */}
+        {CATEGORIES.map(cat => {
+          const catSections = visibleSections.filter(s => s.category === cat.id)
+          if (catSections.length === 0) return null
           return (
-            <button key={s.id} onClick={()=>{ setSection(s.id); setMobileOpen(true) }} style={{
-              width:'100%', display:'flex', alignItems:'center', gap:14,
-              padding:'14px 16px', marginBottom:10,
-              background:'var(--bg-surface)',
-              backdropFilter:'var(--glass-blur)',
-              WebkitBackdropFilter:'var(--glass-blur)',
-              border:`1px solid ${c}22`,
-              borderRadius:'var(--r-lg)',
-              cursor:'pointer', fontFamily:'inherit',
-              transition:'all 0.15s ease',
-              boxShadow:'var(--card-shadow)',
-            }}>
+            <div key={cat.id} style={{marginBottom:20}}>
               <div style={{
-                width:48, height:48, borderRadius:'var(--r-md)', flexShrink:0,
-                background:`linear-gradient(135deg,${c}22,${c}0a)`,
-                border:`1px solid ${c}28`,
-                display:'flex', alignItems:'center', justifyContent:'center', fontSize:24,
-                boxShadow:`0 0 16px ${c}18`,
-              }}>{s.icon}</div>
-              <div style={{flex:1,textAlign:'right'}}>
-                <div style={{fontWeight:700,fontSize:14,color:'var(--text)'}}>{s.label}</div>
-                <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{s.desc}</div>
+                fontSize:13, fontWeight:800, color: cat.color, marginBottom:10,
+                display:'flex', alignItems:'center', gap:7,
+              }}>
+                {cat.icon} {cat.label}
               </div>
-              <span style={{color:c,fontSize:16,opacity:0.6}}>‹</span>
-            </button>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                {catSections.map(s => {
+                  const c = s.color || 'var(--action)'
+                  const done = isComplete(s.id)
+                  return (
+                    <button key={s.id}
+                      onClick={()=>{ setSection(s.id); setMobileOpen(true) }}
+                      style={{
+                        display:'flex', flexDirection:'column', alignItems:'flex-start', gap:8,
+                        padding:'14px 12px',
+                        background:'var(--bg-surface)',
+                        border:`1px solid ${c}22`,
+                        borderRadius:'var(--r-lg)',
+                        cursor:'pointer', fontFamily:'inherit',
+                        transition:'all 0.15s ease',
+                        boxShadow:'var(--card-shadow)',
+                        position:'relative',
+                        textAlign:'right',
+                      }}>
+                      {done && (
+                        <div style={{
+                          position:'absolute',top:8,insetInlineStart:8,
+                          width:16,height:16,borderRadius:'50%',
+                          background:'rgba(34,197,94,0.15)',border:'1px solid rgba(34,197,94,0.4)',
+                          display:'flex',alignItems:'center',justifyContent:'center',
+                          fontSize:9,color:'#22c55e',
+                        }}>✓</div>
+                      )}
+                      <div style={{
+                        width:42,height:42,borderRadius:'var(--r-md)',
+                        background:`linear-gradient(135deg,${c}22,${c}0a)`,
+                        border:`1px solid ${c}28`,
+                        display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
+                      }}>{s.icon}</div>
+                      <div style={{width:'100%'}}>
+                        <div style={{fontWeight:700,fontSize:13,color:'var(--text)'}}>{s.label}</div>
+                        <div style={{fontSize:10,color:'var(--text-muted)',marginTop:2,lineHeight:1.4}}>{s.desc}</div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </div>
@@ -1942,6 +2081,183 @@ function BackupTab() {
       </Card>
 
       <InfoBox icon="️">بياناتك محفوظة تلقائياً في Supabase Cloud. النسخ الاحتياطي هنا للأرشفة الشخصية فقط.</InfoBox>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════
+   RECEIPT SETTINGS TAB
+   Quick toggles + link to full ReceiptCustomizer page
+══════════════════════════════════════════════════ */
+function ReceiptSettingsTab({ onNavigate, data, updateData }) {
+  const biz = data.business || {}
+  function toggle(key, val) { updateData('business', { ...biz, [key]: val }) }
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <Card>
+        <SectionTitle>مخصص الفاتورة المتقدم</SectionTitle>
+        {/* Big launcher card */}
+        <div style={{
+          background:'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(49,140,231,0.1))',
+          border:'1px solid rgba(16,185,129,0.25)',
+          borderRadius:'var(--r-lg)', padding:24, textAlign:'center', marginBottom:4,
+        }}>
+          <div style={{fontSize:52,marginBottom:12,lineHeight:1}}>🧾</div>
+          <div style={{fontWeight:900,fontSize:17,color:'var(--text)',marginBottom:6}}>صمّم فاتورتك بحرية تامة</div>
+          <div style={{fontSize:13,color:'var(--text-muted)',marginBottom:20,lineHeight:1.7}}>
+            محرر مرئي · قوالب جاهزة · كود HTML مخصص<br/>
+            معاينة فورية + طباعة بنقرة واحدة
+          </div>
+          <Btn onClick={() => onNavigate('receipt')}>
+            <span style={{fontSize:16}}>🚀</span> فتح مخصص الفاتورة
+          </Btn>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionTitle>إعدادات سريعة</SectionTitle>
+        <ControlRow label="إظهار الشعار في الفاتورة">
+          <Toggle checked={biz.receipt_show_logo !== false} onChange={v => toggle('receipt_show_logo', v)} />
+        </ControlRow>
+        <ControlRow label="إظهار ملاحظات الطلب">
+          <Toggle checked={biz.receipt_show_notes !== false} onChange={v => toggle('receipt_show_notes', v)} />
+        </ControlRow>
+        <ControlRow label="إظهار معلومات التوصيل">
+          <Toggle checked={biz.receipt_show_delivery !== false} onChange={v => toggle('receipt_show_delivery', v)} />
+        </ControlRow>
+        <ControlRow label="إظهار حقل التوقيع">
+          <Toggle checked={!!biz.receipt_show_signature} onChange={v => toggle('receipt_show_signature', v)} />
+        </ControlRow>
+        <ControlRow label="طباعة تلقائية عند تأكيد الطلب">
+          <Toggle checked={!!biz.receipt_auto_print} onChange={v => toggle('receipt_auto_print', v)} />
+        </ControlRow>
+      </Card>
+
+      <InfoBox icon="💡">يمكنك استخدام الفاتورة لطباعة إيصالات التسليم أو إرسالها كـ PDF عبر واتساب.</InfoBox>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════
+   PAYMENT METHODS TAB
+══════════════════════════════════════════════════ */
+function PaymentMethodsTab({ data, updateData }) {
+  const pm = data.payment_methods || {}
+
+  function save(key, val) {
+    const updated = { ...pm, [key]: val }
+    updateData('payment_methods', updated)
+  }
+
+  const METHODS = [
+    { id:'cash',     label:'نقد (COD)',         icon:'💵', desc:'الدفع النقدي عند التسليم' },
+    { id:'transfer', label:'تحويل بنكي',         icon:'🏦', desc:'التحويل الإلكتروني' },
+    { id:'card',     label:'بطاقة ائتمان',       icon:'💳', desc:'Visa / Mastercard' },
+    { id:'tabby',    label:'Tabby',              icon:'💜', desc:'التقسيط الميسّر' },
+    { id:'tamara',   label:'Tamara',             icon:'🟢', desc:'اشتري الآن وادفع لاحقاً' },
+  ]
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <Card>
+        <SectionTitle>طرق الدفع المقبولة</SectionTitle>
+        {METHODS.map(m => (
+          <ControlRow key={m.id} label={`${m.icon} ${m.label}`} hint={m.desc}>
+            <Toggle checked={pm[m.id] !== false} onChange={v => save(m.id, v)} />
+          </ControlRow>
+        ))}
+      </Card>
+
+      <Card>
+        <SectionTitle>معلومات الحساب البنكي للتحويل</SectionTitle>
+        <Input label="اسم البنك" value={pm.bank_name||''} onChange={v => save('bank_name', v)} placeholder="مصرف الإمارات الإسلامي" />
+        <div style={{marginTop:12}} />
+        <Input label="رقم IBAN" value={pm.iban||''} onChange={v => save('iban', v)} placeholder="AE00 0000 0000 0000 0000 000" />
+        <div style={{marginTop:12}} />
+        <Input label="اسم صاحب الحساب" value={pm.account_name||''} onChange={v => save('account_name', v)} placeholder="شركة موج للهدايا" />
+        <div style={{marginTop:12}} />
+        <Input label="رابط الدفع (اختياري)" value={pm.pay_link||''} onChange={v => save('pay_link', v)} placeholder="https://pay.example.com" />
+      </Card>
+
+      <InfoBox icon="💳">تظهر طرق الدفع المفعّلة للعملاء في رسائل واتساب وعند إنشاء الطلبات.</InfoBox>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════
+   REGION TAB — Language & region settings
+══════════════════════════════════════════════════ */
+function RegionTab() {
+  const [settings, setSettings] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('mawj-region') || '{}') }
+    catch { return {} }
+  })
+
+  function save(key, val) {
+    const updated = { ...settings, [key]: val }
+    setSettings(updated)
+    localStorage.setItem('mawj-region', JSON.stringify(updated))
+    toast('تم الحفظ ')
+  }
+
+  const selectStyle = {
+    padding:'9px 12px',
+    background:'var(--bg-hover)', border:'1px solid var(--border)',
+    borderRadius:'var(--r-md)', color:'var(--text)', fontFamily:'inherit',
+    fontSize:13, outline:'none', width:'100%',
+  }
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <Card>
+        <SectionTitle>الدولة والمنطقة الزمنية</SectionTitle>
+        <ControlRow label="الدولة">
+          <select value={settings.country||'AE'} onChange={e=>save('country',e.target.value)} style={selectStyle}>
+            <option value="AE">🇦🇪 الإمارات العربية المتحدة</option>
+            <option value="SA">🇸🇦 المملكة العربية السعودية</option>
+            <option value="KW">🇰🇼 الكويت</option>
+            <option value="QA">🇶🇦 قطر</option>
+            <option value="BH">🇧🇭 البحرين</option>
+            <option value="OM">🇴🇲 عُمان</option>
+          </select>
+        </ControlRow>
+        <ControlRow label="المنطقة الزمنية">
+          <select value={settings.tz||'Asia/Dubai'} onChange={e=>save('tz',e.target.value)} style={selectStyle}>
+            <option value="Asia/Dubai">توقيت الخليج — GMT+4</option>
+            <option value="Asia/Riyadh">توقيت الرياض — GMT+3</option>
+            <option value="Asia/Kuwait">توقيت الكويت — GMT+3</option>
+          </select>
+        </ControlRow>
+      </Card>
+
+      <Card>
+        <SectionTitle>تنسيقات العرض</SectionTitle>
+        <ControlRow label="تنسيق التاريخ">
+          <select value={settings.date_format||'ar'} onChange={e=>save('date_format',e.target.value)} style={selectStyle}>
+            <option value="ar">١ يناير ٢٠٢٥ (عربي)</option>
+            <option value="dd/mm/yyyy">01/01/2025</option>
+            <option value="yyyy-mm-dd">2025-01-01</option>
+          </select>
+        </ControlRow>
+        <ControlRow label="العملة">
+          <select value={settings.currency||'AED'} onChange={e=>save('currency',e.target.value)} style={selectStyle}>
+            <option value="AED">درهم إماراتي (AED)</option>
+            <option value="SAR">ريال سعودي (SAR)</option>
+            <option value="KWD">دينار كويتي (KWD)</option>
+            <option value="QAR">ريال قطري (QAR)</option>
+          </select>
+        </ControlRow>
+        <ControlRow label="فاصل الأرقام الكبيرة">
+          <select value={settings.number_sep||','} onChange={e=>save('number_sep',e.target.value)} style={selectStyle}>
+            <option value=",">1,000 (فاصلة)</option>
+            <option value=".">1.000 (نقطة)</option>
+            <option value=" ">1 000 (مسافة)</option>
+          </select>
+        </ControlRow>
+      </Card>
+
+      <InfoBox icon="🌍">تُطبَّق إعدادات المنطقة على التقارير وعرض التواريخ والأرقام في كل النظام.</InfoBox>
     </div>
   )
 }
