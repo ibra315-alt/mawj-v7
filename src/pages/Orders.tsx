@@ -1000,109 +1000,151 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
 
   if (!open) return null
 
-  return (
+  const saveLabel = isEdit ? 'حفظ' : isRepl ? 'إرسال' : 'إضافة'
+
+  return createPortal(
     <>
+      {/* Backdrop */}
       <div onClick={onClose} style={{
-        position:'fixed', inset:0, background:'rgba(0,0,0,0.45)',
-        backdropFilter:'blur(12px) saturate(1.2)', WebkitBackdropFilter:'blur(12px) saturate(1.2)',
-        zIndex:1000,
+        position:'fixed', inset:0, background:'rgba(0,0,0,0.5)',
+        backdropFilter:'blur(10px) saturate(1.2)', WebkitBackdropFilter:'blur(10px) saturate(1.2)',
+        zIndex:2000,
       }}/>
-      <div className="order-panel" style={{
-        position:'fixed', top:0, bottom:0, left:0, zIndex:1001,
+
+      {/* Panel */}
+      <div className="order-panel-shell" style={{
+        position:'fixed', zIndex:2001,
         background:'var(--modal-bg)', boxShadow:'var(--modal-shadow)',
         backdropFilter:'var(--glass-blur-lg)', WebkitBackdropFilter:'var(--glass-blur-lg)',
-        display:'flex', flexDirection:'column', animation:'slidePanelIn 250ms ease both', overflow:'hidden',
+        display:'flex', flexDirection:'column', overflow:'hidden',
+        animation:'orderPanelIn 220ms cubic-bezier(0.34,1.1,0.64,1) both',
       }}>
-        {/* Header */}
+
+        {/* ── Sticky header with action buttons always visible ── */}
         <div style={{
-          flexShrink:0, padding:'16px 20px', background:'var(--modal-bg)',
+          flexShrink:0, padding:'11px 14px',
           borderBottom:'1px solid var(--border)',
-          display:'flex', justifyContent:'space-between', alignItems:'center',
+          background:'var(--modal-bg)',
+          display:'flex', alignItems:'center', gap:8,
         }}>
-          <h2 style={{ margin:0, fontSize:17, fontWeight:800, color:'var(--text)' }}>
-            {isEdit ? 'تعديل الطلب' : isRepl ? `استبدال — ${replacementFor?.order_number}` : 'طلب جديد'}
-          </h2>
-          <button onClick={onClose} style={{ background:'var(--bg-hover)', border:'none', borderRadius:8, padding:8, cursor:'pointer', color:'var(--text-muted)', display:'flex' }}>
-            <IcClose size={17}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:15, fontWeight:800, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              {isEdit ? 'تعديل الطلب' : isRepl ? `استبدال — ${replacementFor?.order_number}` : 'طلب جديد'}
+            </div>
+            {isRepl && <div style={{ fontSize:10, color:'#F59E0B', marginTop:1, fontWeight:600 }}>ربح سالب · استبدال مجاني</div>}
+          </div>
+          {/* Cancel */}
+          <button onClick={onClose} style={{
+            padding:'7px 13px', borderRadius:8,
+            border:'1.5px solid var(--border)', background:'transparent',
+            color:'var(--text-muted)', fontSize:13, fontWeight:600,
+            cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+            WebkitTapHighlightColor:'transparent',
+          }}>إلغاء</button>
+          {/* Save — always visible, no scrolling needed */}
+          <button onClick={handleSave} disabled={saving} style={{
+            padding:'7px 18px', borderRadius:8, border:'none',
+            background: saving ? 'var(--bg-hover)'
+              : isRepl ? 'linear-gradient(135deg,#d97706,#F59E0B)'
+              : 'linear-gradient(135deg,#1B6FC9,#318CE7)',
+            color:'#fff',
+            fontSize:13, fontWeight:800,
+            cursor: saving ? 'not-allowed' : 'pointer',
+            fontFamily:'inherit', display:'flex', alignItems:'center', gap:6,
+            boxShadow: saving ? 'none' : '0 2px 14px rgba(49,140,231,0.4)',
+            opacity: saving ? 0.65 : 1, flexShrink:0,
+            transition:'all 0.15s',
+            WebkitTapHighlightColor:'transparent',
+          }}>
+            {saving
+              ? <span style={{ width:13, height:13, border:'2px solid rgba(255,255,255,0.35)', borderTopColor:'#fff', borderRadius:'50%', display:'inline-block', animation:'orderPanelSpin 0.7s linear infinite' }}/>
+              : <><IcSave size={13}/> {saveLabel}</>
+            }
           </button>
         </div>
 
-        {/* Body */}
-        <div style={{ flex:1, padding:'20px', overflowY:'auto', minHeight:0, WebkitOverflowScrolling:'touch' }}>
-          {isRepl && (
-            <div style={{ marginBottom:16, padding:'12px 14px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.3)', borderRadius:12, fontSize:13, color:'#F59E0B', fontWeight:700 }}>
-              طلب استبدال مجاني — الربح سيكون سالباً
-            </div>
-          )}
+        {/* ── Scrollable body ─────────────────────────────────── */}
+        <div style={{ flex:1, padding:'12px 14px', overflowY:'auto', minHeight:0, WebkitOverflowScrolling:'touch' }}>
+
           {phoneWarning && (
-            <div style={{ marginBottom:12, padding:'10px 14px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.35)', borderRadius:12, fontSize:12, color:'#F59E0B' }}>
+            <div style={{ marginBottom:10, padding:'9px 12px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.35)', borderRadius:10, fontSize:12, color:'#F59E0B' }}>
               <b>رقم الهاتف موجود في طلب مفتوح:</b> {phoneWarning.customer_name || 'عميل'} — {phoneWarning.order_number}
             </div>
           )}
 
-          {/* Customer info */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
-            <Input label="اسم العميل"       value={form.customer_name    || ''} onChange={e => setField('customer_name',    e.target.value)} placeholder="اختياري"/>
-            <Input label="رقم الهاتف"       value={form.customer_phone   || ''} onChange={e => setField('customer_phone',   e.target.value)} placeholder="+971..." dir="ltr"/>
-            <Select label="الإمارة"          value={form.customer_city    || ''} onChange={e => setField('customer_city',    e.target.value)}>
-              <option value="">اختر الإمارة</option>
+          {/* Customer info — compact 2-col grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
+            <Input label="اسم العميل"   value={form.customer_name    || ''} onChange={e => setField('customer_name',    e.target.value)} placeholder="اختياري"/>
+            <Input label="رقم الهاتف"   value={form.customer_phone   || ''} onChange={e => setField('customer_phone',   e.target.value)} placeholder="+971..." dir="ltr"/>
+            <Select label="الإمارة"      value={form.customer_city    || ''} onChange={e => setField('customer_city',    e.target.value)}>
+              <option value="">اختر</option>
               {UAE_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </Select>
-            <Input label="العنوان التفصيلي"  value={form.customer_address || ''} onChange={e => setField('customer_address', e.target.value)} placeholder="الحي / الشارع..."/>
+            <Input label="العنوان"       value={form.customer_address || ''} onChange={e => setField('customer_address', e.target.value)} placeholder="الحي / الشارع..."/>
           </div>
 
           {/* Products */}
-          <div style={{ marginBottom:20 }}>
-            <div style={{ fontWeight:700, fontSize:12, color:'var(--text-muted)', letterSpacing:'0.05em', marginBottom:10 }}>المنتجات</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom: selectedProduct ? 10 : 0 }}>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontWeight:700, fontSize:11, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:8 }}>المنتجات</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom: selectedProduct ? 8 : 0 }}>
               {products.map(p => {
                 const sizes = p.sizes?.length > 0 ? p.sizes : [{ id: p.id, size: p.size || '', cost: p.cost || 0, price: p.price || 0 }]
                 const isSingle   = sizes.length === 1
                 const isSelected = selectedProduct?.id === p.id
                 return (
                   <button key={p.id} onClick={() => isSingle ? addItem(p.name, sizes[0]) : setSelectedProduct(isSelected ? null : { ...p, sizes })}
-                    style={{ padding:'7px 13px', borderRadius:8, cursor:'pointer', fontFamily:'inherit', fontSize:13, fontWeight:700, transition:'all 120ms', background: isSelected ? 'var(--action-soft)' : 'var(--bg-hover)', border:`1.5px solid ${isSelected ? 'var(--action)' : 'var(--border)'}`, color: isSelected ? 'var(--action)' : 'var(--text-sec)' }}>
-                    {p.name}{!isSingle && <span style={{ fontSize:10, marginInlineStart:4, opacity:0.6 }}>{isSelected ? '▲' : '▼'}</span>}
+                    style={{ padding:'6px 12px', borderRadius:8, cursor:'pointer', fontFamily:'inherit', fontSize:12, fontWeight:700, transition:'all 120ms', background: isSelected ? 'var(--action-soft)' : 'var(--bg-hover)', border:`1.5px solid ${isSelected ? 'var(--action)' : 'var(--border)'}`, color: isSelected ? 'var(--action)' : 'var(--text-sec)', WebkitTapHighlightColor:'transparent' }}>
+                    {p.name}{!isSingle && <span style={{ fontSize:9, marginInlineStart:3, opacity:0.6 }}>{isSelected ? '▲' : '▼'}</span>}
                   </button>
                 )
               })}
             </div>
             {selectedProduct && (
-              <div style={{ padding:'12px 14px', marginBottom:8, background:'var(--bg-surface)', borderRadius:12, border:'1.5px solid var(--action)', boxShadow:'0 0 12px rgba(49,140,231,0.1)' }}>
-                <div style={{ fontSize:11, color:'var(--action)', fontWeight:700, marginBottom:8 }}>{selectedProduct.name} — اختر الحجم:</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              <div style={{ padding:'10px 12px', marginBottom:6, background:'var(--bg-surface)', borderRadius:10, border:'1.5px solid var(--action)', boxShadow:'0 0 10px rgba(49,140,231,0.1)' }}>
+                <div style={{ fontSize:11, color:'var(--action)', fontWeight:700, marginBottom:6 }}>{selectedProduct.name} — الحجم:</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                   {(selectedProduct.sizes || []).map(sv => (
                     <button key={sv.id} onClick={() => addItem(selectedProduct.name, sv)}
-                      style={{ padding:'10px 16px', borderRadius:8, cursor:'pointer', fontFamily:'inherit', background:'var(--bg-hover)', border:'1.5px solid var(--border)', color:'var(--text)', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
-                      <span style={{ fontSize:14, fontWeight:800 }}>{sv.size}</span>
-                      <span style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>{sv.price} د.إ</span>
+                      style={{ padding:'8px 14px', borderRadius:8, cursor:'pointer', fontFamily:'inherit', background:'var(--bg-hover)', border:'1.5px solid var(--border)', color:'var(--text)', display:'flex', flexDirection:'column', alignItems:'center', gap:2, WebkitTapHighlightColor:'transparent' }}>
+                      <span style={{ fontSize:13, fontWeight:800 }}>{sv.size}</span>
+                      <span style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'Inter,sans-serif' }}>{sv.price} د.إ</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
             {items.length > 0 && (
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop: selectedProduct ? 0 : 6 }}>
                 {items.map((item, idx) => (
-                  <div key={idx} style={{ background:'var(--bg-hover)', borderRadius:12, padding:'10px 12px', border:'1px solid var(--border)' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-                      <div style={{ flex:1 }}>
+                  <div key={idx} style={{ background:'var(--bg-hover)', borderRadius:10, padding:'10px 12px', border:'1px solid var(--border)' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      {/* Name */}
+                      <div style={{ flex:1, minWidth:0, overflow:'hidden' }}>
                         <span style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{item.name}</span>
                         {item.size && <span style={{ fontSize:11, color:'var(--text-muted)', marginInlineStart:4 }}>({item.size})</span>}
                       </div>
+                      {/* Unit price */}
                       <input type="number" value={item.price} onChange={e => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
-                        style={{ width:60, padding:'4px 6px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:6, color:'var(--action)', fontSize:12, textAlign:'center', fontFamily:'Inter,sans-serif' }}/>
-                      <span style={{ fontSize:11, color:'var(--text-muted)' }}>×</span>
-                      <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', Math.max(1, parseInt(e.target.value) || 1))}
-                        style={{ width:40, padding:'4px 6px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', fontSize:13, textAlign:'center', fontFamily:'inherit' }}/>
-                      <span style={{ fontWeight:700, color:'var(--action)', fontSize:13, minWidth:56, textAlign:'start', fontFamily:'Inter,sans-serif' }}>{formatCurrency(item.price * item.qty)}</span>
-                      <button onClick={() => removeItem(idx)} style={{ background:'none', border:'none', color:'var(--danger)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'0 2px' }}>×</button>
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <IcNote size={12} style={{ color:'var(--text-muted)', flexShrink:0 }}/>
-                      <input value={item.engraving_notes || ''} onChange={e => updateItem(idx, 'engraving_notes', e.target.value)}
-                        placeholder="ملاحظات النقش..."
-                        style={{ flex:1, padding:'6px 10px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text)', fontSize:12, fontFamily:'inherit', outline:'none' }}/>
+                        style={{ width:52, padding:'5px 4px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:6, color:'var(--action)', fontSize:12, textAlign:'center', fontFamily:'Inter,sans-serif', flexShrink:0 }}/>
+                      {/* ── Qty stepper — large tap targets for mobile ── */}
+                      <div style={{ display:'flex', alignItems:'center', borderRadius:8, border:'1.5px solid var(--border)', overflow:'hidden', flexShrink:0 }}>
+                        <button
+                          onClick={() => updateItem(idx, 'qty', Math.max(1, item.qty - 1))}
+                          style={{ width:36, height:36, border:'none', borderInlineEnd:'1px solid var(--border)', background:'var(--bg-surface)', color:'var(--text-muted)', fontSize:20, lineHeight:1, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', WebkitTapHighlightColor:'transparent' }}
+                        >−</button>
+                        <span style={{ width:32, textAlign:'center', fontSize:15, fontWeight:800, color:'var(--text)', fontFamily:'Inter,sans-serif', userSelect:'none', flexShrink:0 }}>{item.qty}</span>
+                        <button
+                          onClick={() => updateItem(idx, 'qty', item.qty + 1)}
+                          style={{ width:36, height:36, border:'none', borderInlineStart:'1px solid var(--border)', background:'var(--bg-surface)', color:'var(--action)', fontSize:20, lineHeight:1, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', WebkitTapHighlightColor:'transparent' }}
+                        >+</button>
+                      </div>
+                      {/* Line total */}
+                      <span style={{ fontWeight:800, color:'var(--action)', fontSize:12, minWidth:46, textAlign:'start', fontFamily:'Inter,sans-serif', flexShrink:0 }}>
+                        {formatCurrency(item.price * item.qty)}
+                      </span>
+                      {/* Remove */}
+                      <button onClick={() => removeItem(idx)}
+                        style={{ background:'none', border:'none', color:'var(--danger)', cursor:'pointer', fontSize:20, lineHeight:1, padding:0, flexShrink:0, WebkitTapHighlightColor:'transparent' }}>×</button>
                     </div>
                   </div>
                 ))}
@@ -1111,50 +1153,60 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           </div>
 
           {/* Financial fields */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
-            <Input label="رسوم حياك (يتحملها موج)" type="number" min="0" value={form.hayyak_fee ?? 25} onChange={e => setField('hayyak_fee', e.target.value)}/>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:10 }}>
+            <Input label="رسوم حياك" type="number" min="0" value={form.hayyak_fee ?? 25} onChange={e => setField('hayyak_fee', e.target.value)}/>
             <Input label="خصم (د.إ)" type="number" min="0" value={form.discount || ''} onChange={e => setField('discount', e.target.value)}/>
             {!isEdit && <Input label="تاريخ الطلب" type="date" value={form.order_date || ''} onChange={e => setField('order_date', e.target.value)}/>}
           </div>
 
-          {/* Live profit summary */}
+          {/* Compact live profit bar */}
           <div style={{
-            padding:'14px 16px', borderRadius:12, marginBottom:16,
+            padding:'9px 12px', borderRadius:10, marginBottom:10,
             background: calc.gross_profit < 0 ? 'rgba(248,113,113,0.06)' : 'rgba(49,140,231,0.06)',
             border:`1.5px solid ${calc.gross_profit < 0 ? 'rgba(248,113,113,0.2)' : 'rgba(49,140,231,0.2)'}`,
+            display:'flex', flexWrap:'wrap', gap:'4px 16px', alignItems:'center',
           }}>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:'4px 14px', fontSize:12, marginBottom:6 }}>
-              <span style={{ color:'var(--text-sec)' }}>مبيعات: <b style={{ fontFamily:'Inter,sans-serif' }}>{formatCurrency(calc.subtotal)}</b></span>
-              {parseFloat(form.discount) > 0 && <span style={{ color:'var(--danger)' }}>خصم: −{formatCurrency(form.discount)}</span>}
-              <span style={{ color:'var(--text-sec)' }}>تكلفة: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(calc.product_cost)}</b></span>
-              <span style={{ color:'var(--text-sec)' }}>حياك: <b style={{ color:'#F87171', fontFamily:'Inter,sans-serif' }}>−{formatCurrency(calc.hayyak_fee)}</b></span>
-            </div>
-            <div style={{ display:'flex', gap:16, fontSize:15, fontWeight:900, fontFamily:'Inter,sans-serif' }}>
-              <span style={{ color:'var(--action)' }}>الإجمالي: {formatCurrency(calc.total)}</span>
-              <span style={{ color: calc.gross_profit >= 0 ? '#5DD8A4' : '#F87171' }}>
-                ربح: {calc.gross_profit >= 0 ? '+' : ''}{formatCurrency(calc.gross_profit)}
-              </span>
-            </div>
+            <span style={{ fontSize:14, fontWeight:900, color:'var(--action)', fontFamily:'Inter,sans-serif' }}>
+              {formatCurrency(calc.total)}
+            </span>
+            <span style={{ fontSize:12, color:'var(--text-sec)' }}>
+              ربح: <b style={{ color: calc.gross_profit >= 0 ? '#5DD8A4' : '#F87171', fontFamily:'Inter,sans-serif' }}>
+                {calc.gross_profit >= 0 ? '+' : ''}{formatCurrency(calc.gross_profit)}
+              </b>
+            </span>
+            {parseFloat(form.discount) > 0 && (
+              <span style={{ fontSize:11, color:'var(--danger)', fontFamily:'Inter,sans-serif' }}>خصم −{formatCurrency(form.discount)}</span>
+            )}
           </div>
 
           <Textarea label="ملاحظات" value={form.notes || ''} onChange={e => setField('notes', e.target.value)} placeholder="أي ملاحظات إضافية..."/>
-        </div>
 
-        {/* Footer */}
-        <div style={{ flexShrink:0, padding:'14px 20px', background:'var(--modal-bg)', borderTop:'1px solid var(--border)', display:'flex', gap:10, justifyContent:'flex-end' }}>
-          <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
-          <Btn loading={saving} onClick={handleSave} style={isRepl ? { background:'#F59E0B', color:'#000' } : {}}>
-            <IcSave size={14}/> {isEdit ? 'حفظ التعديلات' : isRepl ? 'إرسال الاستبدال' : 'إضافة الطلب'}
-          </Btn>
+          {/* iPhone home bar safe-area spacer */}
+          <div style={{ height:'max(12px, env(safe-area-inset-bottom))' }}/>
         </div>
       </div>
 
       <style>{`
-        .order-panel { width: 50%; min-width: 440px; }
-        @media (max-width: 768px) { .order-panel { width: 100% !important; min-width: 0 !important; } }
-        @keyframes slidePanelIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .order-panel-shell {
+          top: 64px; bottom: 0;
+          inset-inline-start: 0;
+          width: 50%; min-width: 440px;
+        }
+        @media (max-width: 768px) {
+          .order-panel-shell {
+            top: 56px !important;
+            left: 0 !important; right: 0 !important;
+            width: 100% !important; min-width: 0 !important;
+          }
+        }
+        @keyframes orderPanelIn {
+          from { opacity: 0; transform: translateX(20px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes orderPanelSpin { to { transform: rotate(360deg); } }
       `}</style>
-    </>
+    </>,
+    document.body
   )
 }
 
