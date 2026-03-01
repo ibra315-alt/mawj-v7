@@ -494,6 +494,7 @@ function BusinessTab({ data, products, partners, updateData }) {
       const updated = { ...form, logo_url: url }
       setForm(updated)
       updateData('business', updated)
+      window.dispatchEvent(new CustomEvent('mawj-logo-changed', { detail: { url } }))
       toast('تم رفع الشعار بنجاح')
     } catch (err) {
       console.error('Logo upload failed:', err)
@@ -508,6 +509,7 @@ function BusinessTab({ data, products, partners, updateData }) {
         const updated = { ...form, logo_url: base64 }
         setForm(updated)
         updateData('business', updated)
+        window.dispatchEvent(new CustomEvent('mawj-logo-changed', { detail: { url: base64 } }))
         toast('تم حفظ الشعار')
       } catch {
         toast('فشل رفع الشعار', 'error')
@@ -521,6 +523,7 @@ function BusinessTab({ data, products, partners, updateData }) {
     const updated = { ...form, logo_url: null }
     setForm(updated)
     updateData('business', updated)
+    window.dispatchEvent(new CustomEvent('mawj-logo-changed', { detail: { url: null } }))
     toast('تم حذف الشعار')
   }
 

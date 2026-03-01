@@ -403,6 +403,24 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [presence, setPresence]       = useState<'online'|'idle'>('online')
   const [indicator, setIndicator]     = useState({ inlineStart: 4, width: 80, ready: false })
+  const [logoUrl, setLogoUrl]         = useState<string>('/logo.png')
+
+  // Load logo from business settings (uploaded via Settings page)
+  useEffect(() => {
+    import('../data/db').then(({ Settings }) => {
+      Settings.get('business').then((biz: any) => {
+        if (biz?.logo_url) setLogoUrl(biz.logo_url)
+      }).catch(() => {})
+    }).catch(() => {})
+
+    // Live-update when user changes logo in Settings during same session
+    const handler = (e: Event) => {
+      const url = (e as CustomEvent).detail?.url
+      setLogoUrl(url || '/logo.png')
+    }
+    window.addEventListener('mawj-logo-changed', handler)
+    return () => window.removeEventListener('mawj-logo-changed', handler)
+  }, [])
 
   const navPillRef = useRef<HTMLDivElement>(null)
   const tabRefs    = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -865,7 +883,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
         {/* Logo — RTL start (visually right) */}
         <button className="nav-logo-btn" onClick={() => navigate('dashboard')} aria-label="الصفحة الرئيسية" style={{ justifySelf: 'start' }}>
           <div className="logo-ring">
-            <img src="/logo.png" alt="مَوج" />
+            <img src={logoUrl} alt="مَوج" />
           </div>
         </button>
 
@@ -999,7 +1017,7 @@ export default function Layout({ page, onNavigate, user, onLogout, children }: L
           style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}
         >
           <div style={{ width:42, height:42, borderRadius:'50%', overflow:'hidden', boxShadow:'0 0 0 2px var(--action), 0 0 12px var(--action-glow)', flexShrink:0, background:'var(--header-bg)' }}>
-            <img src="/logo.png" alt="مَوج" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+            <img src={logoUrl} alt="مَوج" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
           </div>
         </button>
 
