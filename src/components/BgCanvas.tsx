@@ -32,7 +32,7 @@ void main() {
   float aspect = u_res.x / u_res.y;
   vec2 p = vec2(uv.x * aspect, uv.y);
 
-  float t = u_time * 0.12;
+  float t = u_time * 0.10;
 
   // 4 metaball centers drifting on sine/cosine paths
   vec2 c0 = vec2(
@@ -52,11 +52,11 @@ void main() {
     0.82 + sin(t * 0.85 + 1.2) * 0.12
   );
 
-  // Metaball field — 1/dist² summing with varying radii
-  float f0 = metaball(p, c0, 0.32);
-  float f1 = metaball(p, c1, 0.28);
-  float f2 = metaball(p, c2, 0.24);
-  float f3 = metaball(p, c3, 0.22);
+  // Metaball field — smaller radii for softer, more diffuse blobs
+  float f0 = metaball(p, c0, 0.20);
+  float f1 = metaball(p, c1, 0.18);
+  float f2 = metaball(p, c2, 0.15);
+  float f3 = metaball(p, c3, 0.14);
 
   // Individual blob colors weighted by their field
   vec3 col = u_c0 * f0 * u_o0
@@ -66,8 +66,8 @@ void main() {
 
   float total = f0 * u_o0 + f1 * u_o1 + f2 * u_o2 + f3 * u_o3;
 
-  // Soft threshold — smooth falloff
-  float alpha = smoothstep(0.3, 1.8, total) * 0.65;
+  // Very gentle falloff — wide smoothstep + low multiplier for subtle, soft blobs
+  float alpha = smoothstep(0.08, 2.5, total) * 0.35;
 
   // Normalize color if total > 0
   col = total > 0.001 ? col / total : vec3(0.0);
@@ -77,15 +77,21 @@ void main() {
 `
 
 // ── Helpers ──
-function parseColor(css: string): [number, number, number] {
-  const el = document.createElement('div')
-  el.style.color = css
-  document.body.appendChild(el)
-  const computed = getComputedStyle(el).color
-  document.body.removeChild(el)
-  const m = computed.match(/(\d+)/g)
-  if (!m) return [0.2, 0.55, 0.9]
-  return [parseInt(m[0]) / 255, parseInt(m[1]) / 255, parseInt(m[2]) / 255]
+function parseHex(hex: string): [number, number, number] {
+  hex = hex.replace('#', '')
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]
+  return [
+    parseInt(hex.slice(0,2), 16) / 255,
+    parseInt(hex.slice(2,4), 16) / 255,
+    parseInt(hex.slice(4,6), 16) / 255,
+  ]
+}
+
+const FALLBACK_COLORS: Record<string, string> = {
+  '--orb-1-color': '#318CE7',
+  '--orb-2-color': '#0095C7',
+  '--orb-3-color': '#64B4E6',
+  '--orb-4-color': '#3C5AB4',
 }
 
 function readOrbColors(): { colors: [number, number, number][]; opacities: number[] } {
@@ -93,10 +99,10 @@ function readOrbColors(): { colors: [number, number, number][]; opacities: numbe
   const get = (prop: string, fallback: string) => root.getPropertyValue(prop).trim() || fallback
 
   const colors: [number, number, number][] = [
-    parseColor(get('--orb-1-color', '#318CE7')),
-    parseColor(get('--orb-2-color', '#0095C7')),
-    parseColor(get('--orb-3-color', '#64B4E6')),
-    parseColor(get('--orb-4-color', '#3C5AB4')),
+    parseHex(get('--orb-1-color', FALLBACK_COLORS['--orb-1-color'])),
+    parseHex(get('--orb-2-color', FALLBACK_COLORS['--orb-2-color'])),
+    parseHex(get('--orb-3-color', FALLBACK_COLORS['--orb-3-color'])),
+    parseHex(get('--orb-4-color', FALLBACK_COLORS['--orb-4-color'])),
   ]
   const opacities = [
     parseFloat(get('--orb-1-opacity', '0.28')),
@@ -260,6 +266,7 @@ function MetaballCanvas() {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
+        filter: 'blur(40px)',
       }}
     />
   )
@@ -285,10 +292,13 @@ export default function BgCanvas() {
     // Mobile check — no WebGL on narrow screens
     if (window.matchMedia('(max-width: 768px)').matches) return
 
-    // WebGL availability check
-    const testCanvas = document.createElement('canvas')
-    const ctx = testCanvas.getContext('webgl')
-    if (ctx) setUseWebGL(true)
+    // Defer WebGL init to not block first paint
+    const id = requestAnimationFrame(() => {
+      const testCanvas = document.createElement('canvas')
+      const ctx = testCanvas.getContext('webgl')
+      if (ctx) setUseWebGL(true)
+    })
+    return () => cancelAnimationFrame(id)
   }, [])
 
   return (
