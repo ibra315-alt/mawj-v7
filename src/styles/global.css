@@ -345,8 +345,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
       transparent 72%,
       rgba(255,255,255,0.11) 84%,
       rgba(255,255,255,0.04) 100%),
-    /* Specular dome — the "bubble highlight" on top of glass */
-    radial-gradient(ellipse 90% 48% at 50% -4%,
+    /* Specular dome — the "bubble highlight" on top of glass (cursor-tracked) */
+    radial-gradient(ellipse 90% 48% at calc(var(--lg-light-x, 50) * 1%) calc(var(--lg-light-y, 50) * 0.4% - 4%),
       var(--lg-specular-lo) 0%,
       rgba(255,255,255,0.06) 45%,
       transparent 65%),
@@ -435,7 +435,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* ── Floating card (dialogs, dropdowns) ── */
 .card-l2 {
   background:
-    radial-gradient(ellipse 90% 46% at 50% -4%, var(--lg-specular-lo) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 46% at calc(var(--lg-light-x, 50) * 1%) calc(var(--lg-light-y, 50) * 0.4% - 4%), var(--lg-specular-lo) 0%, transparent 60%),
     linear-gradient(152deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.06) 100%),
     var(--bg-elevated);
   backdrop-filter: blur(52px) saturate(2.4) brightness(1.06);
@@ -450,7 +450,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* ── Modal card (heaviest glass) ── */
 .card-l3 {
   background:
-    radial-gradient(ellipse 90% 46% at 50% -4%, var(--lg-specular-lo) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 46% at calc(var(--lg-light-x, 50) * 1%) calc(var(--lg-light-y, 50) * 0.4% - 4%), var(--lg-specular-lo) 0%, transparent 55%),
     linear-gradient(152deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.07) 100%),
     var(--modal-bg);
   backdrop-filter: blur(64px) saturate(2.6) brightness(1.05);
@@ -1560,7 +1560,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(var(--lg-brt));
   background:
     radial-gradient(ellipse 96% 94% at 50% 50%, transparent 72%, rgba(255,255,255,0.10) 85%, transparent 100%),
-    radial-gradient(ellipse 90% 48% at 50% -4%, var(--lg-specular-lo) 0%, rgba(255,255,255,0.04) 48%, transparent 66%),
+    radial-gradient(ellipse 90% 48% at calc(var(--lg-light-x, 50) * 1%) calc(var(--lg-light-y, 50) * 0.4% - 4%), var(--lg-specular-lo) 0%, rgba(255,255,255,0.04) 48%, transparent 66%),
     linear-gradient(152deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.06) 100%),
     var(--lg-tint);
   box-shadow:

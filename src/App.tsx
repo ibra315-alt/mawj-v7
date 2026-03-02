@@ -7,6 +7,7 @@ import { ToastContainer, toast, PageLoader } from './components/ui'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import MawjLogo from './components/Logo'
+import LiquidGlassProvider from './components/LiquidGlass'
 import type { User, UserRole } from './types'
 
 // ── Lazy-loaded pages (code splitting) ──
@@ -276,6 +277,9 @@ export default function App() {
 
       {/* ── SW update — smart auto-dismiss toast ── */}
       {swWaiting && <SWUpdateToast onUpdate={handleSwUpdate} onDismiss={() => setSwWaiting(null)} isOnline={isOnline} />}
+
+      {/* ── Liquid glass cursor tracking ── */}
+      <LiquidGlassProvider />
 
       {/* ── Main layout ── */}
       <Layout
