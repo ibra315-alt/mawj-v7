@@ -24,7 +24,17 @@ export function subscribe(
     .on('postgres_changes', { event: events as any, schema: 'public', table }, callback as any)
     .subscribe((status: string) => {
       if (status === 'CHANNEL_ERROR') {
-        setTimeout(() => subscribe(name, table, events, callback), 3000)
+        const retries = (channels.get(name + ':retries') as number) || 0
+        if (retries < 5) {
+          const delay = Math.min(3000 * Math.pow(2, retries), 30000)
+          channels.set(name + ':retries', retries + 1)
+          console.warn(`[realtime] ${name} error, retry ${retries + 1}/5 in ${delay}ms`)
+          setTimeout(() => subscribe(name, table, events, callback), delay)
+        } else {
+          console.error(`[realtime] ${name} — max retries reached, giving up`)
+        }
+      } else if (status === 'SUBSCRIBED') {
+        channels.delete(name + ':retries')
       }
     })
 

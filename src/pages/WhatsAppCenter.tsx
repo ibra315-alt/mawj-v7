@@ -272,7 +272,7 @@ function MessageLogTab({ log, orders }) {
                 </div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', display:'flex', gap:8 }}>
                   {msg.whatsapp_to && <span>إلى: {msg.whatsapp_to.split(',').length} مستلم</span>}
-                  <span>{timeAgo(msg.completed_at)}</span>
+                  <span>{msg.completed_at ? timeAgo(msg.completed_at) : '—'}</span>
                 </div>
               </div>
               <Badge variant={msg.status==='completed' ? 'success' : 'danger'}>

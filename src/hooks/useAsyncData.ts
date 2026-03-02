@@ -13,21 +13,27 @@ export default function useAsyncData(fetcher, deps = []) {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true)
     setError(null)
     try {
       const result = await fetcher()
+      if (signal?.cancelled) return
       setData(result)
     } catch (err) {
+      if (signal?.cancelled) return
       console.error(err)
       setError(err)
     } finally {
-      setLoading(false)
+      if (!signal?.cancelled) setLoading(false)
     }
   }, deps) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const signal = { cancelled: false }
+    load(signal)
+    return () => { signal.cancelled = true }
+  }, [load])
 
   return { data, loading, error, reload: load, setData }
 }

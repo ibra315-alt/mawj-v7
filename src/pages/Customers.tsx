@@ -7,6 +7,14 @@ import { Modal, Btn } from '../components/ui'
 import { IcSearch, IcWhatsapp, IcClose } from '../components/Icons'
 import type { PageProps } from '../types'
 
+/* ── Safe days-since helper (guards null/undefined dates) ── */
+function daysSince(dateStr: any): number {
+  if (!dateStr) return 9999
+  const ms = new Date(dateStr).getTime()
+  if (isNaN(ms)) return 9999
+  return Math.floor((Date.now() - ms) / 86400000)
+}
+
 /* ── Segment config (preserved) ────────────────────────────── */
 const SEGMENT_CONFIG = {
   VIP:  { color:'#F59E0B', bg:'rgba(245,158,11,0.12)',  border:'rgba(245,158,11,0.30)',  label:'VIP',  emoji:'👑' },
@@ -17,7 +25,7 @@ const SEGMENT_CONFIG = {
 }
 
 function getSegment(c) {
-  const daysSinceLast = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
+  const daysSinceLast = daysSince(c.lastOrderDate)
   if (c.totalSpent >= 2000 || c.orderCount >= 5) return { label:'VIP',  color:SEGMENT_CONFIG['VIP'].color,  tier:1 }
   if (c.orderCount >= 3 && daysSinceLast < 60)   return { label:'مخلص', color:SEGMENT_CONFIG['مخلص'].color, tier:2 }
   if (daysSinceLast > 90 && c.orderCount >= 2)   return { label:'خامل', color:SEGMENT_CONFIG['خامل'].color, tier:4 }
@@ -50,15 +58,15 @@ function customerName(c) {
 
 /* ── Smart logic functions ─────────────────────────────────── */
 function churnRisk(c) {
-  const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
+  const daysSince = daysSince(c.lastOrderDate)
   if (c.orderCount < 2) {
     if (daysSince > 90) return { score:80, label:'خطر مرتفع', color:'#F87171' }
     if (daysSince > 45) return { score:50, label:'متوسط',     color:'#F59E0B' }
     return                     { score:15, label:'جيد',        color:'#5DD8A4' }
   }
-  const firstMs = new Date(c.firstOrderDate).getTime()
-  const lastMs  = new Date(c.lastOrderDate).getTime()
-  const avgGap  = Math.max(14, (lastMs - firstMs) / (c.orderCount - 1) / 86400000)
+  const firstMs = c.firstOrderDate ? new Date(c.firstOrderDate).getTime() : Date.now()
+  const lastMs  = c.lastOrderDate  ? new Date(c.lastOrderDate).getTime()  : Date.now()
+  const avgGap  = Math.max(14, (lastMs - firstMs) / Math.max(1, c.orderCount - 1) / 86400000)
   const ratio   = daysSince / avgGap
   if (ratio > 2)   return { score:Math.min(95, Math.round(ratio * 38)), label:'خطر مرتفع', color:'#F87171' }
   if (ratio > 1.2) return { score:Math.round(ratio * 30),               label:'متوسط',     color:'#F59E0B' }
@@ -66,7 +74,7 @@ function churnRisk(c) {
 }
 
 function loyaltyScore(c) {
-  const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
+  const daysSince = daysSince(c.lastOrderDate)
   const r = Math.max(0, 33 - Math.round(daysSince / 3))
   const f = Math.min(33, c.orderCount * 5)
   const m = Math.min(34, Math.round(c.totalSpent / 100))
@@ -74,7 +82,7 @@ function loyaltyScore(c) {
 }
 
 function nextBestAction(c) {
-  const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
+  const daysSince = daysSince(c.lastOrderDate)
   const risk = churnRisk(c)
   if (risk.score > 70)                                                   return { text:`لم يطلب منذ ${daysSince} يوم — أرسل عرضاً`, color:'#F87171', icon:'🔥' }
   if (c.segment.label === 'VIP' && daysSince > 30)                       return { text:'عميل VIP — تواصل شخصياً',                   color:'#F59E0B', icon:'👑' }
@@ -542,7 +550,7 @@ function CustomerRow({ customer: c, onClick, animDelay }) {
   const risk = churnRisk(c)
   const nba  = nextBestAction(c)
   const initial = customerName(c)[0]
-  const daysSince = Math.floor((Date.now() - new Date(c.lastOrderDate)) / 86400000)
+  const daysSince = daysSince(c.lastOrderDate)
 
   return (
     <div
@@ -629,8 +637,8 @@ function CustomerDrawer({ customer: c, onClose }) {
   const seg = c.segment
   const cfg = SEGMENT_CONFIG[seg.label] || {}
   const sorted = [...c.orders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-  const daysSinceFirst = Math.floor((Date.now() - new Date(c.firstOrderDate)) / 86400000)
-  const daysSinceLast  = Math.floor((Date.now() - new Date(c.lastOrderDate))  / 86400000)
+  const daysSinceFirst = daysSince(c.firstOrderDate)
+  const daysSinceLast  = daysSince(c.lastOrderDate)
   const loyalty = loyaltyScore(c)
   const risk    = churnRisk(c)
   const nba     = nextBestAction(c)

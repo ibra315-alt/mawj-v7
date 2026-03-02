@@ -149,14 +149,15 @@ export function StatCard({ label, value, color, trend, sub, icon }: StatCardProp
 
   useEffect(() => {
     if (!isNum) { setDisplay(num); return }
-    let f = 0; const total = 44
+    let f = 0; const total = 44; let raf: number
     const tick = () => {
       f++
       setDisplay(num * (1 - Math.pow(1 - f / total, 3)))
-      if (f < total) requestAnimationFrame(tick)
+      if (f < total) raf = requestAnimationFrame(tick)
       else setDisplay(num)
     }
-    requestAnimationFrame(tick)
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
   }, [value])
 
   const fmt = isNum
