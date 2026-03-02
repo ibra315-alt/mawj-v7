@@ -10,10 +10,12 @@ export default function CursorSpotlight() {
     let x = -500, y = -500
     let tx = -500, ty = -500
     let raf: number
+    let active = true
 
     const onMove = (e: MouseEvent) => { tx = e.clientX; ty = e.clientY }
 
     const tick = () => {
+      if (!active) return
       x += (tx - x) * 0.1
       y += (ty - y) * 0.1
       el.style.transform = `translate3d(${x - 200}px, ${y - 200}px, 0)`
@@ -24,6 +26,7 @@ export default function CursorSpotlight() {
     raf = requestAnimationFrame(tick)
 
     return () => {
+      active = false
       window.removeEventListener('mousemove', onMove)
       cancelAnimationFrame(raf)
     }

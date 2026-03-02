@@ -34,7 +34,7 @@ export default function NotificationBell() {
 
   useEffect(() => {
     const channel = supabase
-      .channel('notif-orders')
+      .channel(`notif-orders-${Date.now()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload: any) => {
         const o = payload.new
         addNotif({

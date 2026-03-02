@@ -121,14 +121,21 @@ function stripToolCall(text) {
   // Strip ALL [TOOL:{...}] blocks from text
   let result = text
   let safety = 0
-  while (result.includes('[TOOL:') && safety++ < 10) {
+  while (result.includes('[TOOL:') && safety++ < 20) {
     const idx = result.indexOf('[TOOL:')
-    // Find matching closing ] by tracking brace depth
+    // Find matching closing ] by tracking brace depth (skip strings to handle escaped braces)
     let depth = 0
     let end = -1
+    let inStr = false
+    let esc = false
     for (let i = idx + 6; i < result.length; i++) {
-      if (result[i] === '{') depth++
-      else if (result[i] === '}') { depth--; if (depth === 0) { end = i + 1; break } }
+      const ch = result[i]
+      if (esc) { esc = false; continue }
+      if (ch === '\\') { esc = true; continue }
+      if (ch === '"') { inStr = !inStr; continue }
+      if (inStr) continue
+      if (ch === '{') depth++
+      else if (ch === '}') { depth--; if (depth === 0) { end = i + 1; break } }
     }
     if (end === -1 || result[end] !== ']') break
     result = (result.slice(0, idx) + result.slice(end + 1)).trim()

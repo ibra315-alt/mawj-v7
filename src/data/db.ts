@@ -39,7 +39,7 @@ export const Settings = {
       .select('value')
       .eq('key', key)
       .single()
-    if (error) return null
+    if (error) { settingsCache[key] = null; return null }
     settingsCache[key] = data.value
     return data.value
   },
@@ -128,27 +128,25 @@ export const DB = {
 }
 
 // ─── ORDER NUMBER ─────────────────────────────────────────────────────────────
-let _orderNumberLock = false
-export async function generateOrderNumber(): Promise<string> {
-  while (_orderNumberLock) await new Promise(r => setTimeout(r, 50))
-  _orderNumberLock = true
-  try {
-    const today = new Date()
-    const prefix = `MWJ-${today.getFullYear().toString().slice(-2)}${String(today.getMonth() + 1).padStart(2, '0')}`
-    const { data } = await supabase
-      .from('orders')
-      .select('order_number')
-      .like('order_number', `${prefix}%`)
-      .order('order_number', { ascending: false })
-      .limit(1)
-    if (data && data.length > 0) {
-      const lastNum = parseInt(data[0].order_number.split('-').pop()!, 10)
-      return `${prefix}-${String(lastNum + 1).padStart(4, '0')}`
-    }
-    return `${prefix}-0001`
-  } finally {
-    _orderNumberLock = false
+let _orderNumberQueue: Promise<string> = Promise.resolve('')
+export function generateOrderNumber(): Promise<string> {
+  _orderNumberQueue = _orderNumberQueue.then(_generateOrderNumberImpl, _generateOrderNumberImpl)
+  return _orderNumberQueue
+}
+async function _generateOrderNumberImpl(): Promise<string> {
+  const today = new Date()
+  const prefix = `MWJ-${today.getFullYear().toString().slice(-2)}${String(today.getMonth() + 1).padStart(2, '0')}`
+  const { data } = await supabase
+    .from('orders')
+    .select('order_number')
+    .like('order_number', `${prefix}%`)
+    .order('order_number', { ascending: false })
+    .limit(1)
+  if (data && data.length > 0) {
+    const lastNum = parseInt(data[0].order_number.split('-').pop()!, 10)
+    return `${prefix}-${String(lastNum + 1).padStart(4, '0')}`
   }
+  return `${prefix}-0001`
 }
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────────

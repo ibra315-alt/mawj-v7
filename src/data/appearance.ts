@@ -204,13 +204,16 @@ export function applyAppearance(prefs: Partial<Preferences>) {
   root.style.setProperty('--dur-slow', `${Math.round(240 * parseFloat(speedMult))}ms`)
 
   // Animations kill-switch
-  const animStyle = document.getElementById('mawj-anim-style') || document.createElement('style')
-  animStyle.id = 'mawj-anim-style'
+  let animStyle = document.getElementById('mawj-anim-style') as HTMLStyleElement | null
+  if (!animStyle) {
+    animStyle = document.createElement('style')
+    animStyle.id = 'mawj-anim-style'
+    document.head.appendChild(animStyle)
+  }
   animStyle.textContent = (!p.animations || p.animationSpeed === 'none') ? `
     .page,.stagger>*{animation:none!important}
     *{transition-duration:0.01ms!important}
   ` : ''
-  if (!document.getElementById('mawj-anim-style')) document.head.appendChild(animStyle)
 
   // Density
   const densityMap: Record<string, string> = { compact: '0.75', normal: '1', spacious: '1.25' }

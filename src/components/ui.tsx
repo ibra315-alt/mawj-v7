@@ -307,6 +307,7 @@ interface ModalProps {
   [key: string]: any
 }
 
+let _modalCount = 0
 export function Modal({ open, onClose, title, children, width = 580, footer }: ModalProps) {
   const [mobile, setMobile] = useState(false)
   useEffect(() => {
@@ -316,9 +317,17 @@ export function Modal({ open, onClose, title, children, width = 580, footer }: M
     return () => window.removeEventListener('resize', check)
   }, [])
   useEffect(() => {
-    if (open) { document.body.style.overflow = 'hidden'; document.body.classList.add('modal-open') }
-    else { document.body.style.overflow = ''; document.body.classList.remove('modal-open') }
-    return () => { document.body.style.overflow = ''; document.body.classList.remove('modal-open') }
+    if (open) {
+      _modalCount++
+      document.body.style.overflow = 'hidden'
+      document.body.classList.add('modal-open')
+    }
+    return () => {
+      if (open) {
+        _modalCount = Math.max(0, _modalCount - 1)
+        if (_modalCount === 0) { document.body.style.overflow = ''; document.body.classList.remove('modal-open') }
+      }
+    }
   }, [open])
   if (!open) return null
 
@@ -361,12 +370,22 @@ export function Modal({ open, onClose, title, children, width = 580, footer }: M
 // ── TOAST ──────────────────────────────────────────
 interface ToastItem { msg: string; type: string; id: number }
 let _setToast: ((t: ToastItem) => void) | null = null
+const _earlyQueue: ToastItem[] = []
 export const setToastFn = (fn: (t: ToastItem) => void) => { _setToast = fn }
-export const toast = (msg: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => _setToast?.({ msg, type, id: Date.now() })
+export const toast = (msg: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+  const item = { msg, type, id: Date.now() }
+  if (_setToast) _setToast(item)
+  else _earlyQueue.push(item)
+}
 
 export function ToastContainer() {
   const [toasts, setToasts] = useState<ToastItem[]>([])
-  useEffect(() => { setToastFn(t => setToasts(p => [...p.slice(-2), t])) }, [])
+  useEffect(() => {
+    setToastFn(t => setToasts(p => [...p.slice(-2), t]))
+    // Flush any toasts that fired before mount
+    _earlyQueue.forEach(t => setToasts(p => [...p.slice(-2), t]))
+    _earlyQueue.length = 0
+  }, [])
   useEffect(() => {
     if (!toasts.length) return
     const t = setTimeout(() => setToasts(p => p.slice(1)), 3000)

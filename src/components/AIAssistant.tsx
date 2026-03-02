@@ -285,13 +285,17 @@ export default function AIAssistant({ onClose, onNavigate }: { onClose: () => vo
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    let mounted = true
     SettingsDB.get('ai_settings').then((cfg: any) => {
+      if (!mounted) return
       setAiCfg(cfg || {})
-      buildContext(cfg || {}).then(setContext)
+      buildContext(cfg || {}).then(ctx => { if (mounted) setContext(ctx) })
     }).catch(() => {
+      if (!mounted) return
       setAiCfg({})
-      buildContext({}).then(setContext)
+      buildContext({}).then(ctx => { if (mounted) setContext(ctx) })
     })
+    return () => { mounted = false }
   }, [])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])

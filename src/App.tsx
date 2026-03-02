@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
+import React, { useState, useEffect, useRef, Suspense, lazy, Component } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, Auth } from './data/db'
 import { loadAndApplyAppearance, DEFAULT_PREFS } from './data/appearance'
@@ -26,6 +26,37 @@ const AgentPage     = lazy(() => import('./pages/AgentPage'))
 const WhatsAppCenter     = lazy(() => import('./pages/WhatsAppCenter'))
 const ReceiptCustomizer  = lazy(() => import('./pages/ReceiptCustomizer'))
 const AIAssistant        = lazy(() => import('./components/AIAssistant'))
+
+/* ══════════════════════════════════════════════════
+   ERROR BOUNDARY — catches page-level crashes
+══════════════════════════════════════════════════ */
+class ErrorBoundary extends Component<
+  { children: React.ReactNode; onReset?: () => void },
+  { hasError: boolean; error: Error | null }
+> {
+  state = { hasError: false, error: null as Error | null }
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error } }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32, textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>⚠️</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>حدث خطأ غير متوقع</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 360, lineHeight: 1.7 }}>
+            عذراً، حدث خطأ أثناء تحميل الصفحة. يرجى المحاولة مرة أخرى.
+          </p>
+          <button
+            onClick={() => { this.setState({ hasError: false, error: null }); this.props.onReset?.() }}
+            style={{ padding: '10px 28px', borderRadius: 10, border: 'none', background: 'var(--action)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 /* ══════════════════════════════════════════════════
    ROLE-BASED ACCESS CONTROL
@@ -253,9 +284,11 @@ export default function App() {
         user={user}
         onLogout={() => { Auth.signOut(); setPage('dashboard') }}
       >
-        <Suspense fallback={<PageLoader />}>
-          {renderPage()}
-        </Suspense>
+        <ErrorBoundary onReset={() => setPageKey(k => k + 1)}>
+          <Suspense fallback={<PageLoader />}>
+            {renderPage()}
+          </Suspense>
+        </ErrorBoundary>
       </Layout>
 
       {/* ── Floating AI Orb ── */}
