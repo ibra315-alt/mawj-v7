@@ -127,7 +127,7 @@ export default function Suppliers(_: PageProps) {
           toast(editItem ? 'تم التحديث' : 'تم الإضافة')
         }}
       />
-      <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} loading={deleting} message="سيتم حذف المورد نهائياً." />
+      <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} loading={deleting} message="سيتم حذف المورد نهائياً." itemName={suppliers.find(s => s.id === deleteId)?.name} />
     </div>
   )
 }

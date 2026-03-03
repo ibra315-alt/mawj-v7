@@ -404,9 +404,14 @@ export function ToastContainer() {
       {toasts.map(t => {
         const v = palette[t.type] || palette.success
         return (
-          <div key={t.id} role="alert" style={{ padding: '10px 20px', borderRadius: 999, fontSize: 'var(--t-sm)', fontWeight: 700, background: v.bg, color: v.color, backdropFilter: 'blur(20px)', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', animation: 'toastIn 0.22s ease both', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontWeight: 900 }}>{v.icon}</span>
-            {t.msg}
+          <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, animation: 'toastIn 0.22s ease both' }}>
+            <div role="alert" style={{ padding: '10px 20px', borderRadius: 999, fontSize: 'var(--t-sm)', fontWeight: 700, background: v.bg, color: v.color, backdropFilter: 'blur(20px)', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 900 }}>{v.icon}</span>
+              {t.msg}
+            </div>
+            <div style={{ width: '80%', height: 2, borderRadius: 999, background: 'rgba(255,255,255,0.2)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: '100%', borderRadius: 999, background: 'rgba(255,255,255,0.7)', transformOrigin: 'left center', animation: 'toastDrain 3s linear forwards' }} />
+            </div>
           </div>
         )
       })}
@@ -424,15 +429,49 @@ interface ConfirmModalProps {
   confirmLabel?: string
   danger?: boolean
   loading?: boolean
+  itemName?: string
+  itemDetail?: string
 }
 
-export function ConfirmModal({ open, onClose, onConfirm, title, message, confirmLabel = 'حذف', danger = true, loading }: ConfirmModalProps) {
+export function ConfirmModal({ open, onClose, onConfirm, title, message, confirmLabel = 'حذف', danger = true, loading, itemName, itemDetail }: ConfirmModalProps) {
   return (
     <Modal open={open} onClose={onClose} title={title || 'تأكيد'} width={400}
       footer={<><Btn variant="ghost" onClick={onClose}>إلغاء</Btn><Btn variant={danger ? 'danger' : 'primary'} loading={loading} onClick={() => { onConfirm(); onClose() }}>{confirmLabel}</Btn></>}
     >
       <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--t-sm)', lineHeight: 1.75 }}>{message}</p>
+      {itemName && (
+        <div style={{ marginTop:12, padding:'10px 14px', borderRadius:'var(--r-md)', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)' }}>
+          <div style={{ fontSize:14, fontWeight:800, color:'var(--danger)' }}>{itemName}</div>
+          {itemDetail && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{itemDetail}</div>}
+        </div>
+      )}
     </Modal>
+  )
+}
+
+// ── DIRTY WARNING ──────────────────────────────────────────
+export function DirtyWarning({ onDiscard, onContinue }: { onDiscard: () => void; onContinue: () => void }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+      padding: '10px 14px', borderRadius: 'var(--r-md)',
+      background: 'rgba(251,191,36,0.10)', border: '1.5px solid rgba(251,191,36,0.28)',
+      marginBottom: 12, animation: 'toastIn 0.18s ease both',
+    }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--warning)', flex: 1 }}>
+        ⚠ توجد تغييرات غير محفوظة
+      </span>
+      <button onClick={onContinue} style={{
+        fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 'var(--r-sm)',
+        border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-secondary)',
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}>متابعة التعديل</button>
+      <button onClick={onDiscard} style={{
+        fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 'var(--r-sm)',
+        border: 'none', background: 'rgba(251,191,36,0.18)', color: 'var(--warning)',
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}>تجاهل</button>
+    </div>
   )
 }
 

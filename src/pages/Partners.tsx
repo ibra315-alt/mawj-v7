@@ -483,6 +483,8 @@ export default function Partners(_: PageProps) {
         onConfirm={handleDelete}
         loading={deleting}
         message="سيتم حذف القيد نهائياً."
+        itemName={deleteTable === 'capital_entries' ? capital.find(c => c.id === deleteId)?.note : withdrawals.find(w => w.id === deleteId)?.note}
+        itemDetail={deleteTable === 'capital_entries' ? formatCurrency(capital.find(c => c.id === deleteId)?.amount) : formatCurrency(withdrawals.find(w => w.id === deleteId)?.amount)}
       />
     </div>
   )

@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency } from '../data/constants'
-import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
+import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, DirtyWarning, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcDelete, IcEdit, IcAlert } from '../components/Icons'
 import useDeleteRecord from '../hooks/useDeleteRecord'
 import useDebounce from '../hooks/useDebounce'
+import { useDirtyForm } from '../hooks/useDirtyForm'
 import type { PageProps } from '../types'
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -691,6 +692,7 @@ export default function Inventory(_: PageProps) {
         onConfirm={handleDelete}
         loading={deleting}
         message="سيتم حذف المنتج نهائياً."
+        itemName={items.find(i => i.id === deleteId)?.name}
       />
       <Modal
         open={!!adjustId}
@@ -851,12 +853,15 @@ function InventoryForm({ open, onClose, item, suppliers, onSaved }) {
   const [form, setForm]   = useState({})
   const [saving, setSaving] = useState(false)
   function setField(k, v) { setForm(p => ({ ...p, [k]: v })) }
+  const dirty = useDirtyForm(onClose)
 
   useEffect(() => {
-    if (open) setForm(item
+    if (!open) return
+    const initForm = item
       ? { ...item }
       : { active: true, stock_qty: 0, low_stock_threshold: 5, cost_price: 0, sell_price: 0 }
-    )
+    setForm(initForm)
+    dirty.setInitial(initForm)
   }, [open, item])
 
   async function handleSave() {
@@ -866,6 +871,7 @@ function InventoryForm({ open, onClose, item, suppliers, onSaved }) {
       const saved = item
         ? await DB.update('inventory', item.id, form)
         : await DB.insert('inventory', form)
+      dirty.markClean(form)
       onSaved(saved)
     } catch (err) {
       toast('فشل الحفظ: ' + (err.message || ''), 'error')
@@ -874,14 +880,15 @@ function InventoryForm({ open, onClose, item, suppliers, onSaved }) {
 
   return (
     <Modal
-      open={open} onClose={onClose}
+      open={open} onClose={() => dirty.attemptClose(form)}
       title={item ? 'تعديل المنتج' : 'منتج جديد'}
       width={500}
       footer={<>
-        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn variant="ghost" onClick={() => dirty.attemptClose(form)}>إلغاء</Btn>
         <Btn loading={saving} onClick={handleSave}>{item ? 'حفظ التعديلات' : 'إضافة المنتج'}</Btn>
       </>}
     >
+      {dirty.showWarn && <DirtyWarning onDiscard={() => dirty.confirmDiscard()} onContinue={() => dirty.cancelClose()} />}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:14 }}>
         <Input label="اسم المنتج *" value={form.name || ''} onChange={e => setField('name', e.target.value)} placeholder="اسم المنتج" containerStyle={{ gridColumn:'1 / -1' }} />
         <Input label="رمز SKU" value={form.sku || ''} onChange={e => setField('sku', e.target.value)} dir="ltr" placeholder="CRY-001" />

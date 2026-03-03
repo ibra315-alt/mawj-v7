@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
-import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
+import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, DirtyWarning, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcEdit, IcDelete } from '../components/Icons'
 import useDeleteRecord from '../hooks/useDeleteRecord'
+import { useDirtyForm } from '../hooks/useDirtyForm'
 import type { PageProps } from '../types'
 
 /* ── constants ───────────────────────────────────────────── */
@@ -827,6 +828,8 @@ export default function Expenses(_: PageProps) {
         open={!!deleteId} onClose={() => setDeleteId(null)}
         onConfirm={handleDelete} loading={deleting}
         message="سيتم حذف المصروف نهائياً."
+        itemName={expenses.find(e => e.id === deleteId)?.title || expenses.find(e => e.id === deleteId)?.category}
+        itemDetail={expenses.find(e => e.id === deleteId)?.amount ? formatCurrency(expenses.find(e => e.id === deleteId).amount) : undefined}
       />
     </>
   )
@@ -972,10 +975,11 @@ function ExpenseForm({ open, onClose, item, onSaved }) {
   const [form,   setForm]   = useState({})
   const [saving, setSaving] = useState(false)
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const dirty = useDirtyForm(onClose)
 
   useEffect(() => {
     if (!open) return
-    setForm(item && item.id ? { ...item } : {
+    const initForm = item && item.id ? { ...item } : {
       title: '',
       amount: '',
       category: item?.category || EXPENSE_CATEGORIES[0],
@@ -984,7 +988,9 @@ function ExpenseForm({ open, onClose, item, onSaved }) {
       reimbursed: false,
       is_subscription: item?.is_subscription || false,
       notes: '',
-    })
+    }
+    setForm(initForm)
+    dirty.setInitial(initForm)
   }, [open, item])
 
   async function handleSave() {
@@ -1000,6 +1006,7 @@ function ExpenseForm({ open, onClose, item, onSaved }) {
       const saved = (item && item.id)
         ? await DB.update('expenses', item.id, payload)
         : await DB.insert('expenses', payload)
+      dirty.markClean(form)
       onSaved(saved)
     } catch (err) { toast('فشل الحفظ: ' + err.message, 'error') }
     finally { setSaving(false) }
@@ -1007,14 +1014,15 @@ function ExpenseForm({ open, onClose, item, onSaved }) {
 
   return (
     <Modal
-      open={open} onClose={onClose}
+      open={open} onClose={() => dirty.attemptClose(form)}
       title={item && item.id ? 'تعديل المصروف' : 'مصروف جديد'}
       width={460}
       footer={<>
-        <Btn variant="ghost" onClick={onClose}>إلغاء</Btn>
+        <Btn variant="ghost" onClick={() => dirty.attemptClose(form)}>إلغاء</Btn>
         <Btn loading={saving} onClick={handleSave}>{item && item.id ? 'حفظ التعديلات' : 'إضافة المصروف'}</Btn>
       </>}
     >
+      {dirty.showWarn && <DirtyWarning onDiscard={() => dirty.confirmDiscard()} onContinue={() => dirty.cancelClose()} />}
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         <Input label="الوصف *" value={form.title || form.description || ''} onChange={e => set('title', e.target.value)} placeholder="وصف المصروف" />
         <Input label="المبلغ (د.إ) *" type="number" min="0" value={form.amount || ''} onChange={e => set('amount', e.target.value)} />

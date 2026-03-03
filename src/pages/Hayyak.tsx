@@ -621,6 +621,8 @@ export default function Hayyak(_: PageProps) {
         open={!!deleteId} onClose={() => setDeleteId(null)}
         onConfirm={handleDeleteRemittance} loading={deleting}
         message="سيتم حذف التحويل وإلغاء ربطه بالطلبات. لا يمكن التراجع."
+        itemName={remittances.find(r => r.id === deleteId)?.label || remittances.find(r => r.id === deleteId)?.date}
+        itemDetail={remittances.find(r => r.id === deleteId)?.bank_received ? formatCurrency(remittances.find(r => r.id === deleteId).bank_received) : undefined}
       />
     </div>
   )

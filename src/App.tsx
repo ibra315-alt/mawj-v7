@@ -87,6 +87,8 @@ export default function App() {
     return hash || localStorage.getItem('mawj-page') || 'dashboard'
   })
   const [pageKey, setPageKey]     = useState<number>(0)
+  const [exiting, setExiting]     = useState<boolean>(false)
+  const pendingNav                = useRef<string | null>(null)
   const [showAI, setShowAI]       = useState<boolean>(false)
   const [isOnline, setIsOnline]   = useState<boolean>(navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState<any>(null)
@@ -168,26 +170,32 @@ export default function App() {
     } catch {}
   }
 
+  function transitionTo(id: string) {
+    if (id === page || exiting) return
+    pendingNav.current = id
+    setExiting(true)
+    setTimeout(() => {
+      setPage(pendingNav.current!)
+      setPageKey(k => k + 1)
+      localStorage.setItem('mawj-page', pendingNav.current!)
+      history.pushState(null, '', '#' + pendingNav.current!)
+      setExiting(false)
+    }, 120)
+  }
+
   function navigate(id: string) {
     if (user && !canAccess(user.role, id)) {
       toast('ليس لديك صلاحية للوصول لهذه الصفحة', 'error')
       return
     }
-    if (id !== page) setPageKey(k => k + 1)
-    setPage(id)
-    localStorage.setItem('mawj-page', id)
-    history.pushState(null, '', '#' + id)
+    transitionTo(id)
   }
 
   // ── Hash-based routing (back/forward button support) ──
   useEffect(() => {
     const onHash = () => {
       const id = window.location.hash.slice(1)
-      if (id && id !== page) {
-        setPage(id)
-        setPageKey(k => k + 1)
-        localStorage.setItem('mawj-page', id)
-      }
+      if (id && id !== page) transitionTo(id)
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
@@ -311,11 +319,17 @@ export default function App() {
         user={user}
         onLogout={() => { Auth.signOut(); setPage('dashboard') }}
       >
-        <ErrorBoundary onReset={() => setPageKey(k => k + 1)}>
-          <Suspense fallback={<PageLoader />}>
-            {renderPage()}
-          </Suspense>
-        </ErrorBoundary>
+        <div style={{
+          opacity: exiting ? 0 : 1,
+          transform: exiting ? 'translateY(-6px)' : 'none',
+          transition: exiting ? 'opacity 120ms ease, transform 120ms ease' : 'none',
+        }}>
+          <ErrorBoundary onReset={() => setPageKey(k => k + 1)}>
+            <Suspense fallback={<PageLoader />}>
+              {renderPage()}
+            </Suspense>
+          </ErrorBoundary>
+        </div>
       </Layout>
 
       {/* ── Floating AI Orb ── */}

@@ -5,11 +5,12 @@ import { DB, Settings, generateOrderNumber, supabase } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency, formatDate, SOURCE_LABELS, UAE_CITIES } from '../data/constants'
 import { calcOrderProfit, ORDER_STATUSES, PIPELINE_STATUSES, getStatusInfo, getNextStatus } from '../data/finance'
-import { Btn, Badge, Input, Select, Textarea, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
+import { Btn, Badge, Input, Select, Textarea, Empty, PageHeader, ConfirmModal, DirtyWarning, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcSearch, IcEdit, IcDelete, IcEye, IcWhatsapp, IcSave, IcNote, IcRefresh, IcClose, IcCheck, IcCopy, IcAlert, IcPhone } from '../components/Icons'
 import PrintReceipt from '../components/PrintReceipt'
 import Confetti from '../components/Confetti'
 import useDebounce from '../hooks/useDebounce'
+import { useDirtyForm } from '../hooks/useDirtyForm'
 import type { PageProps } from '../types'
 
 // Re-export for backward compatibility
@@ -474,6 +475,8 @@ export default function Orders({ user }: PageProps) {
         open={!!deleteId} onClose={() => setDeleteId(null)}
         onConfirm={handleDelete} loading={deleting}
         message="سيتم حذف الطلب نهائياً ولا يمكن استعادته."
+        itemName={orders.find(o => o.id === deleteId)?.customer_name}
+        itemDetail={orders.find(o => o.id === deleteId)?.order_number}
       />
     </div>
   )
@@ -912,11 +915,13 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
   const [saving,          setSaving]          = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [phoneWarning,    setPhoneWarning]    = useState(null)
+  const dirty = useDirtyForm(onClose)
 
   useEffect(() => {
     if (!open) return
+    let initForm, initItems
     if (order) {
-      setForm({
+      initForm = {
         customer_name:      order.customer_name     || '',
         customer_phone:     order.customer_phone    || '',
         customer_city:      order.customer_city     || '',
@@ -928,10 +933,10 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
         order_date:         order.created_at ? order.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
         is_replacement:     order.is_replacement    || false,
         replacement_for_id: order.replacement_for_id|| null,
-      })
-      setItems(order.items || [])
+      }
+      initItems = order.items || []
     } else if (isRepl) {
-      setForm({
+      initForm = {
         customer_name:      replacementFor.customer_name    || '',
         customer_phone:     replacementFor.customer_phone   || '',
         customer_city:      replacementFor.customer_city    || '',
@@ -940,19 +945,22 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
         notes: `استبدال للطلب ${replacementFor.order_number}`,
         order_date: new Date().toISOString().split('T')[0],
         is_replacement: true, replacement_for_id: replacementFor.id,
-      })
-      setItems((replacementFor.items || []).map(i => ({ ...i, engraving_notes:'' })))
+      }
+      initItems = (replacementFor.items || []).map(i => ({ ...i, engraving_notes:'' }))
     } else {
-      setForm({
+      initForm = {
         customer_name:'', customer_phone:'', customer_city:'', customer_address:'',
         hayyak_fee:25, discount:0, status:'new', notes:'',
         order_date: new Date().toISOString().split('T')[0],
         is_replacement:false, replacement_for_id:null,
-      })
-      setItems([])
+      }
+      initItems = []
     }
+    setForm(initForm)
+    setItems(initItems)
     setSelectedProduct(null)
     setPhoneWarning(null)
+    dirty.setInitial({ form: initForm, items: initItems })
   }, [open, order, replacementFor])
 
   const setField = (k, v) => setForm(p => ({ ...p, [k]:v }))
@@ -999,6 +1007,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
           internal_notes: [{ text: `تم إنشاء الطلب${form.is_replacement ? ' (استبدال)' : ''}`, time: new Date().toISOString() }],
         })
       }
+      dirty.markClean({ form, items })
       onSaved(saved)
     } catch (err) {
       toast('فشل الحفظ: ' + err.message, 'error')
@@ -1012,7 +1021,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
   return createPortal(
     <>
       {/* Backdrop */}
-      <div onClick={onClose} style={{
+      <div onClick={() => dirty.attemptClose({ form, items })} style={{
         position:'fixed', inset:0, background:'rgba(0,0,0,0.5)',
         backdropFilter:'blur(10px) saturate(1.2)', WebkitBackdropFilter:'blur(10px) saturate(1.2)',
         zIndex:2000,
@@ -1041,7 +1050,7 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
             {isRepl && <div style={{ fontSize:10, color:'#F59E0B', marginTop:1, fontWeight:600 }}>ربح سالب · استبدال مجاني</div>}
           </div>
           {/* Cancel */}
-          <button onClick={onClose} style={{
+          <button onClick={() => dirty.attemptClose({ form, items })} style={{
             padding:'7px 13px', borderRadius:8,
             border:'1.5px solid var(--border)', background:'transparent',
             color:'var(--text-muted)', fontSize:13, fontWeight:600,
@@ -1072,6 +1081,8 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
 
         {/* ── Scrollable body ─────────────────────────────────── */}
         <div style={{ flex:1, padding:'12px 14px', overflowY:'auto', minHeight:0, WebkitOverflowScrolling:'touch' }}>
+
+          {dirty.showWarn && <DirtyWarning onDiscard={() => dirty.confirmDiscard()} onContinue={() => dirty.cancelClose()} />}
 
           {phoneWarning && (
             <div style={{ marginBottom:10, padding:'9px 12px', background:'rgba(245,158,11,0.1)', border:'1.5px solid rgba(245,158,11,0.35)', borderRadius:10, fontSize:12, color:'#F59E0B' }}>

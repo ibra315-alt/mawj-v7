@@ -1069,6 +1069,10 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   from { opacity:0; transform:translateY(8px) scale(0.95); }
   to   { opacity:1; transform:none; }
 }
+@keyframes toastDrain {
+  from { transform:scaleX(1); }
+  to   { transform:scaleX(0); }
+}
 @keyframes spin         { to { transform:rotate(360deg); } }
 @keyframes skeletonWave {
   0%   { background-position: 200% 0; }
