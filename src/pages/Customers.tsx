@@ -552,7 +552,7 @@ function CustomerRow({ customer: c, onClick, animDelay }) {
   const risk = churnRisk(c)
   const nba  = nextBestAction(c)
   const initial = customerName(c)[0]
-  const daysSince = daysSince(c.lastOrderDate)
+  const days = daysSince(c.lastOrderDate)
 
   return (
     <div
@@ -597,7 +597,7 @@ function CustomerRow({ customer: c, onClick, animDelay }) {
         {/* City + last order */}
         <div style={{ fontSize:11, color:'var(--text-muted)', display:'flex', gap:5, flexWrap:'wrap', marginBottom: nba ? 5 : 0 }}>
           {c.city && <span>📍 {c.city}</span>}
-          <span>· منذ {daysSince} يوم</span>
+          <span>· منذ {days} يوم</span>
         </div>
 
         {/* Next Best Action chip */}
