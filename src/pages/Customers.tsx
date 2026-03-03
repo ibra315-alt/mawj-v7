@@ -5,6 +5,7 @@ import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
 import { Modal, Btn, toast } from '../components/ui'
 import { IcSearch, IcWhatsapp, IcClose } from '../components/Icons'
+import useDebounce from '../hooks/useDebounce'
 import type { PageProps } from '../types'
 
 /* ── Safe days-since helper (guards null/undefined dates) ── */
@@ -108,6 +109,7 @@ export default function Customers(_: PageProps) {
   const [customers,     setCustomers]     = useState([])
   const [loading,       setLoading]       = useState(true)
   const [search,        setSearch]        = useState('')
+  const debouncedSearch = useDebounce(search)
   const [sortBy,        setSortBy]        = useState('spent')
   const [segFilter,     setSegFilter]     = useState('all')
   const [selected,      setSelected]      = useState(null)
@@ -172,7 +174,7 @@ export default function Customers(_: PageProps) {
 
   const filtered = useMemo(() => {
     const list = customers.filter(c => {
-      const q = !search || c.name.includes(search) || c.phone?.includes(search) || c.city?.includes(search)
+      const q = !debouncedSearch || c.name.includes(debouncedSearch) || c.phone?.includes(debouncedSearch) || c.city?.includes(debouncedSearch)
       const s = segFilter === 'all' || c.segment.label === segFilter
       return q && s
     })
@@ -184,7 +186,7 @@ export default function Customers(_: PageProps) {
       if (sortBy === 'risk')    return churnRisk(b).score - churnRisk(a).score
       return a.name.localeCompare(b.name, 'ar')
     })
-  }, [customers, search, segFilter, sortBy])
+  }, [customers, debouncedSearch, segFilter, sortBy])
 
   const maxCityRev = cityData[0]?.rev || 1
 

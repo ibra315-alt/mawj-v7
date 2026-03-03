@@ -4,6 +4,7 @@ import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
 import { Btn, Modal, Input, Textarea, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcEdit, IcDelete, IcSearch, IcCheck, IcAlert } from '../components/Icons'
+import useDebounce from '../hooks/useDebounce'
 import type { PageProps } from '../types'
 
 /* ═══════════════════════════════════════════════════════════
@@ -134,6 +135,7 @@ export default function Hayyak(_: PageProps) {
   const [loading,     setLoading]     = useState(true)
   const [tab,         setTab]         = useState('overview')
   const [search,      setSearch]      = useState('')
+  const debouncedSearch = useDebounce(search)
   const [dateFrom,    setDateFrom]    = useState('')
   const [dateTo,      setDateTo]      = useState('')
   const [groupBy,     setGroupBy]     = useState('none')
@@ -235,7 +237,7 @@ export default function Hayyak(_: PageProps) {
 
   /* ── Filtered & grouped pending ─────────────────────── */
   const filteredPending = stats.pendingOrders.filter(o => {
-    const q = search.toLowerCase()
+    const q = debouncedSearch.toLowerCase()
     const matchQ = !q
       || (o.customer_name  || '').includes(q)
       || (o.order_number   || '').toLowerCase().includes(q)

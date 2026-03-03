@@ -517,28 +517,14 @@ function PipelineFunnel({ counts, onNavigate }) {
         {PIPELINE.map((s, i) => {
           const count = counts[s.id] || 0
           const pct   = Math.round((count / max) * 100)
+          const cv    = count > 0 ? s.color : undefined
           return (
-            <div key={s.id} style={{ display:'flex', alignItems:'center', gap:10 }}>
-              {/* label */}
-              <div style={{ width:64, flexShrink:0, fontSize:11, fontWeight:700, color: count > 0 ? s.color : 'var(--text-muted)', textAlign:'end' }}>{s.label}</div>
-              {/* bar */}
-              <div style={{ flex:1, height:8, borderRadius:99, background:'var(--bg-hover)', overflow:'hidden', position:'relative' }}>
-                <div style={{
-                  height:'100%', width:`${pct}%`,
-                  background:`linear-gradient(90deg,${s.color}99,${s.color})`,
-                  borderRadius:99, transformOrigin:'left center',
-                  animation:'barIn 0.8s cubic-bezier(.4,0,.2,1) both',
-                  animationDelay: `${i * 0.07}s`,
-                }} />
+            <div key={s.id} className="dash-pipeline-row">
+              <div className="dash-pipeline-label" style={{ '--c': cv } as any}>{s.label}</div>
+              <div className="dash-pipeline-track">
+                <div className="dash-pipeline-fill" style={{ width:`${pct}%`, background:`linear-gradient(90deg,${s.color}99,${s.color})`, animationDelay:`${i * 0.07}s` }} />
               </div>
-              {/* count badge */}
-              <div style={{
-                width:28, flexShrink:0, fontSize:12, fontWeight:900,
-                fontFamily:'Inter,sans-serif', textAlign:'center',
-                color: count > 0 ? s.color : 'var(--text-muted)',
-              }}>
-                {count}
-              </div>
+              <div className="dash-pipeline-count" style={{ '--c': cv } as any}>{count}</div>
             </div>
           )
         })}
@@ -551,9 +537,9 @@ function PipelineFunnel({ counts, onNavigate }) {
           { l:'لم يتم', v:counts.not_delivered||0, c:'#F87171' },
           { l:'جارية',  v:(counts.new||0)+(counts.confirmed||0)+(counts.processing||0)+(counts.with_hayyak||0)+(counts.shipped||0), c:'#7EB8F7' },
         ].map(s => (
-          <div key={s.l} style={{ textAlign:'center' }}>
-            <div style={{ fontSize:18, fontWeight:900, color:s.c, fontFamily:'Inter' }}>{s.v}</div>
-            <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600 }}>{s.l}</div>
+          <div key={s.l} className="dash-summary-stat" style={{ '--c': s.c } as any}>
+            <div className="dash-summary-val">{s.v}</div>
+            <div className="dash-summary-label">{s.l}</div>
           </div>
         ))}
       </div>
@@ -592,22 +578,14 @@ function SmartInsights({ insights, onNavigate, metrics, newCusts }) {
           {insights.map((ins, i) => (
             <div
               key={i}
-              className="ins-item"
+              className="dash-insight"
+              data-clickable={ins.page ? '' : undefined}
               onClick={ins.page ? () => onNavigate(ins.page) : undefined}
-              style={{
-                display:'flex', alignItems:'flex-start', gap:10,
-                padding:'10px 12px', borderRadius:12,
-                background:`${ins.color}0a`,
-                border:`1px solid ${ins.color}22`,
-                cursor: ins.page ? 'pointer' : 'default',
-                transition:'all 0.14s ease',
-              }}
-              onMouseEnter={e => { if (ins.page) { e.currentTarget.style.background=`${ins.color}16`; e.currentTarget.style.transform='translateX(-3px)' }}}
-              onMouseLeave={e => { e.currentTarget.style.background=`${ins.color}0a`; e.currentTarget.style.transform='' }}
+              style={{ '--c': ins.color } as any}
             >
-              <span style={{ fontSize:16, flexShrink:0, lineHeight:1.3 }}>{ins.icon}</span>
-              <span style={{ fontSize:12, color:'var(--text-sec)', lineHeight:1.5, fontWeight:600 }}>{ins.text}</span>
-              {ins.page && <span style={{ color:ins.color, fontSize:13, flexShrink:0, marginRight:'auto', opacity:0.6 }}>←</span>}
+              <span className="dash-insight-icon">{ins.icon}</span>
+              <span className="dash-insight-text">{ins.text}</span>
+              {ins.page && <span className="dash-insight-arrow">←</span>}
             </div>
           ))}
         </div>
@@ -820,20 +798,17 @@ function LiveFeed({ orders, onNavigate }) {
         ) : orders.map(o => {
           const s = statusMap[o.status] || { label:o.status, color:'#6B7280' }
           return (
-            <div key={o.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:12, background:'var(--bg-hover)', borderInlineStart:`3px solid ${s.color}`, transition:'background 0.12s' }}
-              onMouseEnter={e=>e.currentTarget.style.background='var(--bg-active)'}
-              onMouseLeave={e=>e.currentTarget.style.background='var(--bg-hover)'}
-            >
+            <div key={o.id} className="dash-feed-item" style={{ '--c': s.color } as any}>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>{o.customer_name || 'عميل'}</div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', display:'flex', gap:6 }}>
-                  <span style={{ direction:'ltr', fontFamily:'monospace', color:s.color, fontWeight:600 }}>{o.order_number}</span>
+                <div className="dash-feed-name">{o.customer_name || 'عميل'}</div>
+                <div className="dash-feed-meta">
+                  <span className="dash-feed-order-num">{o.order_number}</span>
                   {o.customer_city && <span>· {o.customer_city}</span>}
                   <span>· {timeAgo(o.created_at)}</span>
                 </div>
               </div>
-              <span style={{ padding:'3px 9px', borderRadius:999, fontSize:9, fontWeight:700, background:`${s.color}18`, color:s.color, flexShrink:0 }}>{s.label}</span>
-              <div style={{ fontWeight:800, color:'var(--action)', fontSize:13, fontFamily:'Inter,sans-serif', flexShrink:0, minWidth:60, textAlign:'start' }}>{formatCurrency(o.total||0)}</div>
+              <span className="dash-feed-badge">{s.label}</span>
+              <div className="dash-feed-total">{formatCurrency(o.total||0)}</div>
             </div>
           )
         })}
@@ -842,15 +817,12 @@ function LiveFeed({ orders, onNavigate }) {
       {/* Quick actions footer */}
       <div style={{ padding:'12px 14px', borderTop:'1px solid var(--border)', display:'flex', gap:8, flexShrink:0, flexWrap:'wrap' }}>
         {[
-          { l:'+ طلب',    c:'#318CE7', bg:'rgba(49,140,231,0.1)',  border:'rgba(49,140,231,0.2)',  p:'orders'     },
-          { l:'+ مصروف',  c:'#F59E0B', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.2)',  p:'expenses'   },
-          { l:'التقارير', c:'#5DD8A4', bg:'rgba(93,216,164,0.08)', border:'rgba(93,216,164,0.2)',  p:'reports'    },
-          { l:'المحاسبة', c:'#8B5CF6', bg:'rgba(139,92,246,0.08)', border:'rgba(139,92,246,0.2)',  p:'accounting' },
+          { l:'+ طلب',    c:'#318CE7', p:'orders'     },
+          { l:'+ مصروف',  c:'#F59E0B', p:'expenses'   },
+          { l:'التقارير', c:'#5DD8A4', p:'reports'    },
+          { l:'المحاسبة', c:'#8B5CF6', p:'accounting' },
         ].map(a => (
-          <button key={a.l} onClick={()=>onNavigate(a.p)} style={{ flex:1, padding:'8px 0', borderRadius:10, border:`1px solid ${a.border}`, background:a.bg, color:a.c, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit', transition:'all 0.14s', minWidth:60 }}
-            onMouseEnter={e=>e.currentTarget.style.filter='brightness(1.25)'}
-            onMouseLeave={e=>e.currentTarget.style.filter='none'}
-          >
+          <button key={a.l} onClick={()=>onNavigate(a.p)} className="dash-quick-btn" style={{ '--c': a.c } as any}>
             {a.l}
           </button>
         ))}

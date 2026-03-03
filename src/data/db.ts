@@ -73,7 +73,7 @@ export const DB = {
     const cached = queryCache.get(cacheKey)
     if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data as T[]
 
-    let query = supabase.from(table).select('*')
+    let query = supabase.from(table).select(options.columns || '*')
     if (options.orderBy) query = query.order(options.orderBy, { ascending: options.asc ?? false })
     if (options.filters) {
       options.filters.forEach(([col, op, val]) => {

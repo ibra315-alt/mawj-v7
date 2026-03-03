@@ -246,6 +246,7 @@ export interface DatabaseOptions {
   asc?: boolean
   filters?: FilterTuple[]
   limit?: number
+  columns?: string
 }
 
 // ─── Realtime ────────────────────────────────────────────────────────────────

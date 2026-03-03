@@ -5,6 +5,7 @@ import { formatCurrency } from '../data/constants'
 import { Btn, Modal, Input, Select, Textarea, Spinner, Empty, ConfirmModal, toast } from '../components/ui'
 import { IcPlus, IcDelete, IcEdit, IcAlert } from '../components/Icons'
 import useDeleteRecord from '../hooks/useDeleteRecord'
+import useDebounce from '../hooks/useDebounce'
 import type { PageProps } from '../types'
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -48,6 +49,7 @@ export default function Inventory(_: PageProps) {
   const [showForm,      setShowForm]      = useState(false)
   const [editItem,      setEditItem]      = useState(null)
   const [search,        setSearch]        = useState('')
+  const debouncedSearch = useDebounce(search)
   const [activeFilter,  setActiveFilter]  = useState('all')
   const [movements,     setMovements]     = useState([])
   const [movesItem,     setMovesItem]     = useState(null)
@@ -64,7 +66,7 @@ export default function Inventory(_: PageProps) {
       const [inv, sups, recentOrders] = await Promise.all([
         DB.list('inventory', { orderBy: 'name', asc: true }),
         DB.list('suppliers'),
-        DB.list('orders', { orderBy: 'created_at', asc: false, limit: 300 }),
+        DB.list('orders', { orderBy: 'created_at', asc: false, limit: 300, columns: 'items,status,created_at' }),
       ])
       setItems(inv)
       setSuppliers(sups)
@@ -134,8 +136,8 @@ export default function Inventory(_: PageProps) {
   /* ── filtered items ──────────────────────────────────── */
   const filtered = useMemo(() => {
     let list = abcItems
-    if (search) list = list.filter(i =>
-      i.name?.includes(search) || i.sku?.includes(search) || i.category?.includes(search)
+    if (debouncedSearch) list = list.filter(i =>
+      i.name?.includes(debouncedSearch) || i.sku?.includes(debouncedSearch) || i.category?.includes(debouncedSearch)
     )
     if (activeFilter === 'A')    list = list.filter(i => i.abcClass === 'A')
     else if (activeFilter === 'B')    list = list.filter(i => i.abcClass === 'B')
@@ -143,7 +145,7 @@ export default function Inventory(_: PageProps) {
     else if (activeFilter === 'low')  list = list.filter(i => i.stock_qty <= (i.low_stock_threshold || 5))
     else if (activeFilter === 'zero') list = list.filter(i => !i.stock_qty)
     return list
-  }, [abcItems, search, activeFilter])
+  }, [abcItems, debouncedSearch, activeFilter])
 
   /* ── KPIs ─────────────────────────────────────────────── */
   const activeItems = items.filter(i => i.active)

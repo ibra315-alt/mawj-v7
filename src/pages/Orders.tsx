@@ -9,6 +9,7 @@ import { Btn, Badge, Input, Select, Textarea, Empty, PageHeader, ConfirmModal, t
 import { IcPlus, IcSearch, IcEdit, IcDelete, IcEye, IcWhatsapp, IcSave, IcNote, IcRefresh, IcClose, IcCheck, IcCopy, IcAlert, IcPhone } from '../components/Icons'
 import PrintReceipt from '../components/PrintReceipt'
 import Confetti from '../components/Confetti'
+import useDebounce from '../hooks/useDebounce'
 import type { PageProps } from '../types'
 
 // Re-export for backward compatibility
@@ -62,6 +63,7 @@ export default function Orders({ user }: PageProps) {
   const [products,       setProducts]       = useState([])
   const [loading,        setLoading]        = useState(true)
   const [search,         setSearch]         = useState('')
+  const debouncedSearch = useDebounce(search)
   const [activeStatus,   setActiveStatus]   = useState('all')
   const [selectedOrder,  setSelectedOrder]  = useState(null)
   const [showPanel,      setShowPanel]      = useState(false)
@@ -225,8 +227,8 @@ export default function Orders({ user }: PageProps) {
   // ── Filtered feed ───────────────────────────────────────────
   const feedOrders = orders.filter(o => {
     if (activeStatus !== 'all' && o.status !== activeStatus) return false
-    if (!search) return true
-    const q = search.toLowerCase()
+    if (!debouncedSearch) return true
+    const q = debouncedSearch.toLowerCase()
     return (o.customer_name  || '').toLowerCase().includes(q)
         || (o.order_number   || '').toLowerCase().includes(q)
         || (o.customer_phone || '').includes(q)
