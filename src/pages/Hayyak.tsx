@@ -152,7 +152,7 @@ export default function Hayyak(_: PageProps) {
       ])
       setOrders(ords)
       setRemittances(remits.reverse())
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); toast('خطأ في تحميل الطلبات', 'error') }
     finally { setLoading(false) }
   }
 

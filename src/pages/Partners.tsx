@@ -278,7 +278,7 @@ export default function Partners(_: PageProps) {
       setCapital(cap.reverse())
       setWithdrawals(with_.reverse())
       setExpenses(exp)
-    } catch (err) { console.error(err) }
+    } catch (err) { console.error(err); toast('خطأ في تحميل بيانات الشركاء', 'error') }
     finally { setLoading(false) }
   }
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { DB } from '../data/db'
 import { subscribeOrders } from '../data/realtime'
 import { formatCurrency } from '../data/constants'
-import { SkeletonStats, SkeletonCard } from '../components/ui'
+import { SkeletonStats, SkeletonCard, toast } from '../components/ui'
 import Sparkline from '../components/Sparkline'
 import type { PageProps } from '../types'
 
@@ -194,7 +194,7 @@ export default function Dashboard({ onNavigate }: PageProps) {
       }
       setChartData(chart)
 
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); toast('خطأ في تحميل لوحة القيادة', 'error') }
     finally { setLoading(false) }
   }
 

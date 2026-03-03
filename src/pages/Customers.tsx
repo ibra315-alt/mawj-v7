@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
-import { Modal, Btn } from '../components/ui'
+import { Modal, Btn, toast } from '../components/ui'
 import { IcSearch, IcWhatsapp, IcClose } from '../components/Icons'
 import type { PageProps } from '../types'
 
@@ -58,35 +58,35 @@ function customerName(c) {
 
 /* ── Smart logic functions ─────────────────────────────────── */
 function churnRisk(c) {
-  const daysSince = daysSince(c.lastOrderDate)
+  const days = daysSince(c.lastOrderDate)
   if (c.orderCount < 2) {
-    if (daysSince > 90) return { score:80, label:'خطر مرتفع', color:'#F87171' }
-    if (daysSince > 45) return { score:50, label:'متوسط',     color:'#F59E0B' }
-    return                     { score:15, label:'جيد',        color:'#5DD8A4' }
+    if (days > 90) return { score:80, label:'خطر مرتفع', color:'#F87171' }
+    if (days > 45) return { score:50, label:'متوسط',     color:'#F59E0B' }
+    return                { score:15, label:'جيد',        color:'#5DD8A4' }
   }
   const firstMs = c.firstOrderDate ? new Date(c.firstOrderDate).getTime() : Date.now()
   const lastMs  = c.lastOrderDate  ? new Date(c.lastOrderDate).getTime()  : Date.now()
   const avgGap  = Math.max(14, (lastMs - firstMs) / Math.max(1, c.orderCount - 1) / 86400000)
-  const ratio   = daysSince / avgGap
+  const ratio   = days / avgGap
   if (ratio > 2)   return { score:Math.min(95, Math.round(ratio * 38)), label:'خطر مرتفع', color:'#F87171' }
   if (ratio > 1.2) return { score:Math.round(ratio * 30),               label:'متوسط',     color:'#F59E0B' }
   return                  { score:Math.max(5,  Math.round(ratio * 18)), label:'جيد',        color:'#5DD8A4' }
 }
 
 function loyaltyScore(c) {
-  const daysSince = daysSince(c.lastOrderDate)
-  const r = Math.max(0, 33 - Math.round(daysSince / 3))
+  const days = daysSince(c.lastOrderDate)
+  const r = Math.max(0, 33 - Math.round(days / 3))
   const f = Math.min(33, c.orderCount * 5)
   const m = Math.min(34, Math.round(c.totalSpent / 100))
   return Math.min(100, r + f + m)
 }
 
 function nextBestAction(c) {
-  const daysSince = daysSince(c.lastOrderDate)
+  const days = daysSince(c.lastOrderDate)
   const risk = churnRisk(c)
-  if (risk.score > 70)                                                   return { text:`لم يطلب منذ ${daysSince} يوم — أرسل عرضاً`, color:'#F87171', icon:'🔥' }
-  if (c.segment.label === 'VIP' && daysSince > 30)                       return { text:'عميل VIP — تواصل شخصياً',                   color:'#F59E0B', icon:'👑' }
-  if (c.orderCount === 1 && daysSince < 14)                              return { text:'عميل جديد — رحب به بخصم',                   color:'#38BDF8', icon:'🌟' }
+  if (risk.score > 70)                                                   return { text:`لم يطلب منذ ${days} يوم — أرسل عرضاً`, color:'#F87171', icon:'🔥' }
+  if (c.segment.label === 'VIP' && days > 30)                            return { text:'عميل VIP — تواصل شخصياً',                color:'#F59E0B', icon:'👑' }
+  if (c.orderCount === 1 && days < 14)                                   return { text:'عميل جديد — رحب به بخصم',                color:'#38BDF8', icon:'🌟' }
   if (c.orderCount === 4)                                                return { text:'طلب واحد عن VIP — حفزه',                   color:'#A78BFA', icon:'💎' }
   if (c.totalSpent >= 1600 && c.segment.label !== 'VIP')                 return { text:`${Math.round(2000 - c.totalSpent)} د عن VIP`, color:'#F59E0B', icon:'⭐' }
   return null
@@ -140,7 +140,7 @@ export default function Customers(_: PageProps) {
         avgOrder:   c.totalSpent / c.orders.length,
       })).map(c => ({ ...c, segment: getSegment(c) }))
       setCustomers(list)
-    } catch (err) { console.error(err) }
+    } catch (err) { console.error(err); toast('خطأ في تحميل العملاء', 'error') }
     finally { setLoading(false) }
   }
 

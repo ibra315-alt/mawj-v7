@@ -31,7 +31,7 @@ export default function Suppliers(_: PageProps) {
         purMap[p.supplier_id].push(p)
       })
       setPurchases(purMap)
-    } catch (err) { console.error(err) }
+    } catch (err) { console.error(err); toast('خطأ في تحميل الموردين', 'error') }
     finally { setLoading(false) }
   }
 

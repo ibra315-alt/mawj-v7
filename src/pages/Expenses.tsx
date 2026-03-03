@@ -89,7 +89,7 @@ export default function Expenses(_: PageProps) {
     try {
       const data = await DB.list('expenses', { orderBy: 'date' })
       setExpenses(data.reverse())
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); toast('خطأ في تحميل المصروفات', 'error') }
     finally { setLoading(false) }
   }
 

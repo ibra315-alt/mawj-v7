@@ -82,7 +82,7 @@ export default function Inventory(_: PageProps) {
         }
       }
       setVelocity(vel)
-    } catch (err) { console.error(err) }
+    } catch (err) { console.error(err); toast('خطأ في تحميل المخزون', 'error') }
     finally { setLoading(false) }
   }
 

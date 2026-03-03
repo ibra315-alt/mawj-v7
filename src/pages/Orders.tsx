@@ -967,6 +967,8 @@ function OrderPanel({ open, onClose, order, replacementFor, products, onSaved, u
   const calc = calcOrderProfit({ items, hayyak_fee: form.hayyak_fee, discount: form.discount, is_replacement: form.is_replacement })
 
   async function handleSave() {
+    if (!form.customer_name?.trim()) { toast('أدخل اسم العميل', 'error'); return }
+    if (!form.customer_phone?.trim()) { toast('أدخل رقم الهاتف', 'error'); return }
     if (items.length === 0) { toast('أضف منتجاً واحداً على الأقل', 'error'); return }
     setSaving(true)
     try {
