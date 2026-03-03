@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
-import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, toast } from '../components/ui'
+import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcEdit, IcDelete } from '../components/Icons'
 import useDeleteRecord from '../hooks/useDeleteRecord'
 import type { PageProps } from '../types'
@@ -239,12 +239,10 @@ export default function Expenses(_: PageProps) {
 
   if (loading) return (
     <div className="exp-page">
-      <div className="exp-toprow">
-        <div><div className="exp-title">المصاريف</div><div className="exp-sub">جاري التحميل...</div></div>
-      </div>
-      <div style={{ display:'flex', justifyContent:'center', padding:'60px 0' }}>
-        <div style={{ width:32, height:32, border:'3px solid var(--action)', borderTopColor:'transparent', borderRadius:'50%', animation:'expSpin 0.8s linear infinite' }} />
-      </div>
+      <SkeletonStats count={3} />
+      <SkeletonCard rows={4} />
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
     </div>
   )
 
@@ -269,11 +267,11 @@ export default function Expenses(_: PageProps) {
         }
 
         /* ── tabs ── */
-        .exp-tabs { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; margin-bottom:14px; padding-bottom:2px; }
+        .exp-tabs { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin-bottom:14px; padding-bottom:2px; }
         .exp-tabs::-webkit-scrollbar { display:none; }
         .exp-tab {
           display:flex; align-items:center; gap:5px;
-          padding:8px 14px; border-radius:999px; border:1.5px solid var(--border);
+          padding:9px 16px; border-radius:999px; border:1.5px solid var(--border);
           background:var(--bg-surface); color:var(--text-secondary);
           font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
           font-family:var(--font); transition:all 0.15s; flex-shrink:0;

@@ -82,12 +82,20 @@ function canAccess(role: UserRole | undefined, page: string): boolean {
 export default function App() {
   const [session, setSession]     = useState<Session | null | undefined>(undefined)
   const [user, setUser]           = useState<User | null>(null)
-  const [page, setPage]           = useState<string>(() => localStorage.getItem('mawj-page') || 'dashboard')
+  const [page, setPage]           = useState<string>(() => {
+    const hash = window.location.hash.slice(1)
+    return hash || localStorage.getItem('mawj-page') || 'dashboard'
+  })
   const [pageKey, setPageKey]     = useState<number>(0)
   const [showAI, setShowAI]       = useState<boolean>(false)
   const [isOnline, setIsOnline]   = useState<boolean>(navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState<any>(null)
   const [swWaiting, setSwWaiting] = useState<ServiceWorker | null>(null)
+
+  // ── Set initial URL hash ──
+  useEffect(() => {
+    if (!window.location.hash) history.replaceState(null, '', '#' + page)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Online / offline ──
   useEffect(() => {
@@ -168,7 +176,22 @@ export default function App() {
     if (id !== page) setPageKey(k => k + 1)
     setPage(id)
     localStorage.setItem('mawj-page', id)
+    history.pushState(null, '', '#' + id)
   }
+
+  // ── Hash-based routing (back/forward button support) ──
+  useEffect(() => {
+    const onHash = () => {
+      const id = window.location.hash.slice(1)
+      if (id && id !== page) {
+        setPage(id)
+        setPageKey(k => k + 1)
+        localStorage.setItem('mawj-page', id)
+      }
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  })
 
   async function handleInstall() {
     if (!installPrompt) return

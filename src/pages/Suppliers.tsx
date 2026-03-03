@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
-import { Btn, Card, Badge, Modal, Input, Select, Textarea, Spinner, Empty, PageHeader, ConfirmModal, toast } from '../components/ui'
+import { Btn, Card, Badge, Modal, Input, Select, Textarea, Empty, PageHeader, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcDelete, IcEdit, IcPhone, IcWhatsapp } from '../components/Icons'
 import type { PageProps } from '../types'
 
@@ -46,7 +46,13 @@ export default function Suppliers(_: PageProps) {
     finally { setDeleting(false) }
   }
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><Spinner size={36} /></div>
+  if (loading) return (
+    <div className="page" style={{ paddingBottom:140 }}>
+      <SkeletonStats count={2} />
+      <SkeletonCard rows={3} />
+      <div style={{ marginTop:16 }}><SkeletonCard rows={3} /></div>
+    </div>
+  )
 
   return (
     <div className="page">

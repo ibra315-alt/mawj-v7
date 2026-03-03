@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency } from '../data/constants'
-import { Btn, Modal, Input, Select, Textarea, Spinner, Empty, ConfirmModal, toast } from '../components/ui'
+import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcDelete, IcEdit, IcAlert } from '../components/Icons'
 import useDeleteRecord from '../hooks/useDeleteRecord'
 import useDebounce from '../hooks/useDebounce'
@@ -174,8 +174,11 @@ export default function Inventory(_: PageProps) {
     : movements
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh' }}>
-      <Spinner size={36} />
+    <div className="page" style={{ paddingBottom:140 }}>
+      <SkeletonStats count={4} />
+      <SkeletonCard rows={4} />
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
     </div>
   )
 
@@ -275,6 +278,12 @@ export default function Inventory(_: PageProps) {
 
         /* ── search ── */
         .inv-search-wrap { position:relative; margin-bottom:12px; }
+        .inv-search-clear {
+          position:absolute; inset-inline-end:10px; top:50%; transform:translateY(-50%);
+          background:none; border:none; color:var(--text-muted); cursor:pointer;
+          font-size:16px; padding:4px; line-height:1;
+        }
+        .inv-search-clear:hover { color:var(--text-primary); }
         .inv-search {
           width:100%; box-sizing:border-box;
           padding-top:10px; padding-bottom:10px;
@@ -591,10 +600,12 @@ export default function Inventory(_: PageProps) {
           </span>
           <input
             className="inv-search"
+            style={search ? { paddingInlineEnd: 36 } : undefined}
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="بحث بالاسم، SKU، الفئة..."
           />
+          {search && <button className="inv-search-clear" onClick={() => setSearch('')}>✕</button>}
         </div>
 
         {/* ── Product Grid ── */}

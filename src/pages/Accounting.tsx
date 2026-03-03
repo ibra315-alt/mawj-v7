@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { DB, Settings } from '../data/db'
 import { formatCurrency } from '../data/constants'
-import { Spinner, toast } from '../components/ui'
+import { toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import type { PageProps } from '../types'
 
 /* ═══════════════════════════════════════════════════════
@@ -219,8 +219,11 @@ export default function Accounting(_: PageProps) {
   const monthKeys = useMemo(() => allKeys(orders, expenses, remittances), [orders, expenses, remittances])
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <Spinner size={36} />
+    <div className="page" style={{ paddingBottom:140 }}>
+      <SkeletonStats count={4} />
+      <SkeletonCard rows={5} />
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
     </div>
   )
 

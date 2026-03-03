@@ -74,7 +74,7 @@ function FlowStep({ icon, label, value, color = 'var(--action)', pulse = false, 
     <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-        padding: '12px 8px', borderRadius: 'var(--r-md)', textAlign: 'center', minWidth: 0,
+        padding: '14px 12px', borderRadius: 'var(--r-md)', textAlign: 'center', minWidth: 0,
         background: 'var(--bg-hover)',
         border: `1.5px solid ${pulse ? 'rgba(var(--warning-rgb),0.45)' : 'var(--border)'}`,
         boxShadow: pulse ? '0 0 18px rgba(var(--warning-rgb),0.18)' : 'none',
@@ -453,8 +453,11 @@ export default function Hayyak(_: PageProps) {
               <IcSearch size={14} style={{ position: 'absolute', insetInlineStart: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
               <input
                 value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..."
-                style={{ width: '100%', padding: '9px 12px 9px 32px', background: 'var(--bg-surface)', border: '1.5px solid var(--input-border)', borderRadius: 'var(--r-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', boxShadow: 'var(--card-shadow)' }}
+                style={{ width: '100%', padding: '9px 12px 9px 32px', paddingInlineEnd: search ? 36 : 12, background: 'var(--bg-surface)', border: '1.5px solid var(--input-border)', borderRadius: 'var(--r-sm)', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', boxShadow: 'var(--card-shadow)' }}
               />
+              {search && (
+                <button onClick={() => setSearch('')} style={{ position:'absolute', insetInlineEnd:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:16, padding:4, lineHeight:1 }}>✕</button>
+              )}
             </div>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="من تاريخ"
               style={{ padding: '9px 10px', background: 'var(--bg-surface)', border: '1.5px solid var(--input-border)', borderRadius: 'var(--r-sm)', color: dateFrom ? 'var(--text)' : 'var(--text-muted)', fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', boxShadow: 'var(--card-shadow)' }} />

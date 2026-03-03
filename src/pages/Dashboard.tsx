@@ -246,7 +246,7 @@ export default function Dashboard({ onNavigate }: PageProps) {
 
         /* ── Quick Actions ── */
         .db-quick-actions {
-          display: flex; gap: 10px; margin-bottom: 18px;
+          display: flex; gap: 12px; margin-bottom: 18px;
           overflow-x: auto; padding-bottom: 2px;
           scrollbar-width: none;
         }
@@ -404,6 +404,11 @@ export default function Dashboard({ onNavigate }: PageProps) {
         />
       </div>
 
+      {/* ══ TODAY'S ORDERS (LIVE FEED) ══════════════════════ */}
+      <div style={{ marginBottom:16 }}>
+        <LiveFeed orders={todayStream} onNavigate={onNavigate} />
+      </div>
+
       {/* ══ PIPELINE FUNNEL + SMART INSIGHTS ════════════════ */}
       <div className="db-grid2r">
         <PipelineFunnel counts={pipelineCounts} onNavigate={onNavigate} />
@@ -413,11 +418,8 @@ export default function Dashboard({ onNavigate }: PageProps) {
       {/* ══ 30-DAY REVENUE CHART ════════════════════════════ */}
       {chartData.length > 1 && <RevenueChart data={chartData} />}
 
-      {/* ══ TOP PRODUCTS + LIVE FEED ════════════════════════ */}
-      <div className="db-grid2l">
-        <TopProductsPanel products={topProducts} />
-        <LiveFeed orders={todayStream} onNavigate={onNavigate} />
-      </div>
+      {/* ══ TOP PRODUCTS ════════════════════════════════════ */}
+      <TopProductsPanel products={topProducts} />
     </div>
   )
 }

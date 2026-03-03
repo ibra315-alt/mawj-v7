@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
-import { Btn, Modal, Input, Select, Textarea, Spinner, Empty, ConfirmModal, toast } from '../components/ui'
+import { Btn, Modal, Input, Select, Textarea, Empty, ConfirmModal, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcPlus, IcDelete, IcEdit } from '../components/Icons'
 import type { PageProps } from '../types'
 
@@ -372,8 +372,11 @@ export default function Partners(_: PageProps) {
   const hasNoData = capital.length === 0 && withdrawals.length === 0
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <Spinner size={36} />
+    <div className="page" style={{ paddingBottom:140 }}>
+      <SkeletonStats count={3} />
+      <SkeletonCard rows={5} />
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
     </div>
   )
 

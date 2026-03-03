@@ -264,8 +264,8 @@ export default function Orders({ user }: PageProps) {
         .orders-stat-chip { display:flex; align-items:center; gap:6px; padding:5px 12px; border-radius:99px; font-size:12px; font-weight:700; }
         @media (max-width: 768px) {
           .orders-cmd { padding-bottom: 140px; }
-          .orders-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-          .orders-stat-chip { justify-content:center; padding:8px 10px; }
+          .orders-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+          .orders-stat-chip { justify-content:center; padding:10px 12px; font-size:13px; }
         }
         @keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulseRed { 0%,100%{ box-shadow: 0 0 0 0 rgba(248,113,113,0); } 50%{ box-shadow: 0 0 0 6px rgba(248,113,113,0.15); } }
@@ -360,13 +360,16 @@ export default function Orders({ user }: PageProps) {
           placeholder="بحث بالاسم، رقم الطلب، الهاتف، المدينة..."
           style={{
             width:'100%', paddingTop:10, paddingBottom:10,
-            paddingInlineStart:38, paddingInlineEnd:12,
+            paddingInlineStart:38, paddingInlineEnd:search ? 36 : 12,
             background:'var(--bg-surface)', border:'1.5px solid var(--input-border)',
             borderRadius:12, color:'var(--text)', fontSize:13,
             fontFamily:'inherit', outline:'none', boxSizing:'border-box',
             boxShadow:'var(--card-shadow)',
           }}
         />
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position:'absolute', insetInlineEnd:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:16, padding:4, lineHeight:1 }}>✕</button>
+        )}
       </div>
 
       {/* ══ ALERT BANNERS ════════════════════════════════════════ */}

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { DB } from '../data/db'
 import { formatCurrency, formatDate } from '../data/constants'
-import { Modal, Btn, toast } from '../components/ui'
+import { Modal, Btn, toast, SkeletonStats, SkeletonCard } from '../components/ui'
 import { IcSearch, IcWhatsapp, IcClose } from '../components/Icons'
 import useDebounce from '../hooks/useDebounce'
 import type { PageProps } from '../types'
@@ -191,11 +191,11 @@ export default function Customers(_: PageProps) {
   const maxCityRev = cityData[0]?.rev || 1
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh' }}>
-      <div style={{ textAlign:'center' }}>
-        <div style={{ fontSize:36, marginBottom:12, animation:'custSpin 1.4s linear infinite', display:'inline-block' }}>⟳</div>
-        <div style={{ fontSize:13, color:'var(--text-muted)' }}>جاري تحميل العملاء...</div>
-      </div>
+    <div className="page" style={{ paddingBottom:140 }}>
+      <SkeletonStats count={4} />
+      <SkeletonCard rows={4} />
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
+      <div style={{ marginTop:16 }}><SkeletonCard rows={4} /></div>
     </div>
   )
 
@@ -223,9 +223,9 @@ export default function Customers(_: PageProps) {
         .cust-toprow { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px; }
 
         /* ─ Stats ─ */
-        .cust-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+        .cust-stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
         @media (min-width:769px) { .cust-stats { grid-template-columns:repeat(4,1fr); } }
-        .cust-stat { padding:14px 16px; border-radius:14px; background:var(--bg-surface); backdrop-filter:blur(40px); border:1px solid var(--border); position:relative; overflow:hidden; transition:transform 0.18s,box-shadow 0.18s; animation:statIn 0.35s ease both; }
+        .cust-stat { padding:16px; border-radius:14px; background:var(--bg-surface); backdrop-filter:blur(40px); border:1px solid var(--border); position:relative; overflow:hidden; transition:transform 0.18s,box-shadow 0.18s; animation:statIn 0.35s ease both; }
         @media (min-width:769px) { .cust-stat:hover { transform:translateY(-3px); box-shadow:var(--card-shadow-hover); } }
 
         /* ─ Podium ─ */
@@ -248,8 +248,8 @@ export default function Customers(_: PageProps) {
         .seg-chip.seg-act { border-color:var(--sc); background:color-mix(in srgb, var(--sc) 12%, transparent); color:var(--sc); box-shadow:0 0 12px color-mix(in srgb, var(--sc) 22%, transparent); }
 
         /* ─ Customer feed rows ─ */
-        .cust-feed { display:flex; flex-direction:column; gap:8px; }
-        .cust-row { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--bg-surface); border-radius:14px; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s,box-shadow 0.15s; backdrop-filter:blur(40px); overflow:hidden; position:relative; }
+        .cust-feed { display:flex; flex-direction:column; gap:10px; }
+        .cust-row { display:flex; align-items:center; gap:12px; padding:14px 16px; background:var(--bg-surface); border-radius:14px; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s,box-shadow 0.15s; backdrop-filter:blur(40px); overflow:hidden; position:relative; }
         .cust-row:active { transform:scale(0.99); }
         @media (min-width:769px) { .cust-row:hover { transform:translateY(-2px); box-shadow:var(--card-shadow-hover); } }
         .cust-sparkline { display:none; }
@@ -425,7 +425,7 @@ export default function Customers(_: PageProps) {
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="بحث بالاسم أو الهاتف أو المدينة..."
             style={{
-              width:'100%', paddingTop:10, paddingBottom:10, paddingInlineStart:38, paddingInlineEnd:12,
+              width:'100%', paddingTop:10, paddingBottom:10, paddingInlineStart:38, paddingInlineEnd: search ? 36 : 12,
               background:'var(--bg-surface)', border:'1.5px solid var(--input-border)',
               borderRadius:12, color:'var(--text)', fontSize:13, fontFamily:'inherit',
               outline:'none', boxSizing:'border-box', transition:'border-color 0.15s',
@@ -433,6 +433,9 @@ export default function Customers(_: PageProps) {
             onFocus={e => e.target.style.borderColor='var(--action)'}
             onBlur={e => e.target.style.borderColor='var(--input-border)'}
           />
+          {search && (
+            <button onClick={() => setSearch('')} style={{ position:'absolute', insetInlineEnd:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:16, padding:4, lineHeight:1 }}>✕</button>
+          )}
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{
           padding:'10px 12px', background:'var(--bg-surface)', border:'1.5px solid var(--input-border)',
