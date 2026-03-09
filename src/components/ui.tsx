@@ -400,7 +400,7 @@ export function ToastContainer() {
     info:    { bg: 'linear-gradient(135deg,var(--action),var(--action-deep))', color: '#fff', icon: 'ℹ' },
   }
   return (
-    <div role="status" aria-live="polite" style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', pointerEvents: 'none' }}>
+    <div role="status" aria-live="polite" style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 999999, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', pointerEvents: 'none' }}>
       {toasts.map(t => {
         const v = palette[t.type] || palette.success
         return (
